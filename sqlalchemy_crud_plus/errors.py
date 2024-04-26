@@ -15,3 +15,10 @@ class ModelColumnError(SQLAlchemyCRUDPlusException):
 
     def __init__(self, msg: str) -> None:
         super().__init__(msg)
+
+
+class SelectExpressionError(SQLAlchemyCRUDPlusException):
+    """Error raised when a select expression is invalid."""
+
+    def __init__(self, msg: str) -> None:
+        super().__init__(msg)

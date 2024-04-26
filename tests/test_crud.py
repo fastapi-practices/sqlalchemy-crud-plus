@@ -55,12 +55,37 @@ async def test_select_model_by_column():
 
 
 @pytest.mark.asyncio
+async def test_select_model_by_columns():
+    await create_test_model()
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        for i in range(1, 10):
+            result = await crud.select_model_by_columns(session, id=f'{i}', name=f'test_name_{i}')
+            assert result.name == f'test_name_{i}'
+            result = await crud.select_model_by_columns(session, 'or', id=f'{i}', name='null')
+            assert result.name == f'test_name_{i}'
+
+
+@pytest.mark.asyncio
 async def test_select_models():
     await create_test_model()
     async with async_db_session.begin() as session:
         crud = CRUDPlus(Ins)
         result = await crud.select_models(session)
         assert len(result) == 9
+
+
+@pytest.mark.asyncio
+async def test_select_models_order():
+    await create_test_model()
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_models_order(session, 'id', 'name')
+        assert result[0].id == 1
+        result = await crud.select_models_order(session, 'id', model_sort='asc')
+        assert result[0].id == 1
+        result = await crud.select_models_order(session, 'id', model_sort='desc')
+        assert result[0].id == 9
 
 
 @pytest.mark.asyncio
