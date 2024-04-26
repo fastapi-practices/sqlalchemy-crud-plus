@@ -1,0 +1,60 @@
+[project]
+name = "sqlalchemy-crud-plus"
+description = "Asynchronous CRUD Operation based on SQLAlChemy2 Model"
+dynamic = [
+    "version",
+]
+authors = [
+    { name = "Wu Clan", email = "jianhengwu0407@gmail.com" },
+]
+dependencies = [
+    "sqlalchemy>=2.0.0",
+    "pydantic>=2.0",
+]
+requires-python = ">=3.10"
+readme = "README.md"
+license = { text = "MIT" }
+
+[tool.pdm.dev-dependencies]
+lint = [
+    "ruff>=0.4.0",
+    "pre-commit>=3.5.0",
+]
+test = [
+    "pytest>=8.1.1",
+    "aiosqlite>=0.20.0",
+    "pytest-asyncio>=0.23.6",
+]
+
+[tool.ruff]
+line-length = 120
+unsafe-fixes = true
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I"
+]
+preview = true
+ignore-init-module-imports = true
+
+[tool.ruff.lint.isort]
+lines-between-types = 1
+order-by-type = true
+
+[tool.ruff.format]
+quote-style = "single"
+docstring-code-format = true
+
+[tool.pdm]
+distribution = true
+version = { source = "file", path = "sqlalchemy_crud_plus/__init__.py" }
+
+[tool.pdm.scripts]
+lint = "pre-commit run --all-files"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
