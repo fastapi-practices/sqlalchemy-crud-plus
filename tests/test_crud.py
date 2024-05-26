@@ -35,6 +35,20 @@ async def test_create_model():
 
 
 @pytest.mark.asyncio
+async def test_create_models():
+    async with async_db_session.begin() as session:
+        crud = CRUDPlus(Ins)
+        data = []
+        for i in range(1, 10):
+            data.append(ModelSchema(name=f'test_name_{i}'))
+        await crud.create_models(session, data)
+    async with async_db_session() as session:
+        for i in range(1, 10):
+            query = await session.scalar(select(Ins).where(Ins.id == i))
+            assert query.name == f'test_name_{i}'
+
+
+@pytest.mark.asyncio
 async def test_select_model_by_id():
     await create_test_model()
     async with async_db_session() as session:
@@ -96,7 +110,19 @@ async def test_update_model():
         data = ModelSchema(name='test_name_update_1')
         result = await crud.update_model(session, 1, data)
         assert result == 1
-        result = await crud.select_model_by_id(session, 1)
+        result = await session.get(Ins, 1)
+        assert result.name == 'test_name_update_1'
+
+
+@pytest.mark.asyncio
+async def test_update_model_by_column():
+    await create_test_model()
+    async with async_db_session.begin() as session:
+        crud = CRUDPlus(Ins)
+        data = ModelSchema(name='test_name_update_1')
+        result = await crud.update_model_by_column(session, 'name', 'test_name_1', data)
+        assert result == 1
+        result = await session.get(Ins, 1)
         assert result.name == 'test_name_update_1'
 
 
