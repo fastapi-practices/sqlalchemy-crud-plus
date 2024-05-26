@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from typing import Any, Generic, Literal, Sequence, Type, TypeVar
+from typing import Any, Generic, Iterable, Literal, Sequence, Type, TypeVar
 
 from pydantic import BaseModel
 from sqlalchemy import Row, RowMapping, and_, asc, desc, or_, select
@@ -33,6 +33,19 @@ class CRUDPlus(Generic[_Model]):
         else:
             instance = self.model(**obj.model_dump())
         session.add(instance)
+
+    async def create_models(self, session: AsyncSession, obj: Iterable[_CreateSchema]) -> None:
+        """
+        Create new instances of a model
+
+        :param session:
+        :param obj:
+        :return:
+        """
+        instance_list = []
+        for i in obj:
+            instance_list.append(self.model(**i.model_dump()))
+        session.add_all(instance_list)
 
     async def select_model_by_id(self, session: AsyncSession, pk: int) -> _Model | None:
         """
@@ -102,7 +115,7 @@ class CRUDPlus(Generic[_Model]):
         self,
         session: AsyncSession,
         *columns,
-        model_sort: Literal['skip', 'asc', 'desc'] = 'skip',
+        model_sort: Literal['default', 'asc', 'desc'] = 'default',
     ) -> Sequence[Row | RowMapping | Any] | None:
         """
         Query all rows asc or desc
@@ -112,9 +125,6 @@ class CRUDPlus(Generic[_Model]):
         :param model_sort:
         :return:
         """
-        if model_sort != 'skip':
-            if len(columns) != 1:
-                raise SelectExpressionError('ACS and DESC only allow you to specify one column for sorting')
         sort_list = []
         for column in columns:
             if hasattr(self.model, column):
@@ -123,7 +133,7 @@ class CRUDPlus(Generic[_Model]):
             else:
                 raise ModelColumnError(f'Model column {column} is not found')
         match model_sort:
-            case 'skip':
+            case 'default':
                 query = await session.execute(select(self.model).order_by(*sort_list))
             case 'asc':
                 query = await session.execute(select(self.model).order_by(asc(*sort_list)))
@@ -135,7 +145,7 @@ class CRUDPlus(Generic[_Model]):
 
     async def update_model(self, session: AsyncSession, pk: int, obj: _UpdateSchema | dict[str, Any], **kwargs) -> int:
         """
-        Update an instance of a model
+        Update an instance of model's primary key
 
         :param session:
         :param pk:
@@ -152,13 +162,41 @@ class CRUDPlus(Generic[_Model]):
         result = await session.execute(sa_update(self.model).where(self.model.id == pk).values(**instance_data))
         return result.rowcount  # type: ignore
 
+    async def update_model_by_column(
+        self, session: AsyncSession, column: str, column_value: Any, obj: _UpdateSchema | dict[str, Any], **kwargs
+    ) -> int:
+        """
+        Update an instance of model column
+
+        :param session:
+        :param column:
+        :param column_value:
+        :param obj:
+        :param kwargs:
+        :return:
+        """
+        if isinstance(obj, dict):
+            instance_data = obj
+        else:
+            instance_data = obj.model_dump(exclude_unset=True)
+        if kwargs:
+            instance_data.update(kwargs)
+        if hasattr(self.model, column):
+            model_column = getattr(self.model, column)
+        else:
+            raise ModelColumnError(f'Model column {column} is not found')
+        result = await session.execute(
+            sa_update(self.model).where(model_column == column_value).values(**instance_data)
+        )
+        return result.rowcount  # type: ignore
+
     async def delete_model(self, session: AsyncSession, pk: int, **kwargs) -> int:
         """
         Delete an instance of a model
 
         :param session:
         :param pk:
-        :param kwargs:
+        :param kwargs: for soft deletion only
         :return:
         """
         if not kwargs:
