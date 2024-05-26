@@ -3,4 +3,4 @@
 from .crud import CRUDPlus as CRUDPlus
 from .errors import ModelColumnError as ModelColumnError
 
-__version__ = 'v0.0.2'
+__version__ = 'v0.0.3'
