@@ -1,22 +1,17 @@
 # sqlalchemy-crud-plus
 
-基于 SQLAlChemy2 模型的异步 CRUD 操作
+Asynchronous CRUD operations based on SQLAlChemy 2.0
 
-## 下载
+## Download
 
 ```shell
 pip install sqlalchemy-crud-plus
 ```
 
-## TODO
-
-- [ ] ...
-
 ## Use
 
-以下仅为简易示例
-
 ```python
+# example:
 from sqlalchemy.orm import declarative_base
 from sqlalchemy_crud_plus import CRUDPlus
 
@@ -34,7 +29,7 @@ class CRUDIns(CRUDPlus[ModelIns]):
 
 
 # singleton
-ins_dao = CRUDIns(ModelIns)
+ins_dao: CRUDIns = CRUDIns(ModelIns)
 ```
 
 ## 互动
