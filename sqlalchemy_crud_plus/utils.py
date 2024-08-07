@@ -15,8 +15,9 @@ from sqlalchemy_crud_plus.types import Model
 _SUPPORTED_FILTERS = {
     'gt': lambda column: column.__gt__,
     'lt': lambda column: column.__lt__,
-    'gte': lambda column: column.__ge__,
-    'lte': lambda column: column.__le__,
+    'ge': lambda column: column.__ge__,
+    'le': lambda column: column.__le__,
+    'eq': lambda column: column.__eq__,
     'ne': lambda column: column.__ne__,
     'is': lambda column: column.is_,
     'is_not': lambda column: column.is_not,
@@ -63,15 +64,22 @@ async def parse_filters(model: Type[Model] | AliasedClass, **kwargs) -> list[Col
             field_name, op = key.rsplit('__', 1)
             column = await get_column(model, field_name)
             if op == 'or':
-                or_filters = [
-                    sqlalchemy_filter(column)(or_value)
-                    for or_op, or_value in value.items()
-                    if (sqlalchemy_filter := await get_sqlalchemy_filter(or_op, or_value)) is not None
-                ]
+                or_filters = []
+                for or_op, or_value in value.items():
+                    sqlalchemy_filter = await get_sqlalchemy_filter(or_op, or_value)
+                    if sqlalchemy_filter is not None:
+                        if op != 'between':
+                            or_filters.append(sqlalchemy_filter(column)(or_value))
+                        else:
+                            or_filters.append(sqlalchemy_filter(column)(*or_value))
                 filters.append(or_(*or_filters))
             else:
-                if (sqlalchemy_filter := await get_sqlalchemy_filter(op, value)) is not None:
-                    filters.append(sqlalchemy_filter(column)(value))
+                sqlalchemy_filter = await get_sqlalchemy_filter(op, value)
+                if sqlalchemy_filter is not None:
+                    if op != 'between':
+                        filters.append(sqlalchemy_filter(column)(value))
+                    else:
+                        filters.append(sqlalchemy_filter(column)(*value))
         else:
             column = await get_column(model, key)
             filters.append(column == value)

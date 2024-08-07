@@ -8,8 +8,8 @@ from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy_crud_plus.errors import MultipleResultsError
-from sqlalchemy_crud_plus.utils import apply_sorting, count, parse_filters
 from sqlalchemy_crud_plus.types import CreateSchema, Model, UpdateSchema
+from sqlalchemy_crud_plus.utils import apply_sorting, count, parse_filters
 
 
 class CRUDPlus(Generic[Model]):
@@ -71,8 +71,7 @@ class CRUDPlus(Generic[Model]):
         Query by column
 
         :param session: The SQLAlchemy async session.
-        :param kwargs: Query expressions,
-        `advanced usage <https://igorbenav.github.io/fastcrud/advanced/crud/#advanced-filters>`__
+        :param kwargs: Query expressions.
         :return:
         """
         filters = await parse_filters(self.model, **kwargs)
@@ -80,19 +79,21 @@ class CRUDPlus(Generic[Model]):
         query = await session.execute(stmt)
         return query.scalars().first()
 
-    async def select_models(self, session: AsyncSession) -> Sequence[Row[Any] | RowMapping | Any]:
+    async def select_models(self, session: AsyncSession, **kwargs) -> Sequence[Row[Any] | RowMapping | Any]:
         """
         Query all rows
 
         :param session: The SQLAlchemy async session.
+        :param kwargs: Query expressions.
         :return:
         """
-        stmt = select(self.model)
+        filters = await parse_filters(self.model, **kwargs)
+        stmt = select(self.model).where(*filters)
         query = await session.execute(stmt)
         return query.scalars().all()
 
     async def select_models_order(
-        self, session: AsyncSession, sort_columns: str | list[str], sort_orders: str | list[str] | None = None
+        self, session: AsyncSession, sort_columns: str | list[str], sort_orders: str | list[str] | None = None, **kwargs
     ) -> Sequence[Row | RowMapping | Any] | None:
         """
         Query all rows and sort by columns
@@ -102,8 +103,10 @@ class CRUDPlus(Generic[Model]):
         :param sort_orders: more details see apply_sorting
         :return:
         """
-        stmt = await apply_sorting(self.model, select(self.model), sort_columns, sort_orders)
-        query = await session.execute(stmt)
+        filters = await parse_filters(self.model, **kwargs)
+        stmt = select(self.model).where(*filters)
+        stmt_sort = await apply_sorting(self.model, stmt, sort_columns, sort_orders)
+        query = await session.execute(stmt_sort)
         return query.scalars().all()
 
     async def update_model(
@@ -143,8 +146,7 @@ class CRUDPlus(Generic[Model]):
         :param obj: A pydantic schema or dictionary containing the update data
         :param allow_multiple: If `True`, allows updating multiple records that match the filters.
         :param commit: If `True`, commits the transaction immediately. Default is `False`.
-        :param kwargs: Query expressions,
-        `advanced usage <https://igorbenav.github.io/fastcrud/advanced/crud/#advanced-filters>`__
+        :param kwargs: Query expressions.
         :return:
         """
         filters = await parse_filters(self.model, **kwargs)
@@ -190,8 +192,7 @@ class CRUDPlus(Generic[Model]):
 
         :param session: The SQLAlchemy async session.
         :param commit: If `True`, commits the transaction immediately. Default is `False`.
-        :param kwargs: Query expressions,
-        `advanced usage <https://igorbenav.github.io/fastcrud/advanced/crud/#advanced-filters>`__
+        :param kwargs: Query expressions.
         :param allow_multiple: If `True`, allows deleting multiple records that match the filters.
         :param logical_deletion: If `True`, enable logical deletion instead of physical deletion
         :param deleted_flag_column: Specify the flag column for logical deletion
