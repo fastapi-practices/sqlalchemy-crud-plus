@@ -8,7 +8,7 @@ from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy_crud_plus.errors import MultipleResultsError
-from sqlalchemy_crud_plus.helps import apply_sorting, count, parse_filters
+from sqlalchemy_crud_plus.utils import apply_sorting, count, parse_filters
 from sqlalchemy_crud_plus.types import CreateSchema, Model, UpdateSchema
 
 
@@ -71,7 +71,8 @@ class CRUDPlus(Generic[Model]):
         Query by column
 
         :param session: The SQLAlchemy async session.
-        :param kwargs: Query expressions, `advanced usage <https://igorbenav.github.io/fastcrud/advanced/crud/#advanced-filters>`__
+        :param kwargs: Query expressions,
+        `advanced usage <https://igorbenav.github.io/fastcrud/advanced/crud/#advanced-filters>`__
         :return:
         """
         filters = await parse_filters(self.model, **kwargs)
@@ -142,11 +143,12 @@ class CRUDPlus(Generic[Model]):
         :param obj: A pydantic schema or dictionary containing the update data
         :param allow_multiple: If `True`, allows updating multiple records that match the filters.
         :param commit: If `True`, commits the transaction immediately. Default is `False`.
-        :param kwargs: Query expressions, `advanced usage <https://igorbenav.github.io/fastcrud/advanced/crud/#advanced-filters>`__
+        :param kwargs: Query expressions,
+        `advanced usage <https://igorbenav.github.io/fastcrud/advanced/crud/#advanced-filters>`__
         :return:
         """
         filters = await parse_filters(self.model, **kwargs)
-        total_count = await count(session, **kwargs)
+        total_count = await count(session, self.model, filters)
         if not allow_multiple and total_count > 1:
             raise MultipleResultsError(f'Only one record is expected to be update, found {total_count} records.')
         if isinstance(obj, dict):
@@ -179,7 +181,7 @@ class CRUDPlus(Generic[Model]):
         session: AsyncSession,
         allow_multiple: bool = False,
         logical_deletion: bool = False,
-        is_deleted_column: str = 'is_deleted',
+        deleted_flag_column: str = 'del_flag',
         commit: bool = False,
         **kwargs,
     ) -> int:
@@ -188,14 +190,22 @@ class CRUDPlus(Generic[Model]):
 
         :param session: The SQLAlchemy async session.
         :param commit: If `True`, commits the transaction immediately. Default is `False`.
-        :param kwargs: Query expressions, `advanced usage <https://igorbenav.github.io/fastcrud/advanced/crud/#advanced-filters>`__
+        :param kwargs: Query expressions,
+        `advanced usage <https://igorbenav.github.io/fastcrud/advanced/crud/#advanced-filters>`__
+        :param allow_multiple: If `True`, allows deleting multiple records that match the filters.
+        :param logical_deletion: If `True`, enable logical deletion instead of physical deletion
+        :param deleted_flag_column: Specify the flag column for logical deletion
         :return:
         """
         filters = await parse_filters(self.model, **kwargs)
-        total_count = await count(session, **kwargs)
+        total_count = await count(session, self.model, filters)
         if not allow_multiple and total_count > 1:
             raise MultipleResultsError(f'Only one record is expected to be delete, found {total_count} records.')
-        stmt = sa_delete(self.model).where(*filters)
+        if logical_deletion:
+            deleted_flag = {deleted_flag_column: True}
+            stmt = sa_update(self.model).where(*filters).values(**deleted_flag)
+        else:
+            stmt = sa_delete(self.model).where(*filters)
         await session.execute(stmt)
         if commit:
             await session.commit()
