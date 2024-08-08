@@ -23,7 +23,7 @@ async def test_delete_model_by_column(create_test_model, async_db_session):
 
 
 @pytest.mark.asyncio
-async def test_delete_model_by_column_with_multiple_conditions(create_test_model, async_db_session):
+async def test_delete_model_by_column_with_and(create_test_model, async_db_session):
     async with async_db_session.begin() as session:
         crud = CRUDPlus(Ins)
         result = await crud.delete_model_by_column(session, id=1, name='name_1')
