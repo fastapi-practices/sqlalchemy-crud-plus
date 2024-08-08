@@ -64,22 +64,18 @@ async def parse_filters(model: Type[Model] | AliasedClass, **kwargs) -> list[Col
             field_name, op = key.rsplit('__', 1)
             column = await get_column(model, field_name)
             if op == 'or':
-                or_filters = []
-                for or_op, or_value in value.items():
-                    sqlalchemy_filter = await get_sqlalchemy_filter(or_op, or_value)
-                    if sqlalchemy_filter is not None:
-                        if op != 'between':
-                            or_filters.append(sqlalchemy_filter(column)(or_value))
-                        else:
-                            or_filters.append(sqlalchemy_filter(column)(*or_value))
+                or_filters = [
+                    sqlalchemy_filter(column)(or_value)
+                    for or_op, or_value in value.items()
+                    if (sqlalchemy_filter := await get_sqlalchemy_filter(or_op, or_value)) is not None
+                ]
                 filters.append(or_(*or_filters))
             else:
                 sqlalchemy_filter = await get_sqlalchemy_filter(op, value)
                 if sqlalchemy_filter is not None:
-                    if op != 'between':
-                        filters.append(sqlalchemy_filter(column)(value))
-                    else:
-                        filters.append(sqlalchemy_filter(column)(*value))
+                    filters.append(
+                        sqlalchemy_filter(column)(value) if op != 'between' else sqlalchemy_filter(column)(*value)
+                    )
         else:
             column = await get_column(model, key)
             filters.append(column == value)
