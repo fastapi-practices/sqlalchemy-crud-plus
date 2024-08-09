@@ -30,7 +30,7 @@ async def test_update_model_by_column(create_test_model, async_db_session):
 
 
 @pytest.mark.asyncio
-async def test_update_model_by_column_with_multiple_conditions(create_test_model, async_db_session):
+async def test_update_model_by_column_with_and(create_test_model, async_db_session):
     async with async_db_session.begin() as session:
         crud = CRUDPlus(Ins)
         data = ModelTest(name='name_update_1')
@@ -56,7 +56,7 @@ async def test_update_model_by_column_allow_multiple(create_test_model, async_db
     async with async_db_session.begin() as session:
         crud = CRUDPlus(Ins)
         data = ModelTest(name='name_update_1')
-        result = await crud.update_model_by_column(session, data, allow_multiple=True, name__startwith='name')
+        result = await crud.update_model_by_column(session, data, allow_multiple=True, name__startswith='name')
         assert result == 9
         result = await session.get(Ins, 1)
         assert result.name == 'name_update_1'

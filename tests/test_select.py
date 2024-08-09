@@ -133,7 +133,7 @@ async def test_select_model_by_column_with_not_ilike(create_test_model, async_db
 async def test_select_model_by_column_with_startwith(create_test_model, async_db_session):
     async with async_db_session() as session:
         crud = CRUDPlus(Ins)
-        result = await crud.select_model_by_column(session, name__startwith='name')
+        result = await crud.select_model_by_column(session, name__startswith='name')
         assert result.id == 1
 
 
@@ -141,7 +141,7 @@ async def test_select_model_by_column_with_startwith(create_test_model, async_db
 async def test_select_model_by_column_with_endwith(create_test_model, async_db_session):
     async with async_db_session() as session:
         crud = CRUDPlus(Ins)
-        result = await crud.select_model_by_column(session, name__endwith='1')
+        result = await crud.select_model_by_column(session, name__endswith='1')
         assert result.id == 1
 
 

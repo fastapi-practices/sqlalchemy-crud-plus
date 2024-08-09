@@ -42,7 +42,7 @@ async def test_delete_model_by_column_logical(create_test_model, async_db_sessio
 async def test_delete_model_by_column_allow_multiple(create_test_model, async_db_session):
     async with async_db_session.begin() as session:
         crud = CRUDPlus(Ins)
-        result = await crud.delete_model_by_column(session, allow_multiple=True, name__startwith='name')
+        result = await crud.delete_model_by_column(session, allow_multiple=True, name__startswith='name')
         assert result == 9
 
 
@@ -51,6 +51,6 @@ async def test_delete_model_by_column_logical_with_multiple(create_test_model, a
     async with async_db_session.begin() as session:
         crud = CRUDPlus(Ins)
         result = await crud.delete_model_by_column(
-            session, allow_multiple=True, logical_deletion=True, name__startwith='name'
+            session, allow_multiple=True, logical_deletion=True, name__startswith='name'
         )
         assert result == 9
