@@ -17,8 +17,22 @@ class ModelColumnError(SQLAlchemyCRUDPlusException):
         super().__init__(msg)
 
 
-class SelectExpressionError(SQLAlchemyCRUDPlusException):
+class SelectOperatorError(SQLAlchemyCRUDPlusException):
     """Error raised when a select expression is invalid."""
+
+    def __init__(self, msg: str) -> None:
+        super().__init__(msg)
+
+
+class ColumnSortError(SQLAlchemyCRUDPlusException):
+    """Error raised when a column sorting is invalid."""
+
+    def __init__(self, msg: str) -> None:
+        super().__init__(msg)
+
+
+class MultipleResultsError(SQLAlchemyCRUDPlusException):
+    """Error raised when multiple results are invalid."""
 
     def __init__(self, msg: str) -> None:
         super().__init__(msg)
