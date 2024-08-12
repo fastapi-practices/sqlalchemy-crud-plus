@@ -82,6 +82,14 @@ async def test_select_model_by_column_with_ne(create_test_model, async_db_sessio
 
 
 @pytest.mark.asyncio
+async def test_select_model_by_column_with_between(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(session, id__between=(0, 11))
+        assert result.id == 1
+
+
+@pytest.mark.asyncio
 async def test_select_model_by_column_with_is(create_test_model, async_db_session):
     async with async_db_session() as session:
         crud = CRUDPlus(Ins)
@@ -95,6 +103,22 @@ async def test_select_model_by_column_with_is_not(create_test_model, async_db_se
         crud = CRUDPlus(Ins)
         result = await crud.select_model_by_column(session, del_flag__is_not=True)
         assert result.id == 1
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with_is_distinct_from(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(session, del_flag__is_distinct_from=True)
+        assert result.id == 1
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with_is_not_distinct_from(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(session, del_flag__is_not_distinct_from=True)
+        assert result is None
 
 
 @pytest.mark.asyncio
@@ -163,10 +187,128 @@ async def test_select_model_by_column_with_match(create_test_model, async_db_ses
 
 
 @pytest.mark.asyncio
-async def test_select_model_by_column_with_between(create_test_model, async_db_session):
+async def test_select_model_by_column_with_concat(create_test_model, async_db_session):
     async with async_db_session() as session:
         crud = CRUDPlus(Ins)
-        result = await crud.select_model_by_column(session, id__between=(0, 11))
+        result = await crud.select_model_by_column(
+            session, name__concat={'value': '_concat', 'condition': {'eq': 'name_1_concat'}}
+        )
+        assert result is not None
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with_add_string(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(
+            session, name__add={'value': '_add', 'condition': {'eq': 'name_1_add'}}
+        )
+        assert result is not None
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with_radd_string(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(
+            session, name__radd={'value': 'radd_', 'condition': {'eq': 'radd_name_1'}}
+        )
+        assert result is not None
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with_add_number(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(session, id__add={'value': 1, 'condition': {'eq': 2}})
+        assert result is not None
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with_radd_number(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(session, id__radd={'value': 1, 'condition': {'eq': 2}})
+        assert result is not None
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with_sub(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(session, id__sub={'value': 1, 'condition': {'eq': 0}})
+        assert result is not None
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with_rsub(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(session, id__rsub={'value': 2, 'condition': {'eq': 1}})
+        assert result is not None
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with_mul(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(session, id__mul={'value': 1, 'condition': {'eq': 1}})
+        assert result is not None
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with_rmul(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(session, id__rmul={'value': 1, 'condition': {'eq': 1}})
+        assert result is not None
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with_truediv(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(session, id__truediv={'value': 1, 'condition': {'eq': 1}})
+        assert result is not None
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with_rtruediv(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(session, id__rtruediv={'value': 1, 'condition': {'eq': 1}})
+        assert result is not None
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with_floordiv(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(session, id__floordiv={'value': 1, 'condition': {'eq': 1}})
+        assert result is not None
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with_rfloordiv(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(session, id__rfloordiv={'value': 1, 'condition': {'eq': 1}})
+        assert result is not None
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with_mod(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(session, id__mod={'value': 1, 'condition': {'eq': 0}})
+        assert result.id == 1
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with_rmod(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(session, id__rmod={'value': 1, 'condition': {'eq': 0}})
         assert result.id == 1
 
 

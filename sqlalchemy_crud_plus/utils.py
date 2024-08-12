@@ -4,41 +4,73 @@ import warnings
 
 from typing import Any, Callable, Type
 
-from sqlalchemy import ColumnElement, Select, asc, desc, func, or_, select
+from sqlalchemy import ColumnElement, Select, and_, asc, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.util import AliasedClass
 
 from sqlalchemy_crud_plus.errors import ColumnSortError, ModelColumnError, SelectOperatorError
 from sqlalchemy_crud_plus.types import Model
 
-# filters for select
 _SUPPORTED_FILTERS = {
+    # Comparison: https://docs.sqlalchemy.org/en/20/core/operators.html#comparison-operators
     'gt': lambda column: column.__gt__,
     'lt': lambda column: column.__lt__,
     'ge': lambda column: column.__ge__,
     'le': lambda column: column.__le__,
     'eq': lambda column: column.__eq__,
     'ne': lambda column: column.__ne__,
+    'between': lambda column: column.between,
+    # IN: https://docs.sqlalchemy.org/en/20/core/operators.html#in-comparisons
+    'in': lambda column: column.in_,
+    'not_in': lambda column: column.not_in,
+    # Identity: https://docs.sqlalchemy.org/en/20/core/operators.html#identity-comparisons
     'is': lambda column: column.is_,
     'is_not': lambda column: column.is_not,
+    'is_distinct_from': lambda column: column.is_distinct_from,
+    'is_not_distinct_from': lambda column: column.is_not_distinct_from,
+    # String: https://docs.sqlalchemy.org/en/20/core/operators.html#string-comparisons
     'like': lambda column: column.like,
     'not_like': lambda column: column.not_like,
     'ilike': lambda column: column.ilike,
     'not_ilike': lambda column: column.not_ilike,
+    # String Containment: https://docs.sqlalchemy.org/en/20/core/operators.html#string-containment
     'startswith': lambda column: column.startswith,
     'endswith': lambda column: column.endswith,
     'contains': lambda column: column.contains,
+    # String matching: https://docs.sqlalchemy.org/en/20/core/operators.html#string-matching
     'match': lambda column: column.match,
-    'between': lambda column: column.between,
-    'in': lambda column: column.in_,
-    'not_in': lambda column: column.not_in,
+    # String Alteration: https://docs.sqlalchemy.org/en/20/core/operators.html#string-alteration
+    'concat': lambda column: column.concat,
+    # Arithmetic: https://docs.sqlalchemy.org/en/20/core/operators.html#arithmetic-operators
+    'add': lambda column: column.__add__,
+    'radd': lambda column: column.__radd__,
+    'sub': lambda column: column.__sub__,
+    'rsub': lambda column: column.__rsub__,
+    'mul': lambda column: column.__mul__,
+    'rmul': lambda column: column.__rmul__,
+    'truediv': lambda column: column.__truediv__,
+    'rtruediv': lambda column: column.__rtruediv__,
+    'floordiv': lambda column: column.__floordiv__,
+    'rfloordiv': lambda column: column.__rfloordiv__,
+    'mod': lambda column: column.__mod__,
+    'rmod': lambda column: column.__rmod__,
 }
 
 
-async def get_sqlalchemy_filter(operator: str, value: Any) -> Callable[[str], Callable] | None:
-    if operator in {'in', 'not_in', 'between'}:
+async def get_sqlalchemy_filter(
+    operator: str, value: Any, allow_arithmetic: bool = True
+) -> Callable[[str], Callable] | None:
+    if operator in ['in', 'not_in', 'between']:
         if not isinstance(value, (tuple, list, set)):
             raise SelectOperatorError(f'The value of the <{operator}> filter must be tuple, list or set')
+
+    if (
+        operator
+        in ['add', 'radd', 'sub', 'rsub', 'mul', 'rmul', 'truediv', 'rtruediv', 'floordiv', 'rfloordiv', 'mod', 'rmod']
+        and not allow_arithmetic
+    ):
+        raise SelectOperatorError(f'Nested arithmetic operations are not allowed: {operator}')
+
     sqlalchemy_filter = _SUPPORTED_FILTERS.get(operator)
     if sqlalchemy_filter is None:
         warnings.warn(
@@ -46,6 +78,7 @@ async def get_sqlalchemy_filter(operator: str, value: Any) -> Callable[[str], Ca
             SyntaxWarning,
         )
         return None
+
     return sqlalchemy_filter
 
 
@@ -70,6 +103,20 @@ async def parse_filters(model: Type[Model] | AliasedClass, **kwargs) -> list[Col
                     if (sqlalchemy_filter := await get_sqlalchemy_filter(or_op, or_value)) is not None
                 ]
                 filters.append(or_(*or_filters))
+            elif isinstance(value, dict) and {'value', 'condition'}.issubset(value):
+                advanced_value = value['value']
+                condition = value['condition']
+                sqlalchemy_filter = await get_sqlalchemy_filter(op, advanced_value)
+                if sqlalchemy_filter is not None:
+                    condition_filters = []
+                    for cond_op, cond_value in condition.items():
+                        condition_filter = await get_sqlalchemy_filter(cond_op, cond_value, allow_arithmetic=False)
+                        condition_filters.append(
+                            condition_filter(sqlalchemy_filter(column)(advanced_value))(cond_value)
+                            if cond_op != 'between'
+                            else condition_filter(sqlalchemy_filter(column)(advanced_value))(*cond_value)
+                        )
+                    filters.append(and_(*condition_filters))
             else:
                 sqlalchemy_filter = await get_sqlalchemy_filter(op, value)
                 if sqlalchemy_filter is not None:
