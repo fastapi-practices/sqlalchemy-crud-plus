@@ -2,4 +2,4 @@
 # -*- coding: utf-8 -*-
 from .crud import CRUDPlus as CRUDPlus
 
-__version__ = 'v0.0.4'
+__version__ = 'v1.0.0'
