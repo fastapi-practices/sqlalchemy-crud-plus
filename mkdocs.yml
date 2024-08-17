@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
+site_name: SQLAlchemy CRUD Plus
+site_description: Asynchronous CRUD operations based on SQLAlChemy 2.0
+site_url: https://fastapi-practices.github.io/sqlalchemy-crud-plus
+theme:
+  name: material
+repo_name: sqlalchemy-crud-plus
+repo_url: https://github.com/fastapi-practices/sqlalchemy-crud-plus
+plugins:
+  # Material for MkDocs
+  search:
+markdown_extensions:
+  # Python Markdown
+  abbr:
+  attr_list:
+  footnotes:
+  md_in_html:
+  tables:
+  toc:
+    permalink: true
