@@ -2,19 +2,61 @@
 site_name: SQLAlchemy CRUD Plus
 site_description: Asynchronous CRUD operations based on SQLAlChemy 2.0
 site_url: https://fastapi-practices.github.io/sqlalchemy-crud-plus
-theme:
-  name: material
+site_author: Wu Clan
 repo_name: sqlalchemy-crud-plus
 repo_url: https://github.com/fastapi-practices/sqlalchemy-crud-plus
+nav:
+  - Home: index.md
+  - Installing: installing.md
+  - Usage:
+      - 新增: usage/create_model.md
+      - 新增 - 多条: usage/create_models.md
+      - 查询 - 主键 ID: usage/select_model.md
+      - 查询 - 条件过滤: usage/select_model_by_column.md
+      - 查询 - 列表: usage/select_models.md
+      - 查询 - 列表排序: usage/select_models_order.md
+      - 更新 - 主键 ID: usage/update_model.md
+      - 更新 - 条件过滤: usage/update_model_by_column.md
+      - 删除 - 主键 ID: usage/delete_model.md
+      - 删除 - 条件过滤: usage/delete_model_by_column.md
+  - Advanced:
+      - 主键: advanced/primary_key.md
+      - 条件过滤:  advanced/filter.md
+  - Changelog: changelog.md
+theme:
+  name: material
+  features:
+    - content.code.annotate
+    - content.code.select
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - search.suggest
+    - toc.follow
+    - toc.integrate
+    - navigation.top
+    - navigation.footer
 plugins:
-  # Material for MkDocs
-  search:
+  - search
 markdown_extensions:
-  # Python Markdown
-  abbr:
-  attr_list:
-  footnotes:
-  md_in_html:
-  tables:
-  toc:
-    permalink: true
+  - toc:
+      permalink: true
+  - tables
+  - admonition
+  - attr_list
+  - def_list
+  - md_in_html
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
