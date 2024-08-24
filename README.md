@@ -8,29 +8,9 @@ Asynchronous CRUD operations based on SQLAlChemy 2.0
 pip install sqlalchemy-crud-plus
 ```
 
-## Use
+## 文档
 
-```python
-# example:
-from sqlalchemy.orm import declarative_base
-from sqlalchemy_crud_plus import CRUDPlus
-
-Base = declarative_base()
-
-
-class ModelIns(Base):
-    # your sqlalchemy model
-    pass
-
-
-class CRUDIns(CRUDPlus[ModelIns]):
-    # your controller service
-    pass
-
-
-# singleton
-ins_dao: CRUDIns = CRUDIns(ModelIns)
-```
+[SQLAlchemy CRUD Plus](https://fastapi-practices.github.io/sqlalchemy-crud-plus)
 
 ## 互动
 
