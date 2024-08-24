@@ -1,3 +1,16 @@
+```python
+async def create_models(
+    self, 
+    session: AsyncSession, 
+    obj: Iterable[CreateSchema], 
+    commit: bool = False
+) -> list[Model]:
+```
+
+此方法提供 `commit` 参数，详见：[提交](./create_model.md/#_1)
+
+## 示例
+
 ```py title="create_models" hl_lines="23"
 from typing import Iterable
 

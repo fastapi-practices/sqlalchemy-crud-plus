@@ -1,3 +1,15 @@
+````py
+async def create_model(
+    self,
+    session: AsyncSession,
+    obj: CreateSchema,
+    commit: bool = False,
+    **kwargs
+) -> Model:
+````
+
+## 提交
+
 此方法提供 `commit` 参数，默认值为 False，它既不会提交代码，同时也不包含 `flush` 等行为，要想真正写入到数据库，你可以通过以下几种方案
 
 1. 设置 `commit=True` 手动提交
@@ -14,7 +26,7 @@
       
       async def create(self, obj: CreateIns) -> None:
           async with async_db_session.begin() as db:
-              await self.create_model(db, obj, commit=True)
+              await self.create_model(db, obj)
       ```
 
 ## 示例

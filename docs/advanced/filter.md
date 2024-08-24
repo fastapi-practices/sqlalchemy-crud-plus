@@ -88,12 +88,3 @@ AND 子句可以通过连锁多个过滤器来实现。
 ```python
 
 ```
-
-### 跳过数据库提交
-
-对于 `SQLAchemy CRUD Plus`的 `create`、`update`、`db_delete` 和 `delete` 方法，你可以选择传递 `commit=False` 这样你就不会立即提交操作。
-这样就不会立即提交操作。
-
-```python
-
-```

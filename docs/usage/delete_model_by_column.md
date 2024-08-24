@@ -1,4 +1,18 @@
+```py
+async def delete_model_by_column(
+    self,
+    session: AsyncSession,
+    allow_multiple: bool = False,
+    logical_deletion: bool = False,
+    deleted_flag_column: str = 'del_flag',
+    commit: bool = False,
+    **kwargs,
+) -> int:
+```
+
 此方法可结合 [高级过滤器](../advanced/filter.md) 使用
+
+## 示例
 
 ```py title="delete_model_by_column" hl_lines="21"
 from pydantic import BaseModel

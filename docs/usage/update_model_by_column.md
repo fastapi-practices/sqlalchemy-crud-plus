@@ -1,4 +1,17 @@
+```py
+async def update_model_by_column(
+    self,
+    session: AsyncSession,
+    obj: UpdateSchema | dict[str, Any],
+    allow_multiple: bool = False,
+    commit: bool = False,
+    **kwargs,
+) -> int:
+```
+
 此方法可结合 [高级过滤器](../advanced/filter.md) 使用
+
+## 示例
 
 ```py title="update_model_by_columnn" hl_lines="21"
 from pydantic import BaseModel

@@ -1,3 +1,13 @@
+```py
+async def select_model(
+    self,
+    session: AsyncSession,
+    pk: int
+) -> Model | None:
+```
+
+## 示例
+
 ```py title="select_model" hl_lines="21"
 from pydantic import BaseModel
 

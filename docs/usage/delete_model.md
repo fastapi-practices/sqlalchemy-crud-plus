@@ -1,3 +1,14 @@
+```py
+async def delete_model(
+    self, session: 
+    AsyncSession, 
+    pk: int, 
+    commit: bool = False
+) -> int:
+```
+
+## 示例
+
 ```py title="delete_model" hl_lines="21"
 from pydantic import BaseModel
 
