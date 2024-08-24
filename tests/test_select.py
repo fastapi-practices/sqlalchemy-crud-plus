@@ -87,7 +87,7 @@ async def test_select_model_by_column_with_ne(create_test_model, async_db_sessio
 async def test_select_model_by_column_with_between(create_test_model, async_db_session):
     async with async_db_session() as session:
         crud = CRUDPlus(Ins)
-        result = await crud.select_model_by_column(session, id__between=(0, 11))
+        result = await crud.select_model_by_column(session, id__between=(0, 10))
         assert result.id == 1
 
 
@@ -335,6 +335,22 @@ async def test_select_model_by_column_with_or(create_test_model, async_db_sessio
     async with async_db_session() as session:
         crud = CRUDPlus(Ins)
         result = await crud.select_model_by_column(session, id__or={'le': 1, 'eq': 1})
+        assert result.id == 1
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with_mor(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(session, id__mor={'eq': [1, 2, 3, 4, 5, 6, 7, 8, 9]})
+        assert result.id == 1
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with___gor__(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        result = await crud.select_model_by_column(session, __gor__=[{'id__eq': 2}, {'name__endswith': '1'}])
         assert result.id == 1
 
 
