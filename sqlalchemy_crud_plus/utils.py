@@ -57,9 +57,7 @@ _SUPPORTED_FILTERS = {
 }
 
 
-def get_sqlalchemy_filter(
-    operator: str, value: Any, allow_arithmetic: bool = True
-) -> Callable[[str], Callable] | None:
+def get_sqlalchemy_filter(operator: str, value: Any, allow_arithmetic: bool = True) -> Callable[[str], Callable] | None:
     if operator in ['in', 'not_in', 'between']:
         if not isinstance(value, (tuple, list, set)):
             raise SelectOperatorError(f'The value of the <{operator}> filter must be tuple, list or set')

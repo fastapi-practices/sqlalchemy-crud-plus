@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 import pytest
 
+from sqlalchemy import Select
+
 from sqlalchemy_crud_plus import CRUDPlus
 from tests.model import Ins
 
@@ -337,11 +339,25 @@ async def test_select_model_by_column_with_or(create_test_model, async_db_sessio
 
 
 @pytest.mark.asyncio
+async def test_select(create_test_model):
+    crud = CRUDPlus(Ins)
+    result = await crud.select()
+    assert isinstance(result, Select)
+
+
+@pytest.mark.asyncio
 async def test_select_models(create_test_model, async_db_session):
-    async with async_db_session.begin() as session:
+    async with async_db_session() as session:
         crud = CRUDPlus(Ins)
         result = await crud.select_models(session)
         assert len(result) == 9
+
+
+@pytest.mark.asyncio
+async def test_select_order(create_test_model):
+    crud = CRUDPlus(Ins)
+    result = await crud.select_order(sort_columns='name')
+    assert isinstance(result, Select)
 
 
 @pytest.mark.asyncio

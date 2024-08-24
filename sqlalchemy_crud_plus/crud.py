@@ -2,9 +2,7 @@
 # -*- coding: utf-8 -*-
 from typing import Any, Generic, Iterable, Sequence, Type
 
-from sqlalchemy import Row, RowMapping, select
-from sqlalchemy import delete as sa_delete
-from sqlalchemy import update as sa_update
+from sqlalchemy import Row, RowMapping, Select, delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy_crud_plus.errors import MultipleResultsError
@@ -16,7 +14,13 @@ class CRUDPlus(Generic[Model]):
     def __init__(self, model: Type[Model]):
         self.model = model
 
-    async def create_model(self, session: AsyncSession, obj: CreateSchema, commit: bool = False, **kwargs) -> Model:
+    async def create_model(
+        self,
+        session: AsyncSession,
+        obj: CreateSchema,
+        commit: bool = False,
+        **kwargs,
+    ) -> Model:
         """
         Create a new instance of a model
 
@@ -36,7 +40,10 @@ class CRUDPlus(Generic[Model]):
         return ins
 
     async def create_models(
-        self, session: AsyncSession, obj: Iterable[CreateSchema], commit: bool = False
+        self,
+        session: AsyncSession,
+        obj: Iterable[CreateSchema],
+        commit: bool = False,
     ) -> list[Model]:
         """
         Create new instances of a model
@@ -79,6 +86,35 @@ class CRUDPlus(Generic[Model]):
         query = await session.execute(stmt)
         return query.scalars().first()
 
+    async def select(self, **kwargs) -> Select:
+        """
+        Construct the SQLAlchemy selection
+
+        :param kwargs: Query expressions.
+        :return:
+        """
+        filters = parse_filters(self.model, **kwargs)
+        stmt = select(self.model).where(*filters)
+        return stmt
+
+    async def select_order(
+        self,
+        sort_columns: str | list[str],
+        sort_orders: str | list[str] | None = None,
+        **kwargs,
+    ) -> Select:
+        """
+        Constructing SQLAlchemy selection with sorting
+
+        :param kwargs: Query expressions.
+        :param sort_columns: more details see apply_sorting
+        :param sort_orders: more details see apply_sorting
+        :return:
+        """
+        stmt = await self.select(**kwargs)
+        sorted_stmt = apply_sorting(self.model, stmt, sort_columns, sort_orders)
+        return sorted_stmt
+
     async def select_models(self, session: AsyncSession, **kwargs) -> Sequence[Row[Any] | RowMapping | Any]:
         """
         Query all rows
@@ -87,13 +123,16 @@ class CRUDPlus(Generic[Model]):
         :param kwargs: Query expressions.
         :return:
         """
-        filters = parse_filters(self.model, **kwargs)
-        stmt = select(self.model).where(*filters)
+        stmt = await self.select(**kwargs)
         query = await session.execute(stmt)
         return query.scalars().all()
 
     async def select_models_order(
-        self, session: AsyncSession, sort_columns: str | list[str], sort_orders: str | list[str] | None = None, **kwargs
+        self,
+        session: AsyncSession,
+        sort_columns: str | list[str],
+        sort_orders: str | list[str] | None = None,
+        **kwargs,
     ) -> Sequence[Row | RowMapping | Any] | None:
         """
         Query all rows and sort by columns
@@ -103,14 +142,16 @@ class CRUDPlus(Generic[Model]):
         :param sort_orders: more details see apply_sorting
         :return:
         """
-        filters = parse_filters(self.model, **kwargs)
-        stmt = select(self.model).where(*filters)
-        stmt_sort = apply_sorting(self.model, stmt, sort_columns, sort_orders)
-        query = await session.execute(stmt_sort)
+        stmt = await self.select_order(sort_columns, sort_orders, **kwargs)
+        query = await session.execute(stmt)
         return query.scalars().all()
 
     async def update_model(
-        self, session: AsyncSession, pk: int, obj: UpdateSchema | dict[str, Any], commit: bool = False
+        self,
+        session: AsyncSession,
+        pk: int,
+        obj: UpdateSchema | dict[str, Any],
+        commit: bool = False,
     ) -> int:
         """
         Update an instance by model's primary key
@@ -125,7 +166,7 @@ class CRUDPlus(Generic[Model]):
             instance_data = obj
         else:
             instance_data = obj.model_dump(exclude_unset=True)
-        stmt = sa_update(self.model).where(self.model.id == pk).values(**instance_data)
+        stmt = update(self.model).where(self.model.id == pk).values(**instance_data)
         result = await session.execute(stmt)
         if commit:
             await session.commit()
@@ -157,13 +198,18 @@ class CRUDPlus(Generic[Model]):
             instance_data = obj
         else:
             instance_data = obj.model_dump(exclude_unset=True)
-        stmt = sa_update(self.model).where(*filters).values(**instance_data)  # type: ignore
+        stmt = update(self.model).where(*filters).values(**instance_data)  # type: ignore
         result = await session.execute(stmt)
         if commit:
             await session.commit()
         return result.rowcount  # type: ignore
 
-    async def delete_model(self, session: AsyncSession, pk: int, commit: bool = False) -> int:
+    async def delete_model(
+        self,
+        session: AsyncSession,
+        pk: int,
+        commit: bool = False,
+    ) -> int:
         """
         Delete an instance by model's primary key
 
@@ -172,7 +218,7 @@ class CRUDPlus(Generic[Model]):
         :param commit: If `True`, commits the transaction immediately. Default is `False`.
         :return:
         """
-        stmt = sa_delete(self.model).where(self.model.id == pk)
+        stmt = delete(self.model).where(self.model.id == pk)
         result = await session.execute(stmt)
         if commit:
             await session.commit()
@@ -204,10 +250,10 @@ class CRUDPlus(Generic[Model]):
             raise MultipleResultsError(f'Only one record is expected to be delete, found {total_count} records.')
         if logical_deletion:
             deleted_flag = {deleted_flag_column: True}
-            stmt = sa_update(self.model).where(*filters).values(**deleted_flag)
+            stmt = update(self.model).where(*filters).values(**deleted_flag)
         else:
-            stmt = sa_delete(self.model).where(*filters)
-        await session.execute(stmt)
+            stmt = delete(self.model).where(*filters)
+        result = await session.execute(stmt)
         if commit:
             await session.commit()
-        return total_count
+        return result.rowcount  # type: ignore
