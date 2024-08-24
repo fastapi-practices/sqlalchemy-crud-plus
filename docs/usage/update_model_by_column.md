@@ -9,7 +9,13 @@ async def update_model_by_column(
 ) -> int:
 ```
 
-此方法可结合 [高级过滤器](../advanced/filter.md) 使用
+- 此方法提供 `commit` 参数，详见：[提交](./create_model.md/#_1)
+
+- 此方法可结合 [高级过滤器](../advanced/filter.md) 使用
+
+## 更新多条
+
+将参数 `allow_multiple` 设置为 True，将允许更新多条记录，更新的数量取决于过滤器过滤后的数据
 
 ## 示例
 

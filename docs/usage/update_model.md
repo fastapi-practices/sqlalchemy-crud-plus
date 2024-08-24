@@ -8,9 +8,9 @@ async def update_model(
 ) -> int:
 ```
 
-此方法提供 `commit` 参数，详见：[提交](./create_model.md/#_1)
+- 此方法使用主键 pk 参数，详见：[主键](../advanced/primary_key.md)
 
-`obj` 参数还可以是字典数据，通常情况下，传入的 schema 数据将通过 `model_dump(exclude_unset=True)` 序列化之后传入更新
+- 此方法提供 `commit` 参数，详见：[提交](./create_model.md/#_1)
 
 ## 示例
 

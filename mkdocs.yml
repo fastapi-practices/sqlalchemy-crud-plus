@@ -25,6 +25,26 @@ nav:
   - Changelog: changelog.md
 theme:
   name: material
+  font:
+    code: Roboto Mono
+  palette:
+    - media: "(prefers-color-scheme)"
+      primary: deep purple
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to auto mode
   features:
     - content.code.annotate
     - content.code.select

@@ -6,6 +6,8 @@ async def select_model(
 ) -> Model | None:
 ```
 
+此方法使用主键 pk 参数，详见：[主键](../advanced/primary_key.md)
+
 ## 示例
 
 ```py title="select_model" hl_lines="21"

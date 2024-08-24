@@ -64,17 +64,17 @@
 
 === ":star: crud.py"
 
-    ```py
+    ```py hl_lines="7"
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from sqlalchemy_crud_plus import CRUDPlus
     
-
+    
+    # 在使用 IDE 时，传入类参数，将获得更友好的键入提示
     class CRUDIns(CRUDPlus[ModelIns]):
         async def get(self, db: AsyncSession, pk: int) -> ModelIns:
             return await self.select_model(db, pk)
-    
-    # singleton
+
     ins_dao: CRUDIns = CRUDIns(ModelIns)
     ```
 
