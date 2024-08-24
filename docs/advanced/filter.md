@@ -52,7 +52,7 @@ items = await item_crud.select_models(
 
 ## 算术运算符
 
-此过滤器使用方法需查看：[算数](#_8)
+此过滤器使用方法需查看：[算数](#_7)
 
 - `__add`: Python `+` 运算符
 - `__radd`: Python `+` 反向运算

@@ -13,6 +13,8 @@ nav:
       - 新增 - 多条: usage/create_models.md
       - 查询 - 主键 ID: usage/select_model.md
       - 查询 - 条件过滤: usage/select_model_by_column.md
+      - Select: usage/select.md
+      - Select - 排序: usage/select_order.md
       - 查询 - 列表: usage/select_models.md
       - 查询 - 列表排序: usage/select_models_order.md
       - 更新 - 主键 ID: usage/update_model.md
