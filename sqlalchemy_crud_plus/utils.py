@@ -57,7 +57,7 @@ _SUPPORTED_FILTERS = {
 }
 
 
-async def get_sqlalchemy_filter(
+def get_sqlalchemy_filter(
     operator: str, value: Any, allow_arithmetic: bool = True
 ) -> Callable[[str], Callable] | None:
     if operator in ['in', 'not_in', 'between']:
@@ -82,35 +82,35 @@ async def get_sqlalchemy_filter(
     return sqlalchemy_filter
 
 
-async def get_column(model: Type[Model] | AliasedClass, field_name: str):
+def get_column(model: Type[Model] | AliasedClass, field_name: str):
     column = getattr(model, field_name, None)
     if column is None:
         raise ModelColumnError(f'Column {field_name} is not found in {model}')
     return column
 
 
-async def parse_filters(model: Type[Model] | AliasedClass, **kwargs) -> list[ColumnElement]:
+def parse_filters(model: Type[Model] | AliasedClass, **kwargs) -> list[ColumnElement]:
     filters = []
 
     for key, value in kwargs.items():
         if '__' in key:
             field_name, op = key.rsplit('__', 1)
-            column = await get_column(model, field_name)
+            column = get_column(model, field_name)
             if op == 'or':
                 or_filters = [
                     sqlalchemy_filter(column)(or_value)
                     for or_op, or_value in value.items()
-                    if (sqlalchemy_filter := await get_sqlalchemy_filter(or_op, or_value)) is not None
+                    if (sqlalchemy_filter := get_sqlalchemy_filter(or_op, or_value)) is not None
                 ]
                 filters.append(or_(*or_filters))
             elif isinstance(value, dict) and {'value', 'condition'}.issubset(value):
                 advanced_value = value['value']
                 condition = value['condition']
-                sqlalchemy_filter = await get_sqlalchemy_filter(op, advanced_value)
+                sqlalchemy_filter = get_sqlalchemy_filter(op, advanced_value)
                 if sqlalchemy_filter is not None:
                     condition_filters = []
                     for cond_op, cond_value in condition.items():
-                        condition_filter = await get_sqlalchemy_filter(cond_op, cond_value, allow_arithmetic=False)
+                        condition_filter = get_sqlalchemy_filter(cond_op, cond_value, allow_arithmetic=False)
                         condition_filters.append(
                             condition_filter(sqlalchemy_filter(column)(advanced_value))(cond_value)
                             if cond_op != 'between'
@@ -118,19 +118,19 @@ async def parse_filters(model: Type[Model] | AliasedClass, **kwargs) -> list[Col
                         )
                     filters.append(and_(*condition_filters))
             else:
-                sqlalchemy_filter = await get_sqlalchemy_filter(op, value)
+                sqlalchemy_filter = get_sqlalchemy_filter(op, value)
                 if sqlalchemy_filter is not None:
                     filters.append(
                         sqlalchemy_filter(column)(value) if op != 'between' else sqlalchemy_filter(column)(*value)
                     )
         else:
-            column = await get_column(model, key)
+            column = get_column(model, key)
             filters.append(column == value)
 
     return filters
 
 
-async def apply_sorting(
+def apply_sorting(
     model: Type[Model] | AliasedClass,
     stmt: Select,
     sort_columns: str | list[str],
@@ -170,7 +170,7 @@ async def apply_sorting(
         validated_sort_orders = ['asc'] * len(sort_columns) if not sort_orders else sort_orders
 
         for idx, column_name in enumerate(sort_columns):
-            column = await get_column(model, column_name)
+            column = get_column(model, column_name)
             order = validated_sort_orders[idx]
             stmt = stmt.order_by(asc(column) if order == 'asc' else desc(column))
 

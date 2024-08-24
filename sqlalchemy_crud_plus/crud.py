@@ -74,7 +74,7 @@ class CRUDPlus(Generic[Model]):
         :param kwargs: Query expressions.
         :return:
         """
-        filters = await parse_filters(self.model, **kwargs)
+        filters = parse_filters(self.model, **kwargs)
         stmt = select(self.model).where(*filters)
         query = await session.execute(stmt)
         return query.scalars().first()
@@ -87,7 +87,7 @@ class CRUDPlus(Generic[Model]):
         :param kwargs: Query expressions.
         :return:
         """
-        filters = await parse_filters(self.model, **kwargs)
+        filters = parse_filters(self.model, **kwargs)
         stmt = select(self.model).where(*filters)
         query = await session.execute(stmt)
         return query.scalars().all()
@@ -103,9 +103,9 @@ class CRUDPlus(Generic[Model]):
         :param sort_orders: more details see apply_sorting
         :return:
         """
-        filters = await parse_filters(self.model, **kwargs)
+        filters = parse_filters(self.model, **kwargs)
         stmt = select(self.model).where(*filters)
-        stmt_sort = await apply_sorting(self.model, stmt, sort_columns, sort_orders)
+        stmt_sort = apply_sorting(self.model, stmt, sort_columns, sort_orders)
         query = await session.execute(stmt_sort)
         return query.scalars().all()
 
@@ -149,7 +149,7 @@ class CRUDPlus(Generic[Model]):
         :param kwargs: Query expressions.
         :return:
         """
-        filters = await parse_filters(self.model, **kwargs)
+        filters = parse_filters(self.model, **kwargs)
         total_count = await count(session, self.model, filters)
         if not allow_multiple and total_count > 1:
             raise MultipleResultsError(f'Only one record is expected to be update, found {total_count} records.')
@@ -198,7 +198,7 @@ class CRUDPlus(Generic[Model]):
         :param deleted_flag_column: Specify the flag column for logical deletion
         :return:
         """
-        filters = await parse_filters(self.model, **kwargs)
+        filters = parse_filters(self.model, **kwargs)
         total_count = await count(session, self.model, filters)
         if not allow_multiple and total_count > 1:
             raise MultipleResultsError(f'Only one record is expected to be delete, found {total_count} records.')
