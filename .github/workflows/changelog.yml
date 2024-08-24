@@ -1,0 +1,27 @@
+name: Change Logs
+
+on:
+  pull_request_target:
+    branches:
+      - master
+    types:
+      - closed
+  # For manually triggering it
+  workflow_dispatch:
+    inputs:
+      number:
+        description: PR number
+        required: true
+
+jobs:
+  latest-changes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+      - uses: docker://tiangolo/latest-changes:0.3.0
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          latest_changes_file: docs/changelog.md
+          latest_changes_header: '# Change Logs'
