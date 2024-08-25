@@ -73,11 +73,12 @@ items = await item_crud.select_models(
 
     运算符需要多个值，且仅允许元组，列表，集合
 
-```python
-# 获取年龄在 30 - 40 岁之间的员工
+```python title="__between"
+# 获取年龄在 30 - 40 岁之间且名字在目标列表的员工
 items = await item_crud.select_models(
     session=db,
     age__between=[30, 40],
+    name__in=['bob', 'lucy'],
 )
 ```
 
@@ -86,7 +87,7 @@ items = await item_crud.select_models(
 可以通过将多个过滤器链接在一起来实现 AND 子句
 
 ```python
-# 获取年龄在 30 以上，薪资大于 2w 的员工
+# 获取年龄在 30 以上，薪资大于 20k 的员工
 items = await item_crud.select_models(
     session=db,
     age__gt=30,
@@ -100,11 +101,45 @@ items = await item_crud.select_models(
 
     每个键都应是库已支持的过滤器，仅允许字典
 
-```python
+```python title="__or"
 # 获取年龄在 40 岁以上或 30 岁以下的员工
 items = await item_crud.select_models(
     session=db,
     age__or={'gt': 40, 'lt': 30},
+)
+```
+
+## MOR
+
+!!! note
+
+    `or` 过滤器的高级用法，每个键都应是库已支持的过滤器，仅允许字典
+
+```python title="__mor"
+# 获取年龄等于 30 岁和 40 岁的员工
+items = await item_crud.select_models(
+    session=db,
+    age__mor={'eq': [30, 40]},  # (1)
+)
+```
+
+1. 原因：在 python 字典中，不允许存在相同的键值；<br/>
+   场景：我有一个列，需要多个相同条件但不同条件值的查询，此时，你应该使用 `mor` 过滤器，正如此示例一样使用它
+
+## GOR
+
+!!! note
+
+    `or` 过滤器的更高级用法，每个值都应是一个已受支持的条件过滤器，它应该是一个数组
+
+```python title="__gor__"
+# 获取年龄在 30 - 40 岁之间且薪资大于 20k 的员工
+items = await item_crud.select_models(
+    session=db,
+    __gor__=[
+        {'age__between': [30, 40]},
+        {'payroll__gt': 20000}
+    ]
 )
 ```
 
@@ -119,9 +154,9 @@ items = await item_crud.select_models(
     `condition`：此值将作为运算后的比较值，比较条件取决于使用的过滤器
 
 ```python
-# 获取薪资打八折以后仍高于 15000 的员工
+# 获取薪资打八折以后仍高于 20k 的员工
 items = await item_crud.select_models(
     session=db,
-    payroll__mul={'value': 0.8, 'condition': {'gt': 15000}},
+    payroll__mul={'value': 0.8, 'condition': {'gt': 20000}},
 )
 ```
