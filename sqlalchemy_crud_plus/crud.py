@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from typing import Any, Generic, Iterable, Sequence, Type
 
-from sqlalchemy import Row, RowMapping, Select, delete, select, update
+from sqlalchemy import Row, RowMapping, Select, delete, select, update, inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy_crud_plus.errors import MultipleResultsError
@@ -13,6 +13,18 @@ from sqlalchemy_crud_plus.utils import apply_sorting, count, parse_filters
 class CRUDPlus(Generic[Model]):
     def __init__(self, model: Type[Model]):
         self.model = model
+        self.primary_key = self._get_primary_key()
+
+    def _get_primary_key(self):
+        """
+        Dynamically retrieve the primary key column(s) for the model.
+        """
+        mapper = inspect(self.model)
+        primary_key = mapper.primary_key
+        if len(primary_key) == 1:
+            return primary_key[0]
+        else:
+            raise ValueError("Composite primary keys are not supported")
 
     async def create_model(
         self,
@@ -69,7 +81,7 @@ class CRUDPlus(Generic[Model]):
         :param pk: The database primary key value.
         :return:
         """
-        stmt = select(self.model).where(self.model.id == pk)
+        stmt = select(self.model).where(self.primary_key == pk)
         query = await session.execute(stmt)
         return query.scalars().first()
 
@@ -166,7 +178,7 @@ class CRUDPlus(Generic[Model]):
             instance_data = obj
         else:
             instance_data = obj.model_dump(exclude_unset=True)
-        stmt = update(self.model).where(self.model.id == pk).values(**instance_data)
+        stmt = update(self.model).where(self.primary_key == pk).values(**instance_data)
         result = await session.execute(stmt)
         if commit:
             await session.commit()
@@ -218,7 +230,7 @@ class CRUDPlus(Generic[Model]):
         :param commit: If `True`, commits the transaction immediately. Default is `False`.
         :return:
         """
-        stmt = delete(self.model).where(self.model.id == pk)
+        stmt = delete(self.model).where(self.primary_key == pk)
         result = await session.execute(stmt)
         if commit:
             await session.commit()
