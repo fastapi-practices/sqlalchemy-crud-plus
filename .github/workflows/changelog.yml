@@ -1,27 +1,36 @@
 name: Change Logs
 
 on:
-  pull_request_target:
-    branches:
-      - master
-    types:
-      - closed
-  # For manually triggering it
-  workflow_dispatch:
-    inputs:
-      number:
-        description: PR number
-        required: true
+  release:
+    types: [ released ]
 
 jobs:
   latest-changes:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GH_TOKEN }}
-      - uses: docker://tiangolo/latest-changes:0.3.0
+          fetch-depth: 0
+          ref: ${{ github.event.release.target_commitish }}
+
+      - name: Extract release date from git tag
+        run: |
+          echo "date=$(git log -1 --date=short --format=%ad '${{ github.event.release.tag_name }}')" >> $GITHUB_OUTPUT;
+
+      - name: Update Changelog
+        uses: stefanzweifel/changelog-updater-action@v1
         with:
-          token: ${{ secrets.GH_TOKEN }}
-          latest_changes_file: docs/changelog.md
-          latest_changes_header: '# Change Logs'
+          latest-version: ${{ github.event.release.tag_name }}
+          release-notes: ${{ github.event.release.body }}
+          path-to-changelog: docs/changelog.md
+
+      - name: Commit updated CHANGELOG
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          branch: ${{ github.event.release.target_commitish }}
+          commit_message: 📝 Update release notes
+          file_pattern: docs/changelog.md
