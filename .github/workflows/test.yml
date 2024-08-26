@@ -9,7 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    name: lint ${{ matrix.python-version }}
+    name: test ${{ matrix.python-version }}
     strategy:
       matrix:
         python-version: [ '3.10', '3.11', '3.12' ]
