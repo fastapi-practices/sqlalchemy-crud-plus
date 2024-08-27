@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 from typing import Any, Generic, Iterable, Sequence, Type
 
-from sqlalchemy import Row, RowMapping, Select, delete, select, update, inspect
+from sqlalchemy import Row, RowMapping, Select, delete, inspect, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sqlalchemy_crud_plus.errors import MultipleResultsError, CompositePrimaryKeysError
+from sqlalchemy_crud_plus.errors import CompositePrimaryKeysError, MultipleResultsError
 from sqlalchemy_crud_plus.types import CreateSchema, Model, UpdateSchema
 from sqlalchemy_crud_plus.utils import apply_sorting, count, parse_filters
 
@@ -24,7 +24,7 @@ class CRUDPlus(Generic[Model]):
         if len(primary_key) == 1:
             return primary_key[0]
         else:
-            raise CompositePrimaryKeysError("Composite primary keys are not supported")
+            raise CompositePrimaryKeysError('Composite primary keys are not supported')
 
     async def create_model(
         self,
