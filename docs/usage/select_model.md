@@ -15,13 +15,15 @@ from pydantic import BaseModel
 
 from sqlalchemy_crud_plus import CRUDPlus
 
+from sqlalchemy import Mapped, mapped_column
 from sqlalchemy import DeclarativeBase as Base
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class ModelIns(Base):
     # your sqlalchemy model
-    pass
+    # define your primary_key
+    custom_id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
 
 
 class CreateIns(BaseModel):
@@ -30,6 +32,6 @@ class CreateIns(BaseModel):
 
 
 class CRUDIns(CRUDPlus[ModelIns]):
-    async def create(self, db: AsyncSession, pk: int) -> ModelIns:
+    async def select(self, db: AsyncSession, pk: int) -> ModelIns:
         return await self.select_model(db, pk)
 ```

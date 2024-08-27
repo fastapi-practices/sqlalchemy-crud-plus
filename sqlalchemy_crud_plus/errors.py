@@ -36,3 +36,10 @@ class MultipleResultsError(SQLAlchemyCRUDPlusException):
 
     def __init__(self, msg: str) -> None:
         super().__init__(msg)
+
+
+class CompositePrimaryKeysError(SQLAlchemyCRUDPlusException):
+    """Error raised when a table have Composite primary keys."""
+
+    def __init__(self, msg: str) -> None:
+        super().__init__(msg)
