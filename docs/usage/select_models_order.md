@@ -21,7 +21,7 @@ async def select_models_order(
 
 ## 示例
 
-```py title="select_models_order" hl_lines="23"
+```py title="select_models_order" hl_lines="18"
 from typing import Sequence
 
 from pydantic import BaseModel
@@ -34,11 +34,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 class ModelIns(Base):
     # your sqlalchemy model
-    pass
-
-
-class CreateIns(BaseModel):
-    # your pydantic schema
     pass
 
 

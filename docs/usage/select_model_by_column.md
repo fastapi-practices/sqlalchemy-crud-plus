@@ -10,7 +10,7 @@ async def select_model_by_column(
 
 ## 示例
 
-```py title="select_model_by_cloumn" hl_lines="21"
+```py title="select_model_by_cloumn" hl_lines="16"
 from pydantic import BaseModel
 
 from sqlalchemy_crud_plus import CRUDPlus
@@ -21,11 +21,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 class ModelIns(Base):
     # your sqlalchemy model
-    pass
-
-
-class CreateIns(BaseModel):
-    # your pydantic schema
     pass
 
 

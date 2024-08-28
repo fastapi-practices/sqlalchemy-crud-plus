@@ -7,7 +7,7 @@ async def create_models(
 ) -> list[Model]:
 ```
 
-此方法提供 `commit` 参数，详见：[提交](./create_model.md/#_1)
+此方法提供 `commit` 参数，详见：[提交](../advanced/commit.md)
 
 ## 示例
 

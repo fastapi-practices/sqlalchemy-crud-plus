@@ -23,6 +23,7 @@ nav:
       - 删除 - 条件过滤: usage/delete_model_by_column.md
   - Advanced:
       - 主键: advanced/primary_key.md
+      - 提交: advanced/commit.md
       - 条件过滤:  advanced/filter.md
   - Changelog: changelog.md
 theme:
@@ -31,19 +32,19 @@ theme:
     code: Roboto Mono
   palette:
     - media: "(prefers-color-scheme)"
-      primary: deep purple
+      primary: green
       toggle:
         icon: material/brightness-auto
         name: Switch to light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: deep purple
+      primary: pink
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: deep purple
+      primary: green
       toggle:
         icon: material/brightness-4
         name: Switch to auto mode
