@@ -9,7 +9,7 @@ async def delete(self, db: AsyncSession, primary_key: int) -> int:
 
 ## 主键定义
 
-!!! warning 自动主键
+!!! tip 自动主键
 
     我们在 SQLAlchemy CRUD Plus 内部通过 [inspect()](https://docs.sqlalchemy.org/en/20/core/inspection.html) 自动搜索表主键，
     而非强制绑定主键列必须命名为 id，感谢 [@DavidSche](https://github.com/DavidSche) 提供帮助 

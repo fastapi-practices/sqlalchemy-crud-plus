@@ -10,7 +10,7 @@ async def select_model(
 
 ## 示例
 
-```py title="select_model" hl_lines="21"
+```py title="select_model" hl_lines="18"
 from pydantic import BaseModel
 
 from sqlalchemy_crud_plus import CRUDPlus
@@ -24,11 +24,6 @@ class ModelIns(Base):
     # your sqlalchemy model
     # define your primary_key
     custom_id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
-
-
-class CreateIns(BaseModel):
-    # your pydantic schema
-    pass
 
 
 class CRUDIns(CRUDPlus[ModelIns]):

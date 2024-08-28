@@ -23,6 +23,7 @@ nav:
       - 删除 - 条件过滤: usage/delete_model_by_column.md
   - Advanced:
       - 主键: advanced/primary_key.md
+      - 提交: advanced/commit.md
       - 条件过滤:  advanced/filter.md
   - Changelog: changelog.md
 theme:

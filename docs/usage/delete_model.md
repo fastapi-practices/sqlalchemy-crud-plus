@@ -9,11 +9,11 @@ async def delete_model(
 
 - 此方法使用主键 pk 参数，详见：[主键](../advanced/primary_key.md)
 
-- 此方法提供 `commit` 参数，详见：[提交](./create_model.md/#_1)
+- 此方法提供 `commit` 参数，详见：[提交](../advanced/commit.md)
 
 ## 示例
 
-```py title="delete_model" hl_lines="21"
+```py title="delete_model" hl_lines="18"
 from pydantic import BaseModel
 
 from sqlalchemy_crud_plus import CRUDPlus
@@ -27,11 +27,6 @@ class ModelIns(Base):
     # your sqlalchemy model
     # define your primary_key
     custom_id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
-
-
-class CreateIns(BaseModel):
-    # your pydantic schema
-    pass
 
 
 class CRUDIns(CRUDPlus[ModelIns]):

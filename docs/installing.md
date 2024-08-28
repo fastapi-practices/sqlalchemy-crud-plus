@@ -18,3 +18,9 @@
     ```sh
     pdm add sqlalchemy-crud-plus
     ```
+
+=== "uv"
+
+    ```sh
+    uv add sqlalchemy-crud-plus
+    ```
