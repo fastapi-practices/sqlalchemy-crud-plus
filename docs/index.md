@@ -97,7 +97,7 @@
 
 ## 互动
 
-[WeChat / QQ](https://github.com/wu-clan)
+[TG / Discord](https://wu-clan.github.io/homepage/)
 
 ## 赞助
 
