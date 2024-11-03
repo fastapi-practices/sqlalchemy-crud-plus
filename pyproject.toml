@@ -1,9 +1,7 @@
 [project]
 name = "sqlalchemy-crud-plus"
 description = "Asynchronous CRUD operation based on SQLAlchemy2 model"
-dynamic = [
-    "version",
-]
+version = '1.5.0'
 authors = [
     { name = "Wu Clan", email = "jianhengwu0407@gmail.com" },
 ]
@@ -26,7 +24,7 @@ license = { text = "MIT" }
 homepage = "https://github.com/fastapi-practices/sqlalchemy-crud-plus"
 repository = "https://github.com/fastapi-practices/sqlalchemy-crud-plus"
 
-[tool.pdm.dev-dependencies]
+[dependency-groups]
 lint = [
     "ruff>=0.4.0",
     "pre-commit>=3.5.0",
@@ -36,6 +34,9 @@ test = [
     "aiosqlite>=0.20.0",
     "pytest-asyncio>=0.23.6",
 ]
+
+[tool.uv]
+python-downloads = "manual"
 
 [tool.ruff]
 line-length = 120
@@ -58,13 +59,6 @@ order-by-type = true
 quote-style = "single"
 docstring-code-format = true
 
-[tool.pdm]
-distribution = true
-version = { source = "file", path = "sqlalchemy_crud_plus/__init__.py" }
-
-[tool.pdm.scripts]
-lint = "pre-commit run --all-files"
-
 [build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
