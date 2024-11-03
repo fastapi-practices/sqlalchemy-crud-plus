@@ -1,9 +1,5 @@
 ```py
-async def select_models(
-    self,
-    session: AsyncSession, 
-    **kwargs
-) -> Sequence[Row[Any] | RowMapping | Any]:
+async def select_models(self, session: AsyncSession, **kwargs) -> Sequence[Row[Any] | RowMapping | Any]:
 ```
 
 此方法可结合 [高级过滤器](../advanced/filter.md) 使用

@@ -1,8 +1,6 @@
 ```py
-async def select(
-    self,
-    **kwargs
-) -> Select:
+async def select(self, **kwargs) -> Select:
+    ...
 ```
 
 此方法用于构造 SQLAlchemy

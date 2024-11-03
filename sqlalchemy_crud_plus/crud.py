@@ -54,20 +54,26 @@ class CRUDPlus(Generic[Model]):
     async def create_models(
         self,
         session: AsyncSession,
-        obj: Iterable[CreateSchema],
+        objs: Iterable[CreateSchema],
         commit: bool = False,
+        **kwargs,
     ) -> list[Model]:
         """
         Create new instances of a model
 
         :param session: The SQLAlchemy async session.
-        :param obj: The Pydantic schema list containing data to be saved.
+        :param objs: The Pydantic schema list containing data to be saved.
         :param commit: If `True`, commits the transaction immediately. Default is `False`.
+        :param kwargs: Additional model data not included in the pydantic schema.
         :return:
         """
         ins_list = []
-        for ins in obj:
-            ins_list.append(self.model(**ins.model_dump()))
+        for obj in objs:
+            if not kwargs:
+                ins = self.model(**obj.model_dump())
+            else:
+                ins = self.model(**obj.model_dump(), **kwargs)
+            ins_list.append(ins)
         session.add_all(ins_list)
         if commit:
             await session.commit()
@@ -164,6 +170,7 @@ class CRUDPlus(Generic[Model]):
         pk: int,
         obj: UpdateSchema | dict[str, Any],
         commit: bool = False,
+        **kwargs,
     ) -> int:
         """
         Update an instance by model's primary key
@@ -178,6 +185,8 @@ class CRUDPlus(Generic[Model]):
             instance_data = obj
         else:
             instance_data = obj.model_dump(exclude_unset=True)
+        if kwargs:
+            instance_data.update(kwargs)
         stmt = update(self.model).where(self.primary_key == pk).values(**instance_data)
         result = await session.execute(stmt)
         if commit:

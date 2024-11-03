@@ -14,18 +14,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           ref: ${{ github.event.release.target_commitish }}
-
-      - name: Extract release date from git tag
-        run: |
-          echo "date=$(git log -1 --date=short --format=%ad '${{ github.event.release.tag_name }}')" >> $GITHUB_OUTPUT;
 
       - name: Update Changelog
         uses: stefanzweifel/changelog-updater-action@v1
         with:
-          latest-version: ${{ github.event.release.tag_name }}
           release-notes: ${{ github.event.release.body }}
+          latest-version: ${{ github.event.release.tag_name }}
           path-to-changelog: docs/changelog.md
 
       - name: Commit updated CHANGELOG

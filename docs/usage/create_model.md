@@ -4,11 +4,13 @@ async def create_model(
     session: AsyncSession,
     obj: CreateSchema,
     commit: bool = False,
-    **kwargs
+    **kwargs,
 ) -> Model:
 ````
 
-!!! note "create_model <独特>的关键字参数"
+此方法提供 `commit` 参数，详见：[提交](../advanced/commit.md)
+
+!!! note "关键字参数"
 
     除了必须传入 obj schema 外，还可以通过关键字入参，传入非 schema
     参数，比如，对于某些特定场景，其中一个字段并不是通用的，也不需要进行输入控制，只需在写入时赋予指定值，那么你可以使用关键字入参即可

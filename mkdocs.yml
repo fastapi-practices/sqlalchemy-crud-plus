@@ -9,58 +9,61 @@ nav:
   - Home: index.md
   - Installing: installing.md
   - Usage:
-      - 新增: usage/create_model.md
-      - 新增 - 多条: usage/create_models.md
-      - 查询 - 主键 ID: usage/select_model.md
-      - 查询 - 条件过滤: usage/select_model_by_column.md
-      - Select: usage/select.md
-      - Select - 排序: usage/select_order.md
-      - 查询 - 列表: usage/select_models.md
-      - 查询 - 列表排序: usage/select_models_order.md
-      - 更新 - 主键 ID: usage/update_model.md
-      - 更新 - 条件过滤: usage/update_model_by_column.md
-      - 删除 - 主键 ID: usage/delete_model.md
-      - 删除 - 条件过滤: usage/delete_model_by_column.md
+      - 新增:
+          - 单条: usage/create_model.md
+          - 多条: usage/create_models.md
+      - 查询:
+          - 主键 ID: usage/select_model.md
+          - 条件过滤: usage/select_model_by_column.md
+          - Select: usage/select.md
+          - Select 排序: usage/select_order.md
+          - 列表: usage/select_models.md
+          - 列表排序: usage/select_models_order.md
+      - 更新:
+          - 主键 ID: usage/update_model.md
+          - 高级用法: usage/update_model_by_column.md
+      - 删除:
+          - 主键 ID: usage/delete_model.md
+          - 高级用法: usage/delete_model_by_column.md
   - Advanced:
       - 主键: advanced/primary_key.md
       - 提交: advanced/commit.md
-      - 条件过滤:  advanced/filter.md
+      - 条件过滤: advanced/filter.md
   - Changelog: changelog.md
 theme:
   name: material
   font:
     code: Roboto Mono
   palette:
-    - media: "(prefers-color-scheme)"
-      primary: green
+    - media: '(prefers-color-scheme)'
       toggle:
         icon: material/brightness-auto
         name: Switch to light mode
-    - media: "(prefers-color-scheme: light)"
+    - media: '(prefers-color-scheme: light)'
       scheme: default
       primary: pink
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
+    - media: '(prefers-color-scheme: dark)'
       scheme: slate
-      primary: green
+      primary: teal
       toggle:
         icon: material/brightness-4
-        name: Switch to auto mode
+        name: Switch to system preference
   features:
     - content.code.annotate
     - content.code.select
     - navigation.instant
     - navigation.instant.progress
+    - navigation.path
     - navigation.tracking
     - navigation.tabs
     - navigation.tabs.sticky
-    - search.suggest
-    - toc.follow
-    - toc.integrate
     - navigation.top
     - navigation.footer
+    - search.suggest
+    - toc.follow
 plugins:
   - search
 markdown_extensions:
