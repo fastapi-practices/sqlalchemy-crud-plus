@@ -1,13 +1,16 @@
 ```python
 async def create_models(
-    self, 
-    session: AsyncSession, 
-    obj: Iterable[CreateSchema], 
-    commit: bool = False
+    self,
+    session: AsyncSession,
+    objs: Iterable[CreateSchema],
+    commit: bool = False,
+    **kwargs,
 ) -> list[Model]:
 ```
 
-此方法提供 `commit` 参数，详见：[提交](../advanced/commit.md)
+- 此方法提供 `commit` 参数，详见：[提交](../advanced/commit.md)
+
+- 此方法还提供与 `create_model()` 相同用法的关键字参数，需要额外注意的是，`create_models()` 会将关键字参数写入每个实例中
 
 ## 示例
 
@@ -33,8 +36,8 @@ class CreateIns(BaseModel):
 
 
 class CRUDIns(CRUDPlus[ModelIns]):
-    async def creates(self, db: AsyncSession, obj: Iterable[CreateIns]) -> list[ModelIns]:  # (1)
-        return await self.create_models(db, obj)
+    async def creates(self, db: AsyncSession, objs: Iterable[CreateIns]) -> list[ModelIns]:  # (1)
+        return await self.create_models(db, objs)
 ```
 
-1. obj 必须是一个 schema 列表
+1. objs 必须是一个 schema 列表

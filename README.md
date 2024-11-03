@@ -14,7 +14,7 @@ pip install sqlalchemy-crud-plus
 
 ## 互动
 
-[WeChat / QQ](https://wu-clan.github.io/homepage/)
+[TG / Discord](https://wu-clan.github.io/homepage/)
 
 ## 赞助
 

@@ -1,9 +1,5 @@
 ```py
-async def select_model(
-    self,
-    session: AsyncSession,
-    pk: int
-) -> Model | None:
+async def select_model(self, session: AsyncSession, pk: int) -> Model | None:
 ```
 
 此方法使用主键 pk 参数，详见：[主键](../advanced/primary_key.md)

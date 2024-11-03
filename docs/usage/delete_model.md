@@ -1,9 +1,9 @@
 ```py
 async def delete_model(
     self,
-    session: AsyncSession, 
-    pk: int, 
-    commit: bool = False
+    session: AsyncSession,
+    pk: int,
+    commit: bool = False,
 ) -> int:
 ```
 

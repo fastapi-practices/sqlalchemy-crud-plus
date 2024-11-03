@@ -1,10 +1,10 @@
 ```py
-async def select_models_order(
-    self,
-    session: AsyncSession,
-    sort_columns: str | list[str],
-    sort_orders: str | list[str] | None = None,
-    **kwargs
+ async def select_models_order(
+     self,
+     session: AsyncSession,
+     sort_columns: str | list[str],
+     sort_orders: str | list[str] | None = None,
+     **kwargs,
 ) -> Sequence[Row | RowMapping | Any] | None:
 ```
 

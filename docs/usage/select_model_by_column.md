@@ -1,9 +1,5 @@
 ```py
-async def select_model_by_column(
-    self,
-    session: AsyncSession, 
-    **kwargs
-) -> Model | None:
+async def select_model_by_column(self, session: AsyncSession, **kwargs) -> Model | None:
 ```
 
 此方法可结合 [高级过滤器](../advanced/filter.md) 使用

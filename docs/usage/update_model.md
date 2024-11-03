@@ -1,16 +1,19 @@
 ```py
 async def update_model(
-    self, 
+    self,
     session: AsyncSession,
     pk: int,
     obj: UpdateSchema | dict[str, Any],
-    commit: bool = False
+    commit: bool = False,
+    **kwargs,
 ) -> int:
 ```
 
 - 此方法使用主键 pk 参数，详见：[主键](../advanced/primary_key.md)
 
 - 此方法提供 `commit` 参数，详见：[提交](../advanced/commit.md)
+
+- 此方法还提供与 `create_model()` 相同用法的关键字参数
 
 ## 示例
 
