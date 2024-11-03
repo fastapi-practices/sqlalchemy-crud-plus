@@ -28,7 +28,8 @@ jobs:
           uv venv
           uv pip install -r requirements.txt
 
-      - name: |
+      - name: Run lint
+        run: |
           source .venv/bin/activate
           chmod 755 pre-commit.sh
           ./pre-commit.sh
