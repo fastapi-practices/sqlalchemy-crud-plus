@@ -116,7 +116,7 @@ items = await item_crud.select_models(
     `or` 过滤器的高级用法，每个键都应是库已支持的过滤器，仅允许字典
 
 ```python title="__mor"
-# 获取年龄等于 30 岁和 40 岁的员工
+# 获取年龄等于 30 岁或 40 岁的员工
 items = await item_crud.select_models(
     session=db,
     age__mor={'eq': [30, 40]},  # (1)
@@ -133,7 +133,7 @@ items = await item_crud.select_models(
     `or` 过滤器的更高级用法，每个值都应是一个已受支持的条件过滤器，它应该是一个数组
 
 ```python title="__gor__"
-# 获取年龄在 30 - 40 岁之间且薪资大于 20k 的员工
+# 获取年龄在 30 - 40 岁之间或薪资大于 20k 的员工
 items = await item_crud.select_models(
     session=db,
     __gor__=[

@@ -30,6 +30,7 @@ class CRUDPlus(Generic[Model]):
         self,
         session: AsyncSession,
         obj: CreateSchema,
+        flush: bool = False,
         commit: bool = False,
         **kwargs,
     ) -> Model:
@@ -38,6 +39,7 @@ class CRUDPlus(Generic[Model]):
 
         :param session: The SQLAlchemy async session.
         :param obj: The Pydantic schema containing data to be saved.
+        :param flush: If `True`, flush all object changes to the database. Default is `False`.
         :param commit: If `True`, commits the transaction immediately. Default is `False`.
         :param kwargs: Additional model data not included in the pydantic schema.
         :return:
@@ -47,6 +49,8 @@ class CRUDPlus(Generic[Model]):
         else:
             ins = self.model(**obj.model_dump(), **kwargs)
         session.add(ins)
+        if flush:
+            await session.flush()
         if commit:
             await session.commit()
         return ins
@@ -55,6 +59,7 @@ class CRUDPlus(Generic[Model]):
         self,
         session: AsyncSession,
         objs: Iterable[CreateSchema],
+        flush: bool = False,
         commit: bool = False,
         **kwargs,
     ) -> list[Model]:
@@ -63,6 +68,7 @@ class CRUDPlus(Generic[Model]):
 
         :param session: The SQLAlchemy async session.
         :param objs: The Pydantic schema list containing data to be saved.
+        :param flush: If `True`, flush all object changes to the database. Default is `False`.
         :param commit: If `True`, commits the transaction immediately. Default is `False`.
         :param kwargs: Additional model data not included in the pydantic schema.
         :return:
@@ -75,6 +81,8 @@ class CRUDPlus(Generic[Model]):
                 ins = self.model(**obj.model_dump(), **kwargs)
             ins_list.append(ins)
         session.add_all(ins_list)
+        if flush:
+            await session.flush()
         if commit:
             await session.commit()
         return ins_list
@@ -169,6 +177,7 @@ class CRUDPlus(Generic[Model]):
         session: AsyncSession,
         pk: int,
         obj: UpdateSchema | dict[str, Any],
+        flush: bool = False,
         commit: bool = False,
         **kwargs,
     ) -> int:
@@ -178,6 +187,7 @@ class CRUDPlus(Generic[Model]):
         :param session: The SQLAlchemy async session.
         :param pk: The database primary key value.
         :param obj: A pydantic schema or dictionary containing the update data
+        :param flush: If `True`, flush all object changes to the database. Default is `False`.
         :param commit: If `True`, commits the transaction immediately. Default is `False`.
         :return:
         """
@@ -189,6 +199,8 @@ class CRUDPlus(Generic[Model]):
             instance_data.update(kwargs)
         stmt = update(self.model).where(self.primary_key == pk).values(**instance_data)
         result = await session.execute(stmt)
+        if flush:
+            await session.flush()
         if commit:
             await session.commit()
         return result.rowcount  # type: ignore
@@ -198,6 +210,7 @@ class CRUDPlus(Generic[Model]):
         session: AsyncSession,
         obj: UpdateSchema | dict[str, Any],
         allow_multiple: bool = False,
+        flush: bool = False,
         commit: bool = False,
         **kwargs,
     ) -> int:
@@ -207,6 +220,7 @@ class CRUDPlus(Generic[Model]):
         :param session: The SQLAlchemy async session.
         :param obj: A pydantic schema or dictionary containing the update data
         :param allow_multiple: If `True`, allows updating multiple records that match the filters.
+        :param flush: If `True`, flush all object changes to the database. Default is `False`.
         :param commit: If `True`, commits the transaction immediately. Default is `False`.
         :param kwargs: Query expressions.
         :return:
@@ -221,6 +235,8 @@ class CRUDPlus(Generic[Model]):
             instance_data = obj.model_dump(exclude_unset=True)
         stmt = update(self.model).where(*filters).values(**instance_data)  # type: ignore
         result = await session.execute(stmt)
+        if flush:
+            await session.flush()
         if commit:
             await session.commit()
         return result.rowcount  # type: ignore
@@ -229,6 +245,7 @@ class CRUDPlus(Generic[Model]):
         self,
         session: AsyncSession,
         pk: int,
+        flush: bool = False,
         commit: bool = False,
     ) -> int:
         """
@@ -236,11 +253,14 @@ class CRUDPlus(Generic[Model]):
 
         :param session: The SQLAlchemy async session.
         :param pk: The database primary key value.
+        :param flush: If `True`, flush all object changes to the database. Default is `False`.
         :param commit: If `True`, commits the transaction immediately. Default is `False`.
         :return:
         """
         stmt = delete(self.model).where(self.primary_key == pk)
         result = await session.execute(stmt)
+        if flush:
+            await session.flush()
         if commit:
             await session.commit()
         return result.rowcount  # type: ignore
@@ -251,18 +271,20 @@ class CRUDPlus(Generic[Model]):
         allow_multiple: bool = False,
         logical_deletion: bool = False,
         deleted_flag_column: str = 'del_flag',
+        flush: bool = False,
         commit: bool = False,
         **kwargs,
     ) -> int:
         """
-        Delete
+        Delete an instance by model column
 
         :param session: The SQLAlchemy async session.
-        :param commit: If `True`, commits the transaction immediately. Default is `False`.
-        :param kwargs: Query expressions.
         :param allow_multiple: If `True`, allows deleting multiple records that match the filters.
         :param logical_deletion: If `True`, enable logical deletion instead of physical deletion
         :param deleted_flag_column: Specify the flag column for logical deletion
+        :param flush: If `True`, flush all object changes to the database. Default is `False`.
+        :param commit: If `True`, commits the transaction immediately. Default is `False`.
+        :param kwargs: Query expressions.
         :return:
         """
         filters = parse_filters(self.model, **kwargs)
@@ -275,6 +297,8 @@ class CRUDPlus(Generic[Model]):
         else:
             stmt = delete(self.model).where(*filters)
         result = await session.execute(stmt)
+        if flush:
+            await session.flush()
         if commit:
             await session.commit()
         return result.rowcount  # type: ignore
