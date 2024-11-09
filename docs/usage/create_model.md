@@ -3,12 +3,14 @@ async def create_model(
     self,
     session: AsyncSession,
     obj: CreateSchema,
+    flush: bool = False,
     commit: bool = False,
     **kwargs,
 ) -> Model:
 ````
 
-此方法提供 `commit` 参数，详见：[提交](../advanced/commit.md)
+- 此方法提供 `flush` 参数，详见：[冲洗](../advanced/flush.md)
+- 此方法提供 `commit` 参数，详见：[提交](../advanced/commit.md)
 
 !!! note "关键字参数"
 

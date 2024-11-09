@@ -3,13 +3,14 @@ async def create_models(
     self,
     session: AsyncSession,
     objs: Iterable[CreateSchema],
+    flush: bool = False,
     commit: bool = False,
     **kwargs,
 ) -> list[Model]:
 ```
 
+- 此方法提供 `flush` 参数，详见：[冲洗](../advanced/flush.md)
 - 此方法提供 `commit` 参数，详见：[提交](../advanced/commit.md)
-
 - 此方法还提供与 `create_model()` 相同用法的关键字参数，需要额外注意的是，`create_models()` 会将关键字参数写入每个实例中
 
 ## 示例

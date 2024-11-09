@@ -5,13 +5,14 @@ async def delete_model_by_column(
     allow_multiple: bool = False,
     logical_deletion: bool = False,
     deleted_flag_column: str = 'del_flag',
+    flush: bool = False,
     commit: bool = False,
     **kwargs,
 ) -> int:
 ```
 
+- 此方法提供 `flush` 参数，详见：[冲洗](../advanced/flush.md)
 - 此方法提供 `commit` 参数，详见：[提交](../advanced/commit.md)
-
 - 此方法可结合 [高级过滤器](../advanced/filter.md) 使用
 
 ## 删除多条

@@ -3,12 +3,13 @@ async def delete_model(
     self,
     session: AsyncSession,
     pk: int,
+    flush: bool = False,
     commit: bool = False,
 ) -> int:
 ```
 
-- 此方法使用主键 pk 参数，详见：[主键](../advanced/primary_key.md)
-
+- 此方法提供 `flush` 参数，详见：[冲洗](../advanced/flush.md)
+- 此方法使用主键 `pk` 参数，详见：[主键](../advanced/primary_key.md)
 - 此方法提供 `commit` 参数，详见：[提交](../advanced/commit.md)
 
 ## 示例

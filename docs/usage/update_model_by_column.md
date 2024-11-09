@@ -4,13 +4,14 @@ async def update_model_by_column(
     session: AsyncSession,
     obj: UpdateSchema | dict[str, Any],
     allow_multiple: bool = False,
+    flush: bool = False,
     commit: bool = False,
     **kwargs,
 ) -> int:
 ```
 
+- 此方法提供 `flush` 参数，详见：[冲洗](../advanced/flush.md)
 - 此方法提供 `commit` 参数，详见：[提交](../advanced/commit.md)
-
 - 此方法可结合 [高级过滤器](../advanced/filter.md) 使用
 
 ## 更新多条
