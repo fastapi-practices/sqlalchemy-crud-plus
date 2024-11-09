@@ -1,5 +1,14 @@
 # Change Logs
 
+## 1.6.0 - 2024-11-09
+
+### What's Changed
+
+* Add the flush usage by @wu-clan in https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/32
+* Prepare for 1.6.0 release by @wu-clan in https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/33
+
+**Full Changelog**: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.5.0...1.6.0
+
 ## 1.5.0 - 2024-11-03
 
 ### What's Changed
