@@ -1,10 +1,10 @@
 # yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
 site_name: SQLAlchemy CRUD Plus
 site_description: Asynchronous CRUD operations based on SQLAlChemy 2.0
-site_url: https://fastapi-practices.github.io/sqlalchemy-crud-plus
+site_url: https://wu-clan.github.io/sqlalchemy-crud-plus
 site_author: Wu Clan
 repo_name: sqlalchemy-crud-plus
-repo_url: https://github.com/fastapi-practices/sqlalchemy-crud-plus
+repo_url: https://github.com/wu-clan/sqlalchemy-crud-plus
 nav:
   - Home: index.md
   - Installing: installing.md
