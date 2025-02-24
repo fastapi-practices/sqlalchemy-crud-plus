@@ -21,4 +21,5 @@ jobs:
           git-message: '📝 Update release notes'
           git-user-name: 'github-actions[bot]'
           git-user-email: 'github-actions[bot]@users.noreply.github.com'
-          output-file: docs/changelog.md
+          git-branch: 'master'
+          output-file: 'docs/changelog.md'
