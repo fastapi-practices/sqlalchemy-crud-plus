@@ -1,31 +1,21 @@
-name: Change Logs
+name: Release changelog
 
 on:
-  release:
-    types: [ released ]
+  push:
+    tags:
+      - v*
+  pull_request:
 
 jobs:
-  latest-changes:
+  changelog:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: TriPSs/conventional-changelog-action@v5
         with:
-          ref: ${{ github.event.release.target_commitish }}
-
-      - name: Update Changelog
-        uses: stefanzweifel/changelog-updater-action@v1
-        with:
-          release-notes: ${{ github.event.release.body }}
-          latest-version: ${{ github.event.release.tag_name }}
-          path-to-changelog: docs/changelog.md
-
-      - name: Commit updated CHANGELOG
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          branch: ${{ github.event.release.target_commitish }}
-          commit_message: 📝 Update release notes
-          file_pattern: docs/changelog.md
+          github-token: ${{ secrets.github_token }}
+          git-message: '📝 Update release notes'
+          git-user-name: 'github-actions[bot]'
+          git-user-email: 'github-actions[bot]@users.noreply.github.com'
+          output-file: docs/changelog.md
