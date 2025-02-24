@@ -2,9 +2,6 @@ name: Release changelog
 
 on:
   push:
-    tags:
-      - v*
-  pull_request:
 
 jobs:
   changelog:
@@ -21,5 +18,4 @@ jobs:
           git-message: '📝 Update release notes'
           git-user-name: 'github-actions[bot]'
           git-user-email: 'github-actions[bot]@users.noreply.github.com'
-          git-branch: 'master'
           output-file: 'docs/changelog.md'
