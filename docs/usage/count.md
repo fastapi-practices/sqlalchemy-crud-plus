@@ -44,4 +44,3 @@ async def count(
 | Type | Description |
 |------|-------------|
 | int  | 记录数         |
-
