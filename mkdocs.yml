@@ -6,31 +6,33 @@ site_author: Wu Clan
 repo_name: sqlalchemy-crud-plus
 repo_url: https://github.com/wu-clan/sqlalchemy-crud-plus
 nav:
-  - Home: index.md
-  - Installing: installing.md
-  - Usage:
+  - 主页: index.md
+  - 安装: installing.md
+  - 用法:
       - 新增:
           - 单条: usage/create_model.md
           - 多条: usage/create_models.md
       - 查询:
-          - 主键 ID: usage/select_model.md
-          - 条件过滤: usage/select_model_by_column.md
+          - 主键: usage/select_model.md
+          - 列: usage/select_model_by_column.md
           - Select: usage/select.md
           - Select 排序: usage/select_order.md
           - 列表: usage/select_models.md
           - 列表排序: usage/select_models_order.md
+          - Count: usage/count.md
+          - Exists: usage/exists.md
       - 更新:
-          - 主键 ID: usage/update_model.md
-          - 高级用法: usage/update_model_by_column.md
+          - 主键: usage/update_model.md
+          - 列: usage/update_model_by_column.md
       - 删除:
-          - 主键 ID: usage/delete_model.md
-          - 高级用法: usage/delete_model_by_column.md
-  - Advanced:
+          - 主键: usage/delete_model.md
+          - 列: usage/delete_model_by_column.md
+  - 高级用法:
       - 主键: advanced/primary_key.md
       - 冲洗: advanced/flush.md
       - 提交: advanced/commit.md
       - 条件过滤: advanced/filter.md
-  - Changelog: changelog.md
+  - 变更日志: changelog.md
 theme:
   name: material
   font:
@@ -59,7 +61,6 @@ theme:
     - navigation.instant.progress
     - navigation.path
     - navigation.tracking
-    - navigation.tabs
     - navigation.tabs.sticky
     - navigation.top
     - navigation.footer

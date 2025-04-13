@@ -4,8 +4,7 @@ import warnings
 
 from typing import Any, Callable, Type
 
-from sqlalchemy import ColumnElement, Select, and_, asc, desc, func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import ColumnElement, Select, and_, asc, desc, or_
 from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.orm.util import AliasedClass
 
@@ -218,24 +217,3 @@ def apply_sorting(
             stmt = stmt.order_by(asc(column) if order == 'asc' else desc(column))
 
     return stmt
-
-
-async def count(
-    session: AsyncSession,
-    model: Type[Model] | AliasedClass,
-    filters: list[ColumnElement],
-) -> int:
-    """
-    Counts records that match specified filters.
-
-    :param session: The sqlalchemy session to use for the operation.
-    :param model: The SQLAlchemy model.
-    :param filters: Filters to apply for the count.
-    :return:
-    """
-    stmt = select(func.count()).select_from(model)
-    if filters:
-        stmt = stmt.where(*filters)
-    query = await session.execute(stmt)
-    total_count = query.scalar()
-    return total_count if total_count is not None else 0

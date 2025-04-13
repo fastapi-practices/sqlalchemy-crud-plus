@@ -1,6 +1,6 @@
 # sqlalchemy-crud-plus
 
-Asynchronous CRUD operations based on SQLAlChemy 2.0
+基于 SQLAlChemy 2.0 的异步 CRUD 操作
 
 ## Download
 
@@ -14,7 +14,7 @@ pip install sqlalchemy-crud-plus
 
 ## 互动
 
-[TG / Discord](https://wu-clan.github.io/homepage/)
+[Discord](https://wu-clan.github.io/homepage/)
 
 ## 赞助
 

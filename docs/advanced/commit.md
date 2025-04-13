@@ -1,4 +1,4 @@
-SQLAlchemy CRUD Plus 内部很多方法都提供了 `commit` 参数，默认值为 `False`，它既不会执行提交操作，也不包含 `flush`
+SQLAlchemy CRUD Plus 内部为很多方法都提供了 `commit` 参数，默认值为 `False`，它既不会执行提交操作，也不包含 `flush`
 等行为，要想真正写入到数据库，你可以通过以下几种方案
 
 ## `commit=True`
@@ -8,6 +8,8 @@ SQLAlchemy CRUD Plus 将在内部自动执行提交
 
 ```py hl_lines="31"
 from fastapi import FastAPI, Depends
+
+from pydantic import BaseModel
 
 --8<-- "docs/ext/get_db.py"
 
@@ -31,7 +33,6 @@ async def create(self, obj: CreateIns, db: AsyncSession = Depends(get_db)) -> No
 
 ```py hl_lines="9"
 --8<-- "docs/ext/async_db_session.py"
-
 
 async def create(self, obj: CreateIns) -> None:
     async with async_db_session.begin() as db:
