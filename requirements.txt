@@ -3,16 +3,50 @@
 -e .
 aiosqlite==0.20.0
 annotated-types==0.7.0
+    # via pydantic
+cfgv==3.4.0
+    # via pre-commit
 colorama==0.4.6 ; sys_platform == 'win32'
+    # via pytest
+distlib==0.3.9
+    # via virtualenv
 exceptiongroup==1.2.2 ; python_full_version < '3.11'
+    # via pytest
+filelock==3.16.1
+    # via virtualenv
 greenlet==3.1.1 ; (python_full_version < '3.13' and platform_machine == 'AMD64') or (python_full_version < '3.13' and platform_machine == 'WIN32') or (python_full_version < '3.13' and platform_machine == 'aarch64') or (python_full_version < '3.13' and platform_machine == 'amd64') or (python_full_version < '3.13' and platform_machine == 'ppc64le') or (python_full_version < '3.13' and platform_machine == 'win32') or (python_full_version < '3.13' and platform_machine == 'x86_64')
+    # via sqlalchemy
+identify==2.6.1
+    # via pre-commit
 iniconfig==2.0.0
+    # via pytest
+nodeenv==1.9.1
+    # via pre-commit
 packaging==24.1
+    # via pytest
+platformdirs==4.3.6
+    # via virtualenv
 pluggy==1.5.0
+    # via pytest
+pre-commit==4.0.1
 pydantic==2.9.2
+    # via sqlalchemy-crud-plus
 pydantic-core==2.23.4
+    # via pydantic
 pytest==8.3.3
+    # via pytest-asyncio
 pytest-asyncio==0.24.0
+pyyaml==6.0.2
+    # via pre-commit
 sqlalchemy==2.0.36
+    # via sqlalchemy-crud-plus
 tomli==2.0.2 ; python_full_version < '3.11'
+    # via pytest
 typing-extensions==4.12.2
+    # via
+    #   aiosqlite
+    #   pydantic
+    #   pydantic-core
+    #   sqlalchemy
+virtualenv==20.27.1
+    # via pre-commit

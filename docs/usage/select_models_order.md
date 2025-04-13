@@ -1,3 +1,26 @@
+此方法与 [select_models()](./select_models.md) 方法类似，但增加了排序功能
+
+```py title="select_models_order" hl_lines="16"
+from typing import Sequence
+
+from sqlalchemy_crud_plus import CRUDPlus
+
+from sqlalchemy import DeclarativeBase as Base
+from sqlalchemy.ext.asyncio import AsyncSession
+
+
+class ModelIns(Base):
+   # your sqlalchemy model
+   pass
+
+
+class CRUDIns(CRUDPlus[ModelIns]):
+   async def create(self, db: AsyncSession) -> Sequence[ModelIns]:
+      return await self.select_models_order(db, sort_columns=['name', 'age'], sort_orders=['asc', 'desc'])
+```
+
+## API
+
 ```py
  async def select_models_order(
      self,
@@ -8,36 +31,20 @@
 ) -> Sequence[Row | RowMapping | Any] | None:
 ```
 
-此方法可结合 [高级过滤器](../advanced/filter.md) 使用
+**Parameters:**
 
-## 排序
+| Name         | Type                           | Description                                                            | Default |
+|--------------|--------------------------------|------------------------------------------------------------------------|---------|
+| session      | AsyncSession                   | 数据库会话                                                                  | 必填      |
+| sort_columns | `str `\|` list[str]`           | 应用排序的单个列名或列名列表                                                         | 必填      |
+| sort_orders  | `str `\|` list[str] `\|` None` | 单个排序顺序（asc 或 desc）或与 sort_columns 中的列相对应的排序顺序列表。 如果未提供，则默认每列的排序顺序为 asc | `None`  |
 
-对结果进行排序涉及此方法的两个字段
+!!! note "**kwargs"
 
-1. `sort_columns`：应用排序的单个列名或列名列表
+    [条件过滤](../advanced/filter.md)，将创建条件查询 SQL
 
-2. `sort_orders`：单个排序顺序（`asc` 或 `desc`）或与 `sort_columns` 中的列相对应的排序顺序列表。
-   如果未提供，则默认每列的排序顺序为 `asc`
+**Returns:**
 
-## 示例
-
-```py title="select_models_order" hl_lines="18"
-from typing import Sequence
-
-from pydantic import BaseModel
-
-from sqlalchemy_crud_plus import CRUDPlus
-
-from sqlalchemy import DeclarativeBase as Base
-from sqlalchemy.ext.asyncio import AsyncSession
-
-
-class ModelIns(Base):
-    # your sqlalchemy model
-    pass
-
-
-class CRUDIns(CRUDPlus[ModelIns]):
-    async def create(self, db: AsyncSession) -> Sequence[ModelIns]:
-        return await self.select_models_order(db, sort_columns=['name', 'age'], sort_orders=['asc', 'desc'])
-```
+| Type                                           | Description |
+|------------------------------------------------|-------------|
+| `Sequence[Row[Any] `\|` RowMapping  `\|` Any]` | 模型实例序列      |

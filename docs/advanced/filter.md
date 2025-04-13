@@ -1,15 +1,5 @@
 SQLAlchemy CRUD Plus 支持高级过滤选项，允许使用运算符查询记录，如大于（`__gt`）、小于（`__lt`）；
 
-大多数过滤器操作符需要一个字符串或整数值
-
-```python
-# 获取年龄大于 30 岁以上的员工
-items = await item_crud.select_models(
-    session=db,
-    age__gt=30,
-)
-```
-
 ## 比较运算符
 
 - `__gt`：大于
@@ -19,6 +9,14 @@ items = await item_crud.select_models(
 - `__eq`: 等于
 - `__ne`: 不等于
 - `__between`: 在两者之间
+
+```python title="e.g."
+# 获取年龄大于 30 岁以上的员工
+items = await item_crud.select_models(
+    session=db,
+    age__gt=30,
+)
+```
 
 ## IN 比较
 
@@ -30,7 +28,7 @@ items = await item_crud.select_models(
 - `__is`：用于测试 “真”、“假” 和 “无”。
 - `__is_not`：“is” 的否定
 - `__is_distinct_from`: 产生 SQL IS DISTINCT FROM
-- `__is_not_distinct_from`: Produces SQL IS NOT DISTINCT FROM
+- `__is_not_distinct_from`: 产生 SQL IS NOT DISTINCT FROM
 - `__like`：针对特定文本模式的 SQL “like” 搜索
 - `__not_like`：“like” 的否定
 - `__ilike`：大小写不敏感的 “like”
@@ -52,7 +50,13 @@ items = await item_crud.select_models(
 
 ## 算术运算符
 
-此过滤器使用方法需查看：[算数](#_7)
+!!! note
+
+    此过滤器必须传递字典，且字典结构必须为 `{'value': xxx, 'condition': {'已支持的过滤器': xxx}}`
+
+    `value`：此值将与列值进行条件运算
+
+    `condition`：此值将作为运算条件和预期结果
 
 - `__add`: Python `+` 运算符
 - `__radd`: Python `+` 反向运算
@@ -66,6 +70,14 @@ items = await item_crud.select_models(
 - `__rfloordiv`: Python `//` 反向运算
 - `__mod`: Python `%` 运算符
 - `__rmod`: Python `%` 反向运算
+
+```python title="e.g."
+# 获取薪资打八折以后仍高于 20k 的员工
+items = await item_crud.select_models(
+    session=db,
+    payroll__mul={'value': 0.8, 'condition': {'gt': 20000}},
+)
+```
 
 ## BETWEEN、IN、NOT IN
 
@@ -84,7 +96,7 @@ items = await item_crud.select_models(
 
 ## AND
 
-可以通过将多个过滤器链接在一起来实现 AND 子句
+当多个过滤器同时存在时，将自动转为 AND 子句
 
 ```python
 # 获取年龄在 30 以上，薪资大于 20k 的员工
@@ -140,23 +152,5 @@ items = await item_crud.select_models(
         {'age__between': [30, 40]},
         {'payroll__gt': 20000}
     ]
-)
-```
-
-## 算数
-
-!!! note
-
-    此过滤器必须传递字典，且字典结构必须为 `{'value': xxx, 'condition': {'已支持的过滤器': xxx}}`
-
-    `value`：此值将与列值进行运算
-
-    `condition`：此值将作为运算后的比较值，比较条件取决于使用的过滤器
-
-```python
-# 获取薪资打八折以后仍高于 20k 的员工
-items = await item_crud.select_models(
-    session=db,
-    payroll__mul={'value': 0.8, 'condition': {'gt': 20000}},
 )
 ```

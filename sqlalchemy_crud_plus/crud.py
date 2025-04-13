@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 from typing import Any, Generic, Iterable, Sequence, Type
 
-from sqlalchemy import Row, RowMapping, Select, delete, inspect, select, update
+from sqlalchemy import ColumnElement, Row, RowMapping, Select, delete, func, inspect, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy_crud_plus.errors import CompositePrimaryKeysError, MultipleResultsError
 from sqlalchemy_crud_plus.types import CreateSchema, Model, UpdateSchema
-from sqlalchemy_crud_plus.utils import apply_sorting, count, parse_filters
+from sqlalchemy_crud_plus.utils import apply_sorting, parse_filters
 
 
 class CRUDPlus(Generic[Model]):
@@ -48,11 +48,14 @@ class CRUDPlus(Generic[Model]):
             ins = self.model(**obj.model_dump())
         else:
             ins = self.model(**obj.model_dump(), **kwargs)
+
         session.add(ins)
+
         if flush:
             await session.flush()
         if commit:
             await session.commit()
+
         return ins
 
     async def create_models(
@@ -80,12 +83,71 @@ class CRUDPlus(Generic[Model]):
             else:
                 ins = self.model(**obj.model_dump(), **kwargs)
             ins_list.append(ins)
+
         session.add_all(ins_list)
+
         if flush:
             await session.flush()
         if commit:
             await session.commit()
+
         return ins_list
+
+    async def count(
+        self,
+        session: AsyncSession,
+        filters: ColumnElement | list[ColumnElement] | None = None,
+        **kwargs,
+    ) -> int:
+        """
+        Counts records that match specified filters.
+
+        :param session: The sqlalchemy session to use for the operation.
+        :param filters: The WHERE clauses to apply to the query.
+        :param kwargs: Query expressions.
+        :return:
+        """
+        if filters is None:
+            filters = []
+
+        if not isinstance(filters, list):
+            filters = [filters]
+
+        if kwargs:
+            filters.extend(parse_filters(self.model, **kwargs))
+
+        stmt = select(func.count()).select_from(self.model)
+        stmt = stmt.where(*filters)
+        query = await session.execute(stmt)
+        total_count = query.scalar()
+        return total_count if total_count is not None else 0
+
+    async def exists(
+        self,
+        session: AsyncSession,
+        filters: ColumnElement | list[ColumnElement] | None = None,
+        **kwargs,
+    ) -> bool:
+        """
+        Whether the records that match the specified filter exist.
+
+        :param session: The sqlalchemy session to use for the operation.
+        :param filters: The WHERE clauses to apply to the query.
+        :param kwargs: Query expressions.
+        :return:
+        """
+        if filters is None:
+            filters = []
+
+        if not isinstance(filters, list):
+            filters = [filters]
+
+        if kwargs:
+            filters.extend(parse_filters(self.model, **kwargs))
+
+        stmt = select(self.model).where(*filters).limit(1)
+        query = await session.execute(stmt)
+        return query.scalars().first() is not None
 
     async def select_model(self, session: AsyncSession, pk: int) -> Model | None:
         """
@@ -132,9 +194,9 @@ class CRUDPlus(Generic[Model]):
         """
         Constructing SQLAlchemy selection with sorting
 
-        :param kwargs: Query expressions.
         :param sort_columns: more details see apply_sorting
         :param sort_orders: more details see apply_sorting
+        :param kwargs: Query expressions.
         :return:
         """
         stmt = await self.select(**kwargs)
@@ -166,6 +228,7 @@ class CRUDPlus(Generic[Model]):
         :param session: The SQLAlchemy async session.
         :param sort_columns: more details see apply_sorting
         :param sort_orders: more details see apply_sorting
+        :param kwargs: Query expressions.
         :return:
         """
         stmt = await self.select_order(sort_columns, sort_orders, **kwargs)
@@ -189,6 +252,7 @@ class CRUDPlus(Generic[Model]):
         :param obj: A pydantic schema or dictionary containing the update data
         :param flush: If `True`, flush all object changes to the database. Default is `False`.
         :param commit: If `True`, commits the transaction immediately. Default is `False`.
+        :param kwargs: Additional model data not included in the pydantic schema.
         :return:
         """
         if isinstance(obj, dict):
@@ -197,12 +261,15 @@ class CRUDPlus(Generic[Model]):
             instance_data = obj.model_dump(exclude_unset=True)
         if kwargs:
             instance_data.update(kwargs)
+
         stmt = update(self.model).where(self.primary_key == pk).values(**instance_data)
         result = await session.execute(stmt)
+
         if flush:
             await session.flush()
         if commit:
             await session.commit()
+
         return result.rowcount  # type: ignore
 
     async def update_model_by_column(
@@ -226,19 +293,22 @@ class CRUDPlus(Generic[Model]):
         :return:
         """
         filters = parse_filters(self.model, **kwargs)
-        total_count = await count(session, self.model, filters)
+        total_count = await self.count(session, filters)
         if not allow_multiple and total_count > 1:
             raise MultipleResultsError(f'Only one record is expected to be update, found {total_count} records.')
         if isinstance(obj, dict):
             instance_data = obj
         else:
             instance_data = obj.model_dump(exclude_unset=True)
+
         stmt = update(self.model).where(*filters).values(**instance_data)  # type: ignore
         result = await session.execute(stmt)
+
         if flush:
             await session.flush()
         if commit:
             await session.commit()
+
         return result.rowcount  # type: ignore
 
     async def delete_model(
@@ -259,10 +329,12 @@ class CRUDPlus(Generic[Model]):
         """
         stmt = delete(self.model).where(self.primary_key == pk)
         result = await session.execute(stmt)
+
         if flush:
             await session.flush()
         if commit:
             await session.commit()
+
         return result.rowcount  # type: ignore
 
     async def delete_model_by_column(
@@ -288,7 +360,7 @@ class CRUDPlus(Generic[Model]):
         :return:
         """
         filters = parse_filters(self.model, **kwargs)
-        total_count = await count(session, self.model, filters)
+        total_count = await self.count(session, filters)
         if not allow_multiple and total_count > 1:
             raise MultipleResultsError(f'Only one record is expected to be delete, found {total_count} records.')
         if logical_deletion:
@@ -296,9 +368,12 @@ class CRUDPlus(Generic[Model]):
             stmt = update(self.model).where(*filters).values(**deleted_flag)
         else:
             stmt = delete(self.model).where(*filters)
+
         result = await session.execute(stmt)
+
         if flush:
             await session.flush()
         if commit:
             await session.commit()
+
         return result.rowcount  # type: ignore

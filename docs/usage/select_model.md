@@ -1,14 +1,6 @@
-```py
-async def select_model(self, session: AsyncSession, pk: int) -> Model | None:
-```
+通过主键查询单条记录
 
-此方法使用主键 `pk` 参数，详见：[主键](../advanced/primary_key.md)
-
-## 示例
-
-```py title="select_model" hl_lines="18"
-from pydantic import BaseModel
-
+```py title="select_model" hl_lines="15"
 from sqlalchemy_crud_plus import CRUDPlus
 
 from sqlalchemy import Mapped, mapped_column
@@ -17,12 +9,30 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class ModelIns(Base):
-    # your sqlalchemy model
     # define your primary_key
-    custom_id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
+    primary_key: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
 
 
 class CRUDIns(CRUDPlus[ModelIns]):
     async def select(self, db: AsyncSession, pk: int) -> ModelIns:
         return await self.select_model(db, pk)
 ```
+
+## API
+
+```py
+async def select_model(self, session: AsyncSession, pk: int) -> Model | None:
+```
+
+**Parameters:**
+
+| Name    | Type         | Description                      | Default |
+|---------|--------------|----------------------------------|---------|
+| session | AsyncSession | 数据库会话                            | 必填      |
+| pk      | int          | [主键](../advanced/primary_key.md) | 必填      |
+
+**Returns:**
+
+| Type                | Description |
+|---------------------|-------------|
+| `TypeVar `\|` None` | 模型实例        |
