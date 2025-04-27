@@ -23,21 +23,19 @@ class CRUDIns(CRUDPlus[ModelIns]):
 async def count(
     self,
     session: AsyncSession,
-    filters: ColumnElement | list[ColumnElement] | None = None,
+    *whereclause: ColumnExpressionArgument[bool],
     **kwargs,
 ) -> int:
 ```
 
 **Parameters:**
 
-| Name    | Type                                               | Description      | Default |
-|---------|----------------------------------------------------|------------------|---------|
-| session | AsyncSession                                       | 数据库会话            | 必填      |
-| filters | `ColumnElement `\|` list[ColumnElement] `\|` None` | 要应用于查询的 WHERE 子句 | `None`  |
+| Name         | Type                             | Description                                                                                          | Default |
+|--------------|----------------------------------|------------------------------------------------------------------------------------------------------|---------|
+| session      | AsyncSession                     | 数据库会话                                                                                                | 必填      |
+| *whereclause | `ColumnExpressionArgument[bool]` | 等同于 [SQLAlchemy where](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html#the-where-clause) |         |
+| **kwargs     |                                  | [条件过滤](../advanced/filter.md)，将创建条件查询 SQL                                                            |         |
 
-!!! note "**kwargs"
-
-    [条件过滤](../advanced/filter.md)，将创建条件查询 SQL
 
 **Returns:**
 

@@ -2,7 +2,18 @@
 # -*- coding: utf-8 -*-
 from typing import Any, Generic, Iterable, Sequence, Type
 
-from sqlalchemy import ColumnElement, Row, RowMapping, Select, delete, func, inspect, select, update
+from sqlalchemy import (
+    Column,
+    ColumnExpressionArgument,
+    Row,
+    RowMapping,
+    Select,
+    delete,
+    func,
+    inspect,
+    select,
+    update,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy_crud_plus.errors import CompositePrimaryKeysError, MultipleResultsError
@@ -15,7 +26,7 @@ class CRUDPlus(Generic[Model]):
         self.model = model
         self.primary_key = self._get_primary_key()
 
-    def _get_primary_key(self):
+    def _get_primary_key(self) -> Column:
         """
         Dynamically retrieve the primary key column(s) for the model.
         """
@@ -96,28 +107,23 @@ class CRUDPlus(Generic[Model]):
     async def count(
         self,
         session: AsyncSession,
-        filters: ColumnElement | list[ColumnElement] | None = None,
+        *whereclause: ColumnExpressionArgument[bool],
         **kwargs,
     ) -> int:
         """
         Counts records that match specified filters.
 
         :param session: The sqlalchemy session to use for the operation.
-        :param filters: The WHERE clauses to apply to the query.
+        :param whereclause: The WHERE clauses to apply to the query.
         :param kwargs: Query expressions.
         :return:
         """
-        if filters is None:
-            filters = []
-
-        if not isinstance(filters, list):
-            filters = [filters]
+        filter_list = list(whereclause)
 
         if kwargs:
-            filters.extend(parse_filters(self.model, **kwargs))
+            filter_list.extend(parse_filters(self.model, **kwargs))
 
-        stmt = select(func.count()).select_from(self.model)
-        stmt = stmt.where(*filters)
+        stmt = select(func.count()).select_from(self.model).where(*filter_list)
         query = await session.execute(stmt)
         total_count = query.scalar()
         return total_count if total_count is not None else 0
@@ -125,70 +131,87 @@ class CRUDPlus(Generic[Model]):
     async def exists(
         self,
         session: AsyncSession,
-        filters: ColumnElement | list[ColumnElement] | None = None,
+        *whereclause: ColumnExpressionArgument[bool],
         **kwargs,
     ) -> bool:
         """
         Whether the records that match the specified filter exist.
 
         :param session: The sqlalchemy session to use for the operation.
-        :param filters: The WHERE clauses to apply to the query.
+        :param whereclause: The WHERE clauses to apply to the query.
         :param kwargs: Query expressions.
         :return:
         """
-        if filters is None:
-            filters = []
-
-        if not isinstance(filters, list):
-            filters = [filters]
+        filter_list = list(whereclause)
 
         if kwargs:
-            filters.extend(parse_filters(self.model, **kwargs))
+            filter_list.extend(parse_filters(self.model, **kwargs))
 
-        stmt = select(self.model).where(*filters).limit(1)
+        stmt = select(self.model).where(*filter_list).limit(1)
         query = await session.execute(stmt)
         return query.scalars().first() is not None
 
-    async def select_model(self, session: AsyncSession, pk: int) -> Model | None:
+    async def select_model(
+        self,
+        session: AsyncSession,
+        pk: int,
+        *whereclause: ColumnExpressionArgument[bool],
+    ) -> Model | None:
         """
         Query by ID
 
         :param session: The SQLAlchemy async session.
         :param pk: The database primary key value.
+        :param whereclause: The WHERE clauses to apply to the query.
         :return:
         """
-        stmt = select(self.model).where(self.primary_key == pk)
+        filter_list = list(whereclause)
+        _filters = [self.primary_key == pk]
+        _filters.extend(filter_list)
+        stmt = select(self.model).where(*_filters)
         query = await session.execute(stmt)
         return query.scalars().first()
 
-    async def select_model_by_column(self, session: AsyncSession, **kwargs) -> Model | None:
+    async def select_model_by_column(
+        self,
+        session: AsyncSession,
+        *whereclause: ColumnExpressionArgument[bool],
+        **kwargs,
+    ) -> Model | None:
         """
         Query by column
 
         :param session: The SQLAlchemy async session.
+        :param whereclause: The WHERE clauses to apply to the query.
         :param kwargs: Query expressions.
         :return:
         """
-        filters = parse_filters(self.model, **kwargs)
-        stmt = select(self.model).where(*filters)
+        filter_list = list(whereclause)
+        _filters = parse_filters(self.model, **kwargs)
+        _filters.extend(filter_list)
+        stmt = select(self.model).where(*_filters)
         query = await session.execute(stmt)
         return query.scalars().first()
 
-    async def select(self, **kwargs) -> Select:
+    async def select(self, *whereclause: ColumnExpressionArgument[bool], **kwargs) -> Select:
         """
         Construct the SQLAlchemy selection
 
+        :param whereclause: The WHERE clauses to apply to the query.
         :param kwargs: Query expressions.
         :return:
         """
-        filters = parse_filters(self.model, **kwargs)
-        stmt = select(self.model).where(*filters)
+        filter_list = list(whereclause)
+        _filters = parse_filters(self.model, **kwargs)
+        _filters.extend(filter_list)
+        stmt = select(self.model).where(*_filters)
         return stmt
 
     async def select_order(
         self,
         sort_columns: str | list[str],
         sort_orders: str | list[str] | None = None,
+        *whereclause: ColumnExpressionArgument[bool],
         **kwargs,
     ) -> Select:
         """
@@ -196,22 +219,29 @@ class CRUDPlus(Generic[Model]):
 
         :param sort_columns: more details see apply_sorting
         :param sort_orders: more details see apply_sorting
+        :param whereclause: The WHERE clauses to apply to the query.
         :param kwargs: Query expressions.
         :return:
         """
-        stmt = await self.select(**kwargs)
+        stmt = await self.select(*whereclause, **kwargs)
         sorted_stmt = apply_sorting(self.model, stmt, sort_columns, sort_orders)
         return sorted_stmt
 
-    async def select_models(self, session: AsyncSession, **kwargs) -> Sequence[Row[Any] | RowMapping | Any]:
+    async def select_models(
+        self,
+        session: AsyncSession,
+        *whereclause: ColumnExpressionArgument[bool],
+        **kwargs,
+    ) -> Sequence[Row[Any] | RowMapping | Any]:
         """
         Query all rows
 
         :param session: The SQLAlchemy async session.
+        :param whereclause: The WHERE clauses to apply to the query.
         :param kwargs: Query expressions.
         :return:
         """
-        stmt = await self.select(**kwargs)
+        stmt = await self.select(*whereclause, **kwargs)
         query = await session.execute(stmt)
         return query.scalars().all()
 
@@ -220,6 +250,7 @@ class CRUDPlus(Generic[Model]):
         session: AsyncSession,
         sort_columns: str | list[str],
         sort_orders: str | list[str] | None = None,
+        *whereclause: ColumnExpressionArgument[bool],
         **kwargs,
     ) -> Sequence[Row | RowMapping | Any] | None:
         """
@@ -228,10 +259,11 @@ class CRUDPlus(Generic[Model]):
         :param session: The SQLAlchemy async session.
         :param sort_columns: more details see apply_sorting
         :param sort_orders: more details see apply_sorting
+        :param whereclause: The WHERE clauses to apply to the query.
         :param kwargs: Query expressions.
         :return:
         """
-        stmt = await self.select_order(sort_columns, sort_orders, **kwargs)
+        stmt = await self.select_order(sort_columns, sort_orders, *whereclause, **kwargs)
         query = await session.execute(stmt)
         return query.scalars().all()
 
@@ -293,7 +325,7 @@ class CRUDPlus(Generic[Model]):
         :return:
         """
         filters = parse_filters(self.model, **kwargs)
-        total_count = await self.count(session, filters)
+        total_count = await self.count(session, *filters)
         if not allow_multiple and total_count > 1:
             raise MultipleResultsError(f'Only one record is expected to be update, found {total_count} records.')
         if isinstance(obj, dict):
@@ -360,7 +392,7 @@ class CRUDPlus(Generic[Model]):
         :return:
         """
         filters = parse_filters(self.model, **kwargs)
-        total_count = await self.count(session, filters)
+        total_count = await self.count(session, *filters)
         if not allow_multiple and total_count > 1:
             raise MultipleResultsError(f'Only one record is expected to be delete, found {total_count} records.')
         if logical_deletion:
