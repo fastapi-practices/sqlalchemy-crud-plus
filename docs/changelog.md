@@ -1,3 +1,17 @@
+<a id="1.8.0"></a>
+# [1.8.0](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/1.8.0) - 2025-04-27
+
+## What's Changed
+* Update changelog for 1.7.0 by [@wu-clan](https://github.com/wu-clan) in [#39](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/39)
+* Add where clause support to select by [@wu-clan](https://github.com/wu-clan) in [#40](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/40)
+* Prepare for 1.8.0 release by [@wu-clan](https://github.com/wu-clan) in [#41](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/41)
+
+
+**Full Changelog**: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.7.0...1.8.0
+
+[Changes][1.8.0]
+
+
 <a id="1.7.0"></a>
 # [1.7.0](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/1.7.0) - 2025-04-13
 
@@ -132,6 +146,7 @@ CRUD methods have been refactored, check out the documentation for new usage!
 [Changes][0.0.4]
 
 
+[1.8.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.7.0...1.8.0
 [1.7.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.6.0...1.7.0
 [1.6.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.5.0...1.6.0
 [1.5.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.4.0...1.5.0
