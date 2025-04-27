@@ -5,20 +5,19 @@ async def select_order(
     self,
     sort_columns: str | list[str],
     sort_orders: str | list[str] | None = None,
+    *whereclause: ColumnExpressionArgument[bool],
     **kwargs,
 ) -> Select:
 ```
 
 **Parameters:**
 
-| Name         | Type                           | Description                                                            | Default |
-|--------------|--------------------------------|------------------------------------------------------------------------|---------|
-| sort_columns | `str `\|` list[str]`           | 应用排序的单个列名或列名列表                                                         | 必填      |
-| sort_orders  | `str `\|` list[str] `\|` None` | 单个排序顺序（asc 或 desc）或与 sort_columns 中的列相对应的排序顺序列表。 如果未提供，则默认每列的排序顺序为 asc | `None`  |
-
-!!! note "**kwargs"
-
-    [条件过滤](../advanced/filter.md)，将创建条件查询 SQL
+| Name         | Type                             | Description                                                                                          | Default |
+|--------------|----------------------------------|------------------------------------------------------------------------------------------------------|---------|
+| sort_columns | `str `\|` list[str]`             | 应用排序的单个列名或列名列表                                                                                       | 必填      |
+| sort_orders  | `str `\|` list[str] `\|` None`   | 单个排序顺序（asc 或 desc）或与 sort_columns 中的列相对应的排序顺序列表。 如果未提供，则默认每列的排序顺序为 asc                               | `None`  |
+| *whereclause | `ColumnExpressionArgument[bool]` | 等同于 [SQLAlchemy where](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html#the-where-clause) |         |
+| **kwargs     |                                  | [条件过滤](../advanced/filter.md)，将创建条件查询 SQL                                                            |         |
 
 **Returns:**
 

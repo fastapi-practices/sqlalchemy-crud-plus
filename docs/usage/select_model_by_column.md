@@ -20,18 +20,21 @@ class CRUDIns(CRUDPlus[ModelIns]):
 ## API
 
 ```py
-async def select_model_by_column(self, session: AsyncSession, **kwargs) -> Model | None:
+async def select_model_by_column(
+    self,
+    session: AsyncSession,
+    *whereclause: ColumnExpressionArgument[bool],
+    **kwargs,
+) -> Model | None:
 ```
 
 **Parameters:**
 
-| Name    | Type         | Description                      | Default |
-|---------|--------------|----------------------------------|---------|
-| session | AsyncSession | 数据库会话                            | 必填      |
-
-!!! note "**kwargs"
-
-    [条件过滤](../advanced/filter.md)，将创建条件查询 SQL
+| Name         | Type                             | Description                                                                                          | Default |
+|--------------|----------------------------------|------------------------------------------------------------------------------------------------------|---------|
+| session      | AsyncSession                     | 数据库会话                                                                                                | 必填      |
+| *whereclause | `ColumnExpressionArgument[bool]` | 等同于 [SQLAlchemy where](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html#the-where-clause) |         |
+| **kwargs     |                                  | [条件过滤](../advanced/filter.md)，将创建条件查询 SQL                                                            |         |
 
 **Returns:**
 

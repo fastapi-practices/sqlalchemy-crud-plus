@@ -18,11 +18,20 @@ async def test_count(create_test_model, async_db_session):
 
 
 @pytest.mark.asyncio
-async def test_count_filters(create_test_model, async_db_session):
+async def test_count_filters_one(create_test_model, async_db_session):
     async with async_db_session() as session:
         crud = CRUDPlus(Ins)
         for i in range(1, 10):
-            result = await crud.count(session, [Ins.id == i])
+            result = await crud.count(session, Ins.id == i)
+            assert result == 1
+
+
+@pytest.mark.asyncio
+async def test_count_filters_list(create_test_model, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(Ins)
+        for i in range(1, 10):
+            result = await crud.count(session, Ins.id == i)
             assert result == 1
 
 
@@ -40,7 +49,7 @@ async def test_exists_filters(create_test_model, async_db_session):
     async with async_db_session() as session:
         crud = CRUDPlus(Ins)
         for i in range(1, 10):
-            result = await crud.exists(session, [Ins.id == i])
+            result = await crud.exists(session, Ins.id == i)
             assert result is True
 
 

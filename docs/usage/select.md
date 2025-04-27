@@ -50,16 +50,20 @@ async def get_users(
 ## API
 
 ```py
-async def select(self, **kwargs) -> Select:
+async def select(self, *whereclause: ColumnExpressionArgument[bool], **kwargs) -> Select:
     ...
 ```
 
 此方法用于构造 SQLAlchemy
 Select，在一些特定场景将会很有用，例如，配合 [fastapi-pagination](https://github.com/uriyyo/fastapi-pagination) 使用
 
-!!! note "**kwargs"
+**Parameters:**
 
-    [条件过滤](../advanced/filter.md)，将创建条件查询 SQL
+| Name         | Type                             | Description                                                                                          | Default |
+|--------------|----------------------------------|------------------------------------------------------------------------------------------------------|---------|
+| session      | AsyncSession                     | 数据库会话                                                                                                | 必填      |
+| *whereclause | `ColumnExpressionArgument[bool]` | 等同于 [SQLAlchemy where](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html#the-where-clause) |         |
+| **kwargs     |                                  | [条件过滤](../advanced/filter.md)，将创建条件查询 SQL                                                            |         |
 
 **Returns:**
 
