@@ -1,7 +1,7 @@
 [project]
 name = "sqlalchemy-crud-plus"
 description = "Asynchronous CRUD operation based on SQLAlchemy2 model"
-version = '1.5.0'
+version = '1.8.0'
 authors = [
     { name = "Wu Clan", email = "jianhengwu0407@gmail.com" },
 ]
