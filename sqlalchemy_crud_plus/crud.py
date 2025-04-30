@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from typing import Any, Generic, Iterable, Sequence, Type
+from typing import Any, Generic, Iterable, Sequence, Type, Union, Dict
 
 from sqlalchemy import (
     Column,
@@ -26,16 +26,36 @@ class CRUDPlus(Generic[Model]):
         self.model = model
         self.primary_key = self._get_primary_key()
 
-    def _get_primary_key(self) -> Column:
+    def _get_primary_keys(self) -> list[Column]:
         """
-        Dynamically retrieve the primary key column(s) for the model.
+        Retrieve the primary key columns for the model.
         """
         mapper = inspect(self.model)
-        primary_key = mapper.primary_key
-        if len(primary_key) == 1:
-            return primary_key[0]
+        return list(mapper.primary_key)
+
+    def _validate_pk_input(self, pk: Union[Any, Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Validate and normalize primary key input to a dictionary mapping column names to values.
+
+        :param pk: A single value for single primary key, or a dictionary for composite primary keys.
+        :return: Dictionary mapping primary key column names to their values.
+        """
+        pk_columns = [pk_col.name for pk_col in self.primary_keys]
+        if len(self.primary_keys) == 1:
+            if isinstance(pk, dict):
+                if pk_columns[0] not in pk:
+                    raise ValueError(f"Primary key column '{pk_columns[0]}' missing in dictionary")
+                return {pk_columns[0]: pk[pk_columns[0]]}
+            return {pk_columns[0]: pk}
         else:
-            raise CompositePrimaryKeysError('Composite primary keys are not supported')
+            if not isinstance(pk, dict):
+                raise ValueError(
+                    f"Composite primary keys require a dictionary with keys {pk_columns}, got {type(pk)}"
+                )
+            missing = set(pk_columns) - set(pk.keys())
+            if missing:
+                raise ValueError(f"Missing primary key columns: {missing}")
+            return {k: v for k, v in pk.items() if k in pk_columns}
 
     async def create_model(
         self,
@@ -154,7 +174,7 @@ class CRUDPlus(Generic[Model]):
     async def select_model(
         self,
         session: AsyncSession,
-        pk: int,
+        pk: Union[Any, Dict[str, Any]],
         *whereclause: ColumnExpressionArgument[bool],
     ) -> Model | None:
         """
@@ -165,10 +185,9 @@ class CRUDPlus(Generic[Model]):
         :param whereclause: The WHERE clauses to apply to the query.
         :return:
         """
-        filter_list = list(whereclause)
-        _filters = [self.primary_key == pk]
-        _filters.extend(filter_list)
-        stmt = select(self.model).where(*_filters)
+        pk_dict = self._validate_pk_input(pk)
+        filters = [getattr(self.model, col) == val for col, val in pk_dict.items()] + list(whereclause)
+        stmt = select(self.model).where(*filters)
         query = await session.execute(stmt)
         return query.scalars().first()
 
@@ -270,7 +289,7 @@ class CRUDPlus(Generic[Model]):
     async def update_model(
         self,
         session: AsyncSession,
-        pk: int,
+        pk: Union[Any, Dict[str, Any]],
         obj: UpdateSchema | dict[str, Any],
         flush: bool = False,
         commit: bool = False,
@@ -287,14 +306,11 @@ class CRUDPlus(Generic[Model]):
         :param kwargs: Additional model data not included in the pydantic schema.
         :return:
         """
-        if isinstance(obj, dict):
-            instance_data = obj
-        else:
-            instance_data = obj.model_dump(exclude_unset=True)
-        if kwargs:
-            instance_data.update(kwargs)
-
-        stmt = update(self.model).where(self.primary_key == pk).values(**instance_data)
+        pk_dict = self._validate_pk_input(pk)
+        instance_data = obj if isinstance(obj, dict) else obj.model_dump(exclude_unset=True)
+        instance_data.update(kwargs)
+        filters = [getattr(self.model, col) == val for col, val in pk_dict.items()]
+        stmt = update(self.model).where(*filters).values(**instance_data)
         result = await session.execute(stmt)
 
         if flush:
@@ -346,7 +362,7 @@ class CRUDPlus(Generic[Model]):
     async def delete_model(
         self,
         session: AsyncSession,
-        pk: int,
+        pk: Union[Any, Dict[str, Any]],
         flush: bool = False,
         commit: bool = False,
     ) -> int:
@@ -359,7 +375,9 @@ class CRUDPlus(Generic[Model]):
         :param commit: If `True`, commits the transaction immediately. Default is `False`.
         :return:
         """
-        stmt = delete(self.model).where(self.primary_key == pk)
+        pk_dict = self._validate_pk_input(pk)
+        filters = [getattr(self.model, col) == val for col, val in pk_dict.items()]
+        stmt = delete(self.model).where(*filters)
         result = await session.execute(stmt)
 
         if flush:

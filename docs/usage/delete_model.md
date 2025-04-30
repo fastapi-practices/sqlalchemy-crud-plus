@@ -24,7 +24,7 @@ class CRUDIns(CRUDPlus[ModelIns]):
 async def delete_model(
     self,
     session: AsyncSession,
-    pk: int,
+    pk: Union[Any, Dict[str, Any]],
     flush: bool = False,
     commit: bool = False,
 ) -> int:
@@ -44,3 +44,34 @@ async def delete_model(
 | Type | Description |
 |------|-------------|
 | int  | 删除数量        |
+
+
+## example
+
+```python
+# Model with composite primary key
+class UserComposite(Base):
+    __tablename__ = "users_composite"
+    id = Column(String, primary_key=True)
+    name = Column(String, primary_key=True)
+    email = Column(String)
+    
+class UserCreate(BaseModel):
+    id: str
+    name: str | None
+    email: str
+
+async def example(session: AsyncSession):
+    # Composite primary key model
+    crud_composite = CRUDPlus(UserComposite)
+    
+    # Create
+    await crud_composite.create_model(
+        session, UserCreate(id="123", name="John", email="composite@example.com"), commit=True
+    )
+    
+    
+    # Delete by composite primary key (dictionary)
+    await crud_composite.delete_model(session, {"id": "123", "name": "John"}, commit=True)
+
+```

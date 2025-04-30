@@ -24,7 +24,7 @@ class CRUDIns(CRUDPlus[ModelIns]):
 async def select_model(
     self,
     session: AsyncSession,
-    pk: int,
+    pk: Union[Any, Dict[str, Any]],
     *whereclause: ColumnExpressionArgument[bool],
 ) -> Model | None:
 ```
@@ -42,3 +42,35 @@ async def select_model(
 | Type                | Description |
 |---------------------|-------------|
 | `TypeVar `\|` None` | 模型实例        |
+
+
+## example
+
+```python
+# Model with composite primary key
+class UserComposite(Base):
+    __tablename__ = "users_composite"
+    id = Column(String, primary_key=True)
+    name = Column(String, primary_key=True)
+    email = Column(String)
+    
+class UserCreate(BaseModel):
+    id: str
+    name: str | None
+    email: str
+
+async def example(session: AsyncSession):
+    # Composite primary key model
+    crud_composite = CRUDPlus(UserComposite)
+    
+    # Create
+    await crud_composite.create_model(
+        session, UserCreate(id="123", name="John", email="composite@example.com"), commit=True
+    )
+    
+    # Select by composite primary key (dictionary)
+    user = await crud_composite.select_model(session, {"id": "123", "name": "John"})
+    print(user.email)  # composite@example.com
+
+
+```

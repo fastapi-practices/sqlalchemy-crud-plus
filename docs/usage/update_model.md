@@ -21,7 +21,7 @@ class UpdateIns(BaseModel):
 
 
 class CRUDIns(CRUDPlus[ModelIns]):
-    async def create(self, db: AsyncSession, pk: int, obj: UpdateIns) -> int:
+    async def update(self, db: AsyncSession, pk: Union[Any, Dict[str, Any]], obj: UpdateIns) -> int:
         return await self.update_model(db, pk, obj)
 ```
 
@@ -31,7 +31,7 @@ class CRUDIns(CRUDPlus[ModelIns]):
 async def update_model(
     self,
     session: AsyncSession,
-    pk: int,
+    pk: Union[Any, Dict[str, Any]],
     obj: UpdateSchema | dict[str, Any],
     flush: bool = False,
     commit: bool = False,
@@ -70,3 +70,36 @@ async def update_model(
 | Type | Description |
 |------|-------------|
 | int  | 更新数量        |
+
+
+## example
+
+```python
+# Model with composite primary key
+class UserComposite(Base):
+    __tablename__ = "users_composite"
+    id = Column(String, primary_key=True)
+    name = Column(String, primary_key=True)
+    email = Column(String)
+    
+class UserCreate(BaseModel):
+    id: str
+    name: str | None
+    email: str
+
+async def example(session: AsyncSession):
+    # Composite primary key model
+    crud_composite = CRUDPlus(UserComposite)
+    
+    # Create
+    await crud_composite.create_model(
+        session, UserCreate(id="123", name="John", email="composite@example.com"), commit=True
+    )
+    
+    # Update by composite primary key (dictionary)
+    await crud_composite.update_model(
+        session, {"id": "123", "name": "John"}, {"email": "updated_composite@example.com"}, commit=True
+    )
+    
+
+```
