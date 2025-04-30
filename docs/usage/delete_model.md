@@ -63,15 +63,24 @@ class UserCreate(BaseModel):
 
 async def example(session: AsyncSession):
     # Composite primary key model
-    crud_composite = CRUDPlus(UserComposite)
+    crud = CRUDPlus(UserComposite)
     
     # Create
-    await crud_composite.create_model(
+    await crud.create_model(
         session, UserCreate(id="123", name="John", email="composite@example.com"), commit=True
     )
     
     
     # Delete by composite primary key (dictionary)
-    await crud_composite.delete_model(session, {"id": "123", "name": "John"}, commit=True)
+    await crud.delete_model(session, {"id": "123", "name": "John"}, commit=True)
+    
+    # Create
+    await crud.create_model(
+        session, UserCreate(id="456", name="Jack", email="Jack@example.com"), commit=True
+    )
+    
+    # Delete by composite primary key (tuple)
+    await crud.delete_model(session, ("456", "Jack"), commit=True)
+        
 
 ```

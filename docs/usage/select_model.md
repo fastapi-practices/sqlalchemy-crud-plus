@@ -61,16 +61,20 @@ class UserCreate(BaseModel):
 
 async def example(session: AsyncSession):
     # Composite primary key model
-    crud_composite = CRUDPlus(UserComposite)
+    crud = CRUDPlus(UserComposite)
     
     # Create
-    await crud_composite.create_model(
+    await crud.create_model(
         session, UserCreate(id="123", name="John", email="composite@example.com"), commit=True
     )
     
     # Select by composite primary key (dictionary)
-    user = await crud_composite.select_model(session, {"id": "123", "name": "John"})
+    user = await crud.select_model(session, {"id": "123", "name": "John"})
     print(user.email)  # composite@example.com
 
+    # Select by composite primary key (tuple)
+    user = await crud.select_model(session, ("123", "John"))
+    print(user.email)  # composite@example.com
+    
 
 ```

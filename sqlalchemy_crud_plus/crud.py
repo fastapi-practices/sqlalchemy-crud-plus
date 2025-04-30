@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from typing import Any, Generic, Iterable, Sequence, Type, Union, Dict
+from typing import Any, Generic, Iterable, Sequence, Type, Union, Dict, Tuple
 
 from sqlalchemy import (
     Column,
@@ -25,6 +25,7 @@ class CRUDPlus(Generic[Model]):
     def __init__(self, model: Type[Model]):
         self.model = model
         self.primary_key = self._get_primary_key()
+        self._pk_column_names = [pk_col.name for pk_col in self.primary_keys]  # Cache column names
 
     def _get_primary_keys(self) -> list[Column]:
         """
@@ -33,29 +34,47 @@ class CRUDPlus(Generic[Model]):
         mapper = inspect(self.model)
         return list(mapper.primary_key)
 
-    def _validate_pk_input(self, pk: Union[Any, Dict[str, Any]]) -> Dict[str, Any]:
+    @property
+    def primary_key_columns(self) -> list[str]:
+        """
+        Return the names of the primary key columns in order.
+        """
+        return self._pk_column_names
+
+    def _validate_pk_input(self, pk: Union[Any, Dict[str, Any], Tuple[Any, ...]]) -> Dict[str, Any]:
         """
         Validate and normalize primary key input to a dictionary mapping column names to values.
 
-        :param pk: A single value for single primary key, or a dictionary for composite primary keys.
+        :param pk: A single value for single primary key, a dictionary, or a tuple for composite primary keys.
         :return: Dictionary mapping primary key column names to their values.
+        :raises ValueError: If the input format is invalid or missing required primary key columns.
         """
-        pk_columns = [pk_col.name for pk_col in self.primary_keys]
         if len(self.primary_keys) == 1:
+            pk_col = self._pk_column_names[0]
             if isinstance(pk, dict):
-                if pk_columns[0] not in pk:
-                    raise ValueError(f"Primary key column '{pk_columns[0]}' missing in dictionary")
-                return {pk_columns[0]: pk[pk_columns[0]]}
-            return {pk_columns[0]: pk}
+                if pk_col not in pk:
+                    raise ValueError(f"Primary key column '{pk_col}' missing in dictionary")
+                return {pk_col: pk[pk_col]}
+            return {pk_col: pk}
         else:
-            if not isinstance(pk, dict):
-                raise ValueError(
-                    f"Composite primary keys require a dictionary with keys {pk_columns}, got {type(pk)}"
-                )
-            missing = set(pk_columns) - set(pk.keys())
-            if missing:
-                raise ValueError(f"Missing primary key columns: {missing}")
-            return {k: v for k, v in pk.items() if k in pk_columns}
+            if isinstance(pk, dict):
+                missing = set(self._pk_column_names) - set(pk.keys())
+                if missing:
+                    raise ValueError(
+                        f"Missing primary key columns: {missing}. Expected keys: {self._pk_column_names}"
+                    )
+                return {k: v for k, v in pk.items() if k in self._pk_column_names}
+            elif isinstance(pk, tuple):
+                if len(pk) != len(self.primary_keys):
+                    raise ValueError(
+                        f"Expected {len(self.primary_keys)} primary key values, got {len(pk)}. "
+                        f"Expected columns: {self._pk_column_names}"
+                    )
+                return dict(zip(self._pk_column_names, pk))
+            raise ValueError(
+                f"Composite primary keys require a dictionary or tuple with keys/values for {self._pk_column_names}, "
+                f"got {type(pk)}"
+            )
 
     async def create_model(
         self,
@@ -174,14 +193,16 @@ class CRUDPlus(Generic[Model]):
     async def select_model(
         self,
         session: AsyncSession,
-        pk: Union[Any, Dict[str, Any]],
+        pk: Union[Any, Dict[str, Any], Tuple[Any, ...]],
         *whereclause: ColumnExpressionArgument[bool],
     ) -> Model | None:
         """
         Query by ID
 
         :param session: The SQLAlchemy async session.
-        :param pk: The database primary key value.
+        :param pk: A single value for a single primary key (e.g., int, str), a dictionary
+                   mapping column names to values, or a tuple of values (in column order) for
+                   composite primary keys.
         :param whereclause: The WHERE clauses to apply to the query.
         :return:
         """
@@ -289,7 +310,7 @@ class CRUDPlus(Generic[Model]):
     async def update_model(
         self,
         session: AsyncSession,
-        pk: Union[Any, Dict[str, Any]],
+        pk: Union[Any, Dict[str, Any], Tuple[Any, ...]],
         obj: UpdateSchema | dict[str, Any],
         flush: bool = False,
         commit: bool = False,
@@ -299,7 +320,9 @@ class CRUDPlus(Generic[Model]):
         Update an instance by model's primary key
 
         :param session: The SQLAlchemy async session.
-        :param pk: The database primary key value.
+        :param pk: A single value for a single primary key (e.g., int, str), a dictionary
+                   mapping column names to values, or a tuple of values (in column order) for
+                   composite primary keys.
         :param obj: A pydantic schema or dictionary containing the update data
         :param flush: If `True`, flush all object changes to the database. Default is `False`.
         :param commit: If `True`, commits the transaction immediately. Default is `False`.
@@ -362,7 +385,7 @@ class CRUDPlus(Generic[Model]):
     async def delete_model(
         self,
         session: AsyncSession,
-        pk: Union[Any, Dict[str, Any]],
+        pk: Union[Any, Dict[str, Any], Tuple[Any, ...]],
         flush: bool = False,
         commit: bool = False,
     ) -> int:
@@ -370,7 +393,9 @@ class CRUDPlus(Generic[Model]):
         Delete an instance by model's primary key
 
         :param session: The SQLAlchemy async session.
-        :param pk: The database primary key value.
+        :param pk: A single value for a single primary key (e.g., int, str), a dictionary
+                   mapping column names to values, or a tuple of values (in column order) for
+                   composite primary keys.
         :param flush: If `True`, flush all object changes to the database. Default is `False`.
         :param commit: If `True`, commits the transaction immediately. Default is `False`.
         :return:

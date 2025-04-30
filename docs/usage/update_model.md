@@ -89,17 +89,21 @@ class UserCreate(BaseModel):
 
 async def example(session: AsyncSession):
     # Composite primary key model
-    crud_composite = CRUDPlus(UserComposite)
+    crud = CRUDPlus(UserComposite)
     
     # Create
-    await crud_composite.create_model(
+    await crud.create_model(
         session, UserCreate(id="123", name="John", email="composite@example.com"), commit=True
     )
     
     # Update by composite primary key (dictionary)
-    await crud_composite.update_model(
+    await crud.update_model(
         session, {"id": "123", "name": "John"}, {"email": "updated_composite@example.com"}, commit=True
     )
     
+    # Update by composite primary key (tuple)
+    await crud.update_model(
+        session, ("123", "John"), {"email": "new_tuple@example.com"}, commit=True
+    )
 
 ```
