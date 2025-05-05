@@ -24,17 +24,17 @@ class CRUDIns(CRUDPlus[ModelIns]):
 async def select_model(
     self,
     session: AsyncSession,
-    pk: int,
+    pk: Any | Sequence[Any],
     *whereclause: ColumnExpressionArgument[bool],
 ) -> Model | None:
 ```
 
 **Parameters:**
 
-| Name         | Type                             | Description                                                                                          | Default |
-|--------------|----------------------------------|------------------------------------------------------------------------------------------------------|---------|
-| session      | AsyncSession                     | 数据库会话                                                                                                | 必填      |
-| pk           | int                              | [主键](../advanced/primary_key.md)                                                                     | 必填      |
+| Name         | Type                             | Description                                                                                         | Default |
+|--------------|----------------------------------|-----------------------------------------------------------------------------------------------------|---------|
+| session      | AsyncSession                     | 数据库会话                                                                                               | 必填      |
+| pk           | `Any `\| `Sequence[Any]`         | [主键](../advanced/primary_key.md)                                                                     | 必填      |
 | *whereclause | `ColumnExpressionArgument[bool]` | 等同于 [SQLAlchemy where](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html#the-where-clause) |         |
 
 **Returns:**

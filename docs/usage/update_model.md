@@ -31,7 +31,7 @@ class CRUDIns(CRUDPlus[ModelIns]):
 async def update_model(
     self,
     session: AsyncSession,
-    pk: int,
+    pk: Any | Sequence[Any],
     obj: UpdateSchema | dict[str, Any],
     flush: bool = False,
     commit: bool = False,
@@ -44,7 +44,7 @@ async def update_model(
 | Name    | Type                          | Description                      | Default |
 |---------|-------------------------------|----------------------------------|---------|
 | session | AsyncSession                  | 数据库会话                            | 必填      |
-| pk      | int                           | [主键](../advanced/primary_key.md) | 必填      |
+| pk      | `Any `\| `Sequence[Any]`      | [主键](../advanced/primary_key.md) | 必填      |
 | obj     | `TypeVar `\|` dict[str, Any]` | 更新数据参数                           | 必填      |
 | flush   | bool                          | [冲洗](../advanced/flush.md)       | `False` |
 | commit  | bool                          | [提交](../advanced/commit.md)      | `False` |

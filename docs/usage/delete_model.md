@@ -24,7 +24,7 @@ class CRUDIns(CRUDPlus[ModelIns]):
 async def delete_model(
     self,
     session: AsyncSession,
-    pk: int,
+    pk: Any | Sequence[Any],
     flush: bool = False,
     commit: bool = False,
 ) -> int:
@@ -32,12 +32,12 @@ async def delete_model(
 
 **Parameters:**
 
-| Name    | Type         | Description                      | Default |
-|---------|--------------|----------------------------------|---------|
-| session | AsyncSession | 数据库会话                            | 必填      |
-| pk      | int          | [主键](../advanced/primary_key.md) | 必填      |
-| flush   | bool         | [冲洗](../advanced/flush.md)       | `False` |
-| commit  | bool         | [提交](../advanced/commit.md)      | `False` |
+| Name    | Type                     | Description                      | Default |
+|---------|--------------------------|----------------------------------|---------|
+| session | AsyncSession             | 数据库会话                            | 必填      |
+| pk      | `Any `\| `Sequence[Any]` | [主键](../advanced/primary_key.md) | 必填      |
+| flush   | bool                     | [冲洗](../advanced/flush.md)       | `False` |
+| commit  | bool                     | [提交](../advanced/commit.md)      | `False` |
 
 **Returns:**
 
