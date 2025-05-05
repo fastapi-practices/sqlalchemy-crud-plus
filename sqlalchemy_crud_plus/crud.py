@@ -41,7 +41,7 @@ class CRUDPlus(Generic[Model]):
         """
         Get the primary key filter(s).
 
-        :param pk:
+        :param pk: Single value for simple primary key, or tuple for composite primary key.
         :return:
         """
         if isinstance(self.primary_key, list):

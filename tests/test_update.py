@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from random import choice
-
 import pytest
 
 from sqlalchemy_crud_plus import CRUDPlus
