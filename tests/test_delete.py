@@ -3,7 +3,7 @@
 import pytest
 
 from sqlalchemy_crud_plus import CRUDPlus
-from tests.model import Ins
+from tests.model import Ins, InsPks
 
 
 @pytest.mark.asyncio
@@ -11,6 +11,14 @@ async def test_delete_model(create_test_model, async_db_session):
     async with async_db_session.begin() as session:
         crud = CRUDPlus(Ins)
         result = await crud.delete_model(session, 1)
+        assert result == 1
+
+
+@pytest.mark.asyncio
+async def test_delete_model_pks(create_test_model_pks, async_db_session):
+    async with async_db_session.begin() as session:
+        crud = CRUDPlus(InsPks)
+        result = await crud.delete_model(session, (1, 'men'))
         assert result == 1
 
 

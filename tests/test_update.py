@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from random import choice
+
 import pytest
 
 from sqlalchemy_crud_plus import CRUDPlus
-from tests.model import Ins
-from tests.schema import ModelTest
+from tests.model import Ins, InsPks
+from tests.schema import ModelTest, ModelTestPks
 
 
 @pytest.mark.asyncio
@@ -15,6 +17,17 @@ async def test_update_model(create_test_model, async_db_session):
         result = await crud.update_model(session, 1, data)
         assert result == 1
         result = await session.get(Ins, 1)
+        assert result.name == 'name_update_1'
+
+
+@pytest.mark.asyncio
+async def test_update_model_pks(create_test_model_pks, async_db_session):
+    async with async_db_session.begin() as session:
+        crud = CRUDPlus(InsPks)
+        data = ModelTestPks(id=1, name='name_update_1', sex='men')
+        result = await crud.update_model(session, (1, 'men'), data)
+        assert result == 1
+        result = await session.get(InsPks, (1, 'men'))
         assert result.name == 'name_update_1'
 
 

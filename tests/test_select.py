@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import Select
 
 from sqlalchemy_crud_plus import CRUDPlus
-from tests.model import Ins
+from tests.model import Ins, InsPks
 
 
 @pytest.mark.asyncio
@@ -59,6 +59,18 @@ async def test_select_model(create_test_model, async_db_session):
         crud = CRUDPlus(Ins)
         for i in range(1, 10):
             result = await crud.select_model(session, i)
+            assert result.name == f'name_{i}'
+
+
+@pytest.mark.asyncio
+async def test_select_model_pks(create_test_model_pks, async_db_session):
+    async with async_db_session() as session:
+        crud = CRUDPlus(InsPks)
+        for i in range(1, 5):
+            result = await crud.select_model(session, (i, 'men'))
+            assert result.name == f'name_{i}'
+        for i in range(6, 10):
+            result = await crud.select_model(session, (i, 'women'))
             assert result.name == f'name_{i}'
 
 

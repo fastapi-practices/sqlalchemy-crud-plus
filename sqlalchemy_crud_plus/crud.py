@@ -26,7 +26,7 @@ class CRUDPlus(Generic[Model]):
         self.model = model
         self.primary_key = self._get_primary_key()
 
-    def _get_primary_key(self) -> Column:
+    def _get_primary_key(self) -> Column | list[Column]:
         """
         Dynamically retrieve the primary key column(s) for the model.
         """
@@ -35,7 +35,21 @@ class CRUDPlus(Generic[Model]):
         if len(primary_key) == 1:
             return primary_key[0]
         else:
-            raise CompositePrimaryKeysError('Composite primary keys are not supported')
+            return list(primary_key)
+
+    def _get_pk_filter(self, pk: Any | Sequence[Any]) -> list[bool]:
+        """
+        Get the primary key filter(s).
+
+        :param pk:
+        :return:
+        """
+        if isinstance(self.primary_key, list):
+            if len(pk) != len(self.primary_key):
+                raise CompositePrimaryKeysError(f'Expected {len(self.primary_key)} values for composite primary key')
+            return [column == value for column, value in zip(self.primary_key, pk)]
+        else:
+            return [self.primary_key == pk]
 
     async def create_model(
         self,
@@ -55,10 +69,7 @@ class CRUDPlus(Generic[Model]):
         :param kwargs: Additional model data not included in the pydantic schema.
         :return:
         """
-        if not kwargs:
-            ins = self.model(**obj.model_dump())
-        else:
-            ins = self.model(**obj.model_dump(), **kwargs)
+        ins = self.model(**obj.model_dump()) if not kwargs else self.model(**obj.model_dump(), **kwargs)
 
         session.add(ins)
 
@@ -89,10 +100,7 @@ class CRUDPlus(Generic[Model]):
         """
         ins_list = []
         for obj in objs:
-            if not kwargs:
-                ins = self.model(**obj.model_dump())
-            else:
-                ins = self.model(**obj.model_dump(), **kwargs)
+            ins = self.model(**obj.model_dump()) if not kwargs else self.model(**obj.model_dump(), **kwargs)
             ins_list.append(ins)
 
         session.add_all(ins_list)
@@ -118,12 +126,12 @@ class CRUDPlus(Generic[Model]):
         :param kwargs: Query expressions.
         :return:
         """
-        filter_list = list(whereclause)
+        filters = list(whereclause)
 
         if kwargs:
-            filter_list.extend(parse_filters(self.model, **kwargs))
+            filters.extend(parse_filters(self.model, **kwargs))
 
-        stmt = select(func.count()).select_from(self.model).where(*filter_list)
+        stmt = select(func.count()).select_from(self.model).where(*filters)
         query = await session.execute(stmt)
         total_count = query.scalar()
         return total_count if total_count is not None else 0
@@ -154,21 +162,20 @@ class CRUDPlus(Generic[Model]):
     async def select_model(
         self,
         session: AsyncSession,
-        pk: int,
+        pk: Any | Sequence[Any],
         *whereclause: ColumnExpressionArgument[bool],
     ) -> Model | None:
         """
-        Query by ID
+        Query by primary key(s)
 
         :param session: The SQLAlchemy async session.
-        :param pk: The database primary key value.
+        :param pk: Single value for simple primary key, or tuple for composite primary key.
         :param whereclause: The WHERE clauses to apply to the query.
         :return:
         """
-        filter_list = list(whereclause)
-        _filters = [self.primary_key == pk]
-        _filters.extend(filter_list)
-        stmt = select(self.model).where(*_filters)
+        filters = self._get_pk_filter(pk)
+        filters + list(whereclause)
+        stmt = select(self.model).where(*filters)
         query = await session.execute(stmt)
         return query.scalars().first()
 
@@ -186,10 +193,8 @@ class CRUDPlus(Generic[Model]):
         :param kwargs: Query expressions.
         :return:
         """
-        filter_list = list(whereclause)
-        _filters = parse_filters(self.model, **kwargs)
-        _filters.extend(filter_list)
-        stmt = select(self.model).where(*_filters)
+        filters = parse_filters(self.model, **kwargs) + list(whereclause)
+        stmt = select(self.model).where(*filters)
         query = await session.execute(stmt)
         return query.scalars().first()
 
@@ -201,10 +206,8 @@ class CRUDPlus(Generic[Model]):
         :param kwargs: Query expressions.
         :return:
         """
-        filter_list = list(whereclause)
-        _filters = parse_filters(self.model, **kwargs)
-        _filters.extend(filter_list)
-        stmt = select(self.model).where(*_filters)
+        filters = parse_filters(self.model, **kwargs) + list(whereclause)
+        stmt = select(self.model).where(*filters)
         return stmt
 
     async def select_order(
@@ -270,7 +273,7 @@ class CRUDPlus(Generic[Model]):
     async def update_model(
         self,
         session: AsyncSession,
-        pk: int,
+        pk: Any | Sequence[Any],
         obj: UpdateSchema | dict[str, Any],
         flush: bool = False,
         commit: bool = False,
@@ -280,21 +283,17 @@ class CRUDPlus(Generic[Model]):
         Update an instance by model's primary key
 
         :param session: The SQLAlchemy async session.
-        :param pk: The database primary key value.
+        :param pk: Single value for simple primary key, or tuple for composite primary key.
         :param obj: A pydantic schema or dictionary containing the update data
         :param flush: If `True`, flush all object changes to the database. Default is `False`.
         :param commit: If `True`, commits the transaction immediately. Default is `False`.
         :param kwargs: Additional model data not included in the pydantic schema.
         :return:
         """
-        if isinstance(obj, dict):
-            instance_data = obj
-        else:
-            instance_data = obj.model_dump(exclude_unset=True)
-        if kwargs:
-            instance_data.update(kwargs)
-
-        stmt = update(self.model).where(self.primary_key == pk).values(**instance_data)
+        filters = self._get_pk_filter(pk)
+        instance_data = obj if isinstance(obj, dict) else obj.model_dump(exclude_unset=True)
+        instance_data.update(kwargs)
+        stmt = update(self.model).where(*filters).values(**instance_data)
         result = await session.execute(stmt)
 
         if flush:
@@ -325,15 +324,13 @@ class CRUDPlus(Generic[Model]):
         :return:
         """
         filters = parse_filters(self.model, **kwargs)
+
         total_count = await self.count(session, *filters)
         if not allow_multiple and total_count > 1:
             raise MultipleResultsError(f'Only one record is expected to be update, found {total_count} records.')
-        if isinstance(obj, dict):
-            instance_data = obj
-        else:
-            instance_data = obj.model_dump(exclude_unset=True)
 
-        stmt = update(self.model).where(*filters).values(**instance_data)  # type: ignore
+        instance_data = obj if isinstance(obj, dict) else obj.model_dump(exclude_unset=True)
+        stmt = update(self.model).where(*filters).values(**instance_data)
         result = await session.execute(stmt)
 
         if flush:
@@ -346,7 +343,7 @@ class CRUDPlus(Generic[Model]):
     async def delete_model(
         self,
         session: AsyncSession,
-        pk: int,
+        pk: Any | Sequence[Any],
         flush: bool = False,
         commit: bool = False,
     ) -> int:
@@ -354,12 +351,14 @@ class CRUDPlus(Generic[Model]):
         Delete an instance by model's primary key
 
         :param session: The SQLAlchemy async session.
-        :param pk: The database primary key value.
+        :param pk: Single value for simple primary key, or tuple for composite primary key.
         :param flush: If `True`, flush all object changes to the database. Default is `False`.
         :param commit: If `True`, commits the transaction immediately. Default is `False`.
         :return:
         """
-        stmt = delete(self.model).where(self.primary_key == pk)
+        filters = self._get_pk_filter(pk)
+
+        stmt = delete(self.model).where(*filters)
         result = await session.execute(stmt)
 
         if flush:
@@ -392,14 +391,16 @@ class CRUDPlus(Generic[Model]):
         :return:
         """
         filters = parse_filters(self.model, **kwargs)
+
         total_count = await self.count(session, *filters)
         if not allow_multiple and total_count > 1:
             raise MultipleResultsError(f'Only one record is expected to be delete, found {total_count} records.')
-        if logical_deletion:
-            deleted_flag = {deleted_flag_column: True}
-            stmt = update(self.model).where(*filters).values(**deleted_flag)
-        else:
-            stmt = delete(self.model).where(*filters)
+
+        stmt = (
+            update(self.model).where(*filters).values(**{deleted_flag_column: True})
+            if logical_deletion
+            else delete(self.model).where(*filters)
+        )
 
         result = await session.execute(stmt)
 

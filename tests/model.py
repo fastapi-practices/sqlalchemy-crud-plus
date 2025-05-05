@@ -20,3 +20,14 @@ class Ins(Base):
     del_flag: Mapped[bool] = mapped_column(default=False)
     created_time: Mapped[datetime] = mapped_column(init=False, default_factory=datetime.now)
     updated_time: Mapped[datetime | None] = mapped_column(init=False, onupdate=datetime.now)
+
+
+class InsPks(Base):
+    __tablename__ = 'ins_pks'
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(64))
+    sex: Mapped[str] = mapped_column(String(16), primary_key=True, index=True)
+    del_flag: Mapped[bool] = mapped_column(default=False)
+    created_time: Mapped[datetime] = mapped_column(init=False, default_factory=datetime.now)
+    updated_time: Mapped[datetime | None] = mapped_column(init=False, onupdate=datetime.now)
