@@ -1,3 +1,17 @@
+<a id="1.9.0"></a>
+# [1.9.0](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/1.9.0) - 2025-05-05
+
+## What's Changed
+* Update changelog for 1.8.0 by [@wu-clan](https://github.com/wu-clan) in [#42](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/42)
+* Add composite primary key support by [@wu-clan](https://github.com/wu-clan) in [#44](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/44)
+* Prepare for 1.9.0 release by [@wu-clan](https://github.com/wu-clan) in [#45](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/45)
+
+
+**Full Changelog**: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.8.0...1.9.0
+
+[Changes][1.9.0]
+
+
 <a id="1.8.0"></a>
 # [1.8.0](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/1.8.0) - 2025-04-27
 
@@ -146,6 +160,7 @@ CRUD methods have been refactored, check out the documentation for new usage!
 [Changes][0.0.4]
 
 
+[1.9.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.8.0...1.9.0
 [1.8.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.7.0...1.8.0
 [1.7.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.6.0...1.7.0
 [1.6.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.5.0...1.6.0
