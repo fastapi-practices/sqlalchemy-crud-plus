@@ -11,8 +11,8 @@ from sqlalchemy_crud_plus.errors import (
     MultipleResultsError,
     SelectOperatorError,
 )
-from tests.model import Ins, InsPks
-from tests.schema import ModelTest
+from tests.models.basic import Ins, InsPks
+from tests.schemas.basic import ModelTest
 
 
 class TestErrorHandling:

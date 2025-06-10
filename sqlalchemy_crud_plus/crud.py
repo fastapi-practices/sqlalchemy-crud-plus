@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from __future__ import annotations
+
 from typing import Any, Generic, Iterable, Sequence
 
 from sqlalchemy import (
@@ -15,8 +17,17 @@ from sqlalchemy import (
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy_crud_plus.errors import CompositePrimaryKeysError, ModelColumnError, MultipleResultsError
-from sqlalchemy_crud_plus.types import CreateSchema, Model, UpdateSchema
-from sqlalchemy_crud_plus.utils import apply_sorting, parse_filters
+from sqlalchemy_crud_plus.types import (
+    CreateSchema,
+    JoinConditionsConfig,
+    LoadStrategiesConfig,
+    Model,
+    QueryOptions,
+    SortColumns,
+    SortOrders,
+    UpdateSchema,
+)
+from sqlalchemy_crud_plus.utils import apply_join_conditions, apply_sorting, build_load_strategies, parse_filters
 
 
 class CRUDPlus(Generic[Model]):
@@ -157,12 +168,12 @@ class CRUDPlus(Generic[Model]):
         :param kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
-        filter_list = list(whereclause)
+        filters = list(whereclause)
 
         if kwargs:
-            filter_list.extend(parse_filters(self.model, **kwargs))
+            filters.extend(parse_filters(self.model, **kwargs))
 
-        stmt = select(self.model).where(*filter_list).limit(1)
+        stmt = select(self.model).where(*filters).limit(1)
         query = await session.execute(stmt)
         return query.scalars().first() is not None
 
@@ -171,18 +182,42 @@ class CRUDPlus(Generic[Model]):
         session: AsyncSession,
         pk: Any | Sequence[Any],
         *whereclause: ColumnExpressionArgument[bool],
+        options: QueryOptions | None = None,
+        load_strategies: LoadStrategiesConfig | None = None,
+        join_conditions: JoinConditionsConfig | None = None,
+        **kwargs: Any,
     ) -> Model | None:
         """
-        Query by primary key(s)
+        Query by primary key(s) with optional relationship loading and joins.
 
-        :param session: The SQLAlchemy async session.
-        :param pk: Single value for simple primary key, or tuple for composite primary key.
-        :param whereclause: The WHERE clauses to apply to the query.
+        :param session: SQLAlchemy async session
+        :param pk: Primary key value(s) - single value or tuple for composite keys
+        :param whereclause: Additional WHERE clauses
+        :param options: SQLAlchemy loading options
+        :param load_strategies: Relationship loading strategies
+        :param join_conditions: JOIN conditions for relationships
+        :param kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
-        filters = self._get_pk_filter(pk)
-        filters.extend(list(whereclause))
+        filters = list(whereclause)
+        filters.extend(self._get_pk_filter(pk))
+
+        if kwargs:
+            filters.extend(parse_filters(self.model, **kwargs))
+
         stmt = select(self.model).where(*filters)
+
+        if options:
+            stmt = stmt.options(*options)
+
+        if join_conditions:
+            stmt = apply_join_conditions(self.model, stmt, join_conditions)
+
+        if load_strategies:
+            rel_options = build_load_strategies(self.model, load_strategies)
+            if rel_options:
+                stmt = stmt.options(*rel_options)
+
         query = await session.execute(stmt)
         return query.scalars().first()
 
@@ -190,27 +225,49 @@ class CRUDPlus(Generic[Model]):
         self,
         session: AsyncSession,
         *whereclause: ColumnExpressionArgument[bool],
-        **kwargs,
+        options: QueryOptions | None = None,
+        load_strategies: LoadStrategiesConfig | None = None,
+        join_conditions: JoinConditionsConfig | None = None,
+        **kwargs: Any,
     ) -> Model | None:
         """
-        Query by column
+        Query by column with optional relationship loading and joins.
 
-        :param session: The SQLAlchemy async session.
-        :param whereclause: The WHERE clauses to apply to the query.
-        :param kwargs: Query expressions.
+        :param session: SQLAlchemy async session
+        :param whereclause: Additional WHERE clauses
+        :param options: SQLAlchemy loading options
+        :param load_strategies: Relationship loading strategies
+        :param join_conditions: JOIN conditions for relationships
+        :param kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
-        filters = parse_filters(self.model, **kwargs) + list(whereclause)
+        filters = list(whereclause)
+
+        if kwargs:
+            filters.extend(parse_filters(self.model, **kwargs))
+
         stmt = select(self.model).where(*filters)
+
+        if options:
+            stmt = stmt.options(*options)
+
+        if join_conditions:
+            stmt = apply_join_conditions(self.model, stmt, join_conditions)
+
+        if load_strategies:
+            rel_options = build_load_strategies(self.model, load_strategies)
+            if rel_options:
+                stmt = stmt.options(*rel_options)
+
         query = await session.execute(stmt)
         return query.scalars().first()
 
     async def select(self, *whereclause: ColumnExpressionArgument[bool], **kwargs) -> Select:
         """
-        Construct the SQLAlchemy selection
+        Construct the SQLAlchemy selection.
 
-        :param whereclause: The WHERE clauses to apply to the query.
-        :param kwargs: Query expressions.
+        :param whereclause: WHERE clauses to apply to the query
+        :param kwargs: Query expressions
         :return:
         """
         filters = parse_filters(self.model, **kwargs) + list(whereclause)
@@ -219,18 +276,18 @@ class CRUDPlus(Generic[Model]):
 
     async def select_order(
         self,
-        sort_columns: str | list[str],
-        sort_orders: str | list[str] | None = None,
+        sort_columns: SortColumns,
+        sort_orders: SortOrders = None,
         *whereclause: ColumnExpressionArgument[bool],
-        **kwargs,
+        **kwargs: Any,
     ) -> Select:
         """
-        Constructing SQLAlchemy selection with sorting
+        Construct SQLAlchemy selection with sorting.
 
-        :param sort_columns: more details see apply_sorting
-        :param sort_orders: more details see apply_sorting
-        :param whereclause: The WHERE clauses to apply to the query.
-        :param kwargs: Query expressions.
+        :param sort_columns: Column names to sort by
+        :param sort_orders: Sort orders ('asc' or 'desc')
+        :param whereclause: WHERE clauses to apply to the query
+        :param kwargs: Query expressions
         :return:
         """
         stmt = await self.select(*whereclause, **kwargs)
@@ -241,39 +298,94 @@ class CRUDPlus(Generic[Model]):
         self,
         session: AsyncSession,
         *whereclause: ColumnExpressionArgument[bool],
-        **kwargs,
+        options: QueryOptions | None = None,
+        load_strategies: LoadStrategiesConfig | None = None,
+        join_conditions: JoinConditionsConfig | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        **kwargs: Any,
     ) -> Sequence[Model]:
         """
-        Query all rows that match the specified filters.
+         Query all rows that match the specified filters with optional relationship loading and joins.
 
-        :param session: The SQLAlchemy async session
-        :param whereclause: Additional WHERE clauses to apply to the query
+        :param session: SQLAlchemy async session
+        :param whereclause: Additional WHERE clauses
+        :param options: SQLAlchemy loading options
+        :param load_strategies: Relationship loading strategies
+        :param join_conditions: JOIN conditions for relationships
+        :param limit: Maximum number of results to return
+        :param offset: Number of results to skip
         :param kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
         stmt = await self.select(*whereclause, **kwargs)
+
+        if options:
+            stmt = stmt.options(*options)
+
+        if join_conditions:
+            stmt = apply_join_conditions(self.model, stmt, join_conditions)
+
+        if load_strategies:
+            rel_options = build_load_strategies(self.model, load_strategies)
+            if rel_options:
+                stmt = stmt.options(*rel_options)
+
+        if limit is not None:
+            stmt = stmt.limit(limit)
+        if offset is not None:
+            stmt = stmt.offset(offset)
+
         query = await session.execute(stmt)
         return query.scalars().all()
 
     async def select_models_order(
         self,
         session: AsyncSession,
-        sort_columns: str | list[str],
-        sort_orders: str | list[str] | None = None,
+        sort_columns: SortColumns,
+        sort_orders: SortOrders = None,
         *whereclause: ColumnExpressionArgument[bool],
-        **kwargs,
+        options: QueryOptions | None = None,
+        load_strategies: LoadStrategiesConfig | None = None,
+        join_conditions: JoinConditionsConfig | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        **kwargs: Any,
     ) -> Sequence[Model]:
         """
-        Query all rows that match the specified filters and sort by columns.
+        Query all rows that match the specified filters and sort by columns
+        with optional relationship loading and joins.
 
-        :param session: The SQLAlchemy async session
-        :param sort_columns: Column name(s) to sort by
-        :param sort_orders: Sort order(s) ('asc' or 'desc')
-        :param whereclause: Additional WHERE clauses to apply to the query
-        :param kwargs: Filter expressions using field__operator=value syntax
+        :param session: SQLAlchemy async session
+        :param sort_columns: Column names to sort by
+        :param sort_orders: Sort orders ('asc' or 'desc')
+        :param   whereclause: Additional WHERE clauses
+        :param   options: SQLAlchemy loading options
+        :param   load_strategies: Relationship loading strategies
+        :param  join_conditions: JOIN conditions for relationships
+        :param   limit: Maximum number of results to return
+        :param  offset: Number of results to skip
+        :param  kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
         stmt = await self.select_order(sort_columns, sort_orders, *whereclause, **kwargs)
+
+        if options:
+            stmt = stmt.options(*options)
+
+        if join_conditions:
+            stmt = apply_join_conditions(self.model, stmt, join_conditions)
+
+        if load_strategies:
+            rel_options = build_load_strategies(self.model, load_strategies)
+            if rel_options:
+                stmt = stmt.options(*rel_options)
+
+        if limit is not None:
+            stmt = stmt.limit(limit)
+        if offset is not None:
+            stmt = stmt.offset(offset)
+
         query = await session.execute(stmt)
         return query.scalars().all()
 

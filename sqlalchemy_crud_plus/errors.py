@@ -43,3 +43,17 @@ class CompositePrimaryKeysError(SQLAlchemyCRUDPlusException):
 
     def __init__(self, msg: str) -> None:
         super().__init__(msg)
+
+
+class LoadingStrategyError(SQLAlchemyCRUDPlusException):
+    """Error raised when a loading strategy is invalid."""
+
+    def __init__(self, msg: str) -> None:
+        super().__init__(msg)
+
+
+class JoinConditionError(SQLAlchemyCRUDPlusException):
+    """Error raised when a join operation is invalid."""
+
+    def __init__(self, msg: str) -> None:
+        super().__init__(msg)

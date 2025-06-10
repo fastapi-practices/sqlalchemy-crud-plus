@@ -7,16 +7,20 @@ from sqlalchemy.orm import aliased
 
 from sqlalchemy_crud_plus.errors import (
     ColumnSortError,
+    JoinConditionError,
     ModelColumnError,
     SelectOperatorError,
 )
 from sqlalchemy_crud_plus.utils import (
+    apply_join_conditions,
     apply_sorting,
+    build_load_strategies,
     get_column,
     get_sqlalchemy_filter,
     parse_filters,
 )
-from tests.model import Ins
+from tests.models.basic import Ins
+from tests.models.relations import RelPost, RelUser
 
 
 class TestUtilityFunctions:
@@ -197,3 +201,65 @@ class TestUtilityFunctions:
         """Test arithmetic filter parsing."""
         filters = parse_filters(Ins, id__add={'value': 5, 'condition': {'gt': 10}})
         assert len(filters) == 1
+
+    def test_build_load_strategies_list(self):
+        """Test building load strategies with list format."""
+        options = build_load_strategies(RelUser, ['posts', 'profile'])
+
+        assert len(options) == 2
+        for option in options:
+            assert hasattr(option, 'path')
+
+    def test_build_load_strategies_dict(self):
+        """Test building load strategies with dict format."""
+        options = build_load_strategies(RelUser, {'posts': 'selectinload', 'profile': 'joinedload'})
+
+        assert len(options) == 2
+
+    def test_build_load_strategies_invalid_relation(self):
+        """Test building load strategies with invalid relationship."""
+        options = build_load_strategies(RelUser, ['invalid_relation', 'posts'])
+        assert len(options) == 1
+
+    def test_apply_join_conditions_list(self):
+        """Test applying JOIN conditions with list format."""
+        stmt = select(RelPost)
+        new_stmt = apply_join_conditions(RelPost, stmt, ['author'])
+
+        sql_str = str(new_stmt)
+        assert 'JOIN' in sql_str.upper()
+
+    def test_apply_join_conditions_dict(self):
+        """Test applying JOIN conditions with dict format."""
+        stmt = select(RelPost)
+        new_stmt = apply_join_conditions(RelPost, stmt, {'author': 'left'})
+
+        sql_str = str(new_stmt)
+        assert 'JOIN' in sql_str.upper()
+
+    def test_apply_join_conditions_invalid_relation(self):
+        """Test applying JOIN conditions with invalid relationship."""
+        stmt = select(RelPost)
+        new_stmt = apply_join_conditions(RelPost, stmt, ['invalid_relation', 'author'])
+
+        sql_str = str(new_stmt)
+        assert 'JOIN' in sql_str.upper()
+
+    def test_empty_load_strategies(self):
+        """Test empty load strategies."""
+        options = build_load_strategies(RelUser, [])
+        assert len(options) == 0
+
+    def test_unknown_loading_strategy(self):
+        """Test unknown loading strategy raises error."""
+        from sqlalchemy_crud_plus.errors import LoadingStrategyError
+
+        with pytest.raises(LoadingStrategyError):
+            build_load_strategies(RelUser, {'posts': 'unknown_strategy'})
+
+    def test_unknown_join_type(self):
+        """Test unknown JOIN type raises error."""
+        stmt = select(RelPost)
+
+        with pytest.raises(JoinConditionError):
+            apply_join_conditions(RelPost, stmt, {'author': 'unknown_join'})

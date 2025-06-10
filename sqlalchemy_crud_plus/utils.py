@@ -1,15 +1,31 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from __future__ import annotations
+
 import warnings
 
 from typing import Any, Callable
 
 from sqlalchemy import ColumnElement, Select, and_, asc, desc, or_
-from sqlalchemy.orm import InstrumentedAttribute
+from sqlalchemy.orm import (
+    InstrumentedAttribute,
+    contains_eager,
+    joinedload,
+    noload,
+    raiseload,
+    selectinload,
+    subqueryload,
+)
 from sqlalchemy.orm.util import AliasedClass
 
-from sqlalchemy_crud_plus.errors import ColumnSortError, ModelColumnError, SelectOperatorError
-from sqlalchemy_crud_plus.types import Model
+from sqlalchemy_crud_plus.errors import (
+    ColumnSortError,
+    JoinConditionError,
+    LoadingStrategyError,
+    ModelColumnError,
+    SelectOperatorError,
+)
+from sqlalchemy_crud_plus.types import JoinConditionsConfig, LoadStrategiesConfig, Model
 
 _SUPPORTED_FILTERS = {
     # Comparison: https://docs.sqlalchemy.org/en/20/core/operators.html#comparison-operators
@@ -278,5 +294,92 @@ def apply_sorting(
             column = get_column(model, column_name)
             order = validated_sort_orders[idx]
             stmt = stmt.order_by(asc(column) if order == 'asc' else desc(column))
+
+    return stmt
+
+
+def build_load_strategies(model: type[Model], load_strategies: LoadStrategiesConfig | None) -> list:
+    """
+    Build relationship loading strategy options.
+
+    :param model: SQLAlchemy model class
+    :param load_strategies: Loading strategies configuration
+    :return:
+    """
+
+    strategy_map = {
+        'selectinload': selectinload,
+        'joinedload': joinedload,
+        'subqueryload': subqueryload,
+        'contains_eager': contains_eager,
+        'raiseload': raiseload,
+        'noload': noload,
+    }
+
+    options = []
+    default_strategy = 'selectinload'
+
+    if isinstance(load_strategies, list):
+        for rel_name in load_strategies:
+            try:
+                rel_attr = getattr(model, rel_name)
+                strategy_func = strategy_map[default_strategy]
+                options.append(strategy_func(rel_attr))
+            except AttributeError:
+                continue
+
+    elif isinstance(load_strategies, dict):
+        for rel_name, strategy_name in load_strategies.items():
+            if strategy_name not in strategy_map:
+                raise LoadingStrategyError(
+                    f'Invalid loading strategy: {strategy_name}, only supports {list(strategy_map.keys())}'
+                )
+            try:
+                rel_attr = getattr(model, rel_name)
+                strategy_func = strategy_map.get(strategy_name)
+                options.append(strategy_func(rel_attr))
+            except AttributeError:
+                continue
+
+    return options
+
+
+def apply_join_conditions(model: type[Model], stmt: Select, join_conditions: JoinConditionsConfig | None):
+    """
+    Apply JOIN conditions to the query statement.
+
+    :param model: SQLAlchemy model class
+    :param stmt: SQLAlchemy Select statement
+    :param join_conditions: JOIN conditions configuration
+    :return:
+    """
+    if isinstance(join_conditions, list):
+        for rel_name in join_conditions:
+            try:
+                rel_attr = getattr(model, rel_name)
+                stmt = stmt.join(rel_attr)
+            except AttributeError:
+                continue
+
+    elif isinstance(join_conditions, dict):
+        for rel_name, join_type in join_conditions.items():
+            if join_type not in ['left', 'inner', 'right', 'full']:
+                raise JoinConditionError(
+                    f'Invalid join type: {join_type}, only supports `left`, `inner`, `right`, `full`'
+                )
+            try:
+                rel_attr = getattr(model, rel_name)
+                if join_type == 'left':
+                    stmt = stmt.join(rel_attr, isouter=True)
+                elif join_type == 'inner':
+                    stmt = stmt.join(rel_attr)
+                elif join_type == 'right':
+                    stmt = stmt.join(rel_attr, isouter=True)
+                elif join_type == 'full':
+                    stmt = stmt.join(rel_attr, full=True)
+                else:
+                    stmt = stmt.join(rel_attr)
+            except AttributeError:
+                continue
 
     return stmt

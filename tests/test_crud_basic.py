@@ -5,8 +5,8 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy_crud_plus import CRUDPlus
-from tests.model import Ins, InsPks
-from tests.schema import ModelTest, ModelTestPks
+from tests.models.basic import Ins, InsPks
+from tests.schemas.basic import ModelTest, ModelTestPks
 
 
 class TestBasicCRUD:
