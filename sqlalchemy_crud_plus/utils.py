@@ -56,21 +56,33 @@ _SUPPORTED_FILTERS = {
     'rmod': lambda column: column.__rmod__,
 }
 
+_DYNAMIC_OPERATORS = [
+    'concat',
+    'add',
+    'radd',
+    'sub',
+    'rsub',
+    'mul',
+    'rmul',
+    'truediv',
+    'rtruediv',
+    'floordiv',
+    'rfloordiv',
+    'mod',
+    'rmod',
+]
+
 
 def get_sqlalchemy_filter(operator: str, value: Any, allow_arithmetic: bool = True) -> Callable[[str], Callable] | None:
     if operator in ['in', 'not_in', 'between']:
         if not isinstance(value, (tuple, list, set)):
             raise SelectOperatorError(f'The value of the <{operator}> filter must be tuple, list or set')
 
-    if (
-        operator
-        in ['add', 'radd', 'sub', 'rsub', 'mul', 'rmul', 'truediv', 'rtruediv', 'floordiv', 'rfloordiv', 'mod', 'rmod']
-        and not allow_arithmetic
-    ):
+    if operator in _DYNAMIC_OPERATORS and not allow_arithmetic:
         raise SelectOperatorError(f'Nested arithmetic operations are not allowed: {operator}')
 
     sqlalchemy_filter = _SUPPORTED_FILTERS.get(operator)
-    if sqlalchemy_filter is None and operator not in ['or', 'mor', '__gor']:
+    if sqlalchemy_filter is None and operator != 'or':
         warnings.warn(
             f'The operator <{operator}> is not yet supported, only {", ".join(_SUPPORTED_FILTERS.keys())}.',
             SyntaxWarning,
@@ -94,12 +106,6 @@ def _create_or_filters(column: str, op: str, value: Any) -> list[ColumnElement |
             sqlalchemy_filter = get_sqlalchemy_filter(or_op, or_value)
             if sqlalchemy_filter is not None:
                 or_filters.append(sqlalchemy_filter(column)(or_value))
-    elif op == 'mor':
-        for or_op, or_values in value.items():
-            for or_value in or_values:
-                sqlalchemy_filter = get_sqlalchemy_filter(or_op, or_value)
-                if sqlalchemy_filter is not None:
-                    or_filters.append(sqlalchemy_filter(column)(or_value))
     return or_filters
 
 
@@ -131,43 +137,50 @@ def _create_and_filters(column: str, op: str, value: Any) -> list[ColumnElement 
 def parse_filters(model: Type[Model] | AliasedClass, **kwargs) -> list[ColumnElement]:
     filters = []
 
-    def process_filters(target_column: str, target_op: str, target_value: Any):
-        # OR / MOR
-        or_filters = _create_or_filters(target_column, target_op, target_value)
-        if or_filters:
-            filters.append(or_(*or_filters))
-
-        # ARITHMETIC
-        arithmetic_filters = _create_arithmetic_filters(target_column, target_op, target_value)
-        if arithmetic_filters:
-            filters.append(and_(*arithmetic_filters))
-        else:
-            # AND
-            and_filters = _create_and_filters(target_column, target_op, target_value)
-            if and_filters:
-                filters.append(*and_filters)
-
     for key, value in kwargs.items():
-        if '__' in key:
-            field_name, op = key.rsplit('__', 1)
-
-            # OR GROUP
-            if field_name == '__gor' and op == '':
-                _or_filters = []
-                for field_or in value:
-                    for _key, _value in field_or.items():
-                        _field_name, _op = _key.rsplit('__', 1)
-                        _column = get_column(model, _field_name)
-                        process_filters(_column, _op, _value)
-                if _or_filters:
-                    filters.append(or_(*_or_filters))
-            else:
-                column = get_column(model, field_name)
-                process_filters(column, op, value)
-        else:
-            # NON FILTER
+        if '__' not in key:
+            # NO FILTER
             column = get_column(model, key)
             filters.append(column == value)
+            continue
+
+        field_name, op = key.rsplit('__', 1)
+
+        # OR GROUP
+        if field_name == '__or' and op == '':
+            __or__filters = []
+
+            for field_or in value:
+                for _key, _value in field_or.items():
+                    _field_name, _op = _key.rsplit('__', 1)
+                    _column = get_column(model, _field_name)
+
+                    if '__' not in key:
+                        __or__filters.append(_column == _value)
+
+                    if _op == 'or':
+                        __or__filters.append(*_create_or_filters(_column, _op, _value))
+                        continue
+
+                    if _op in _DYNAMIC_OPERATORS:
+                        __or__filters.append(*_create_arithmetic_filters(_column, _op, _value))
+                        continue
+
+                    __or__filters.append(*_create_and_filters(_column, _op, _value))
+
+            filters.append(or_(*__or__filters))
+        else:
+            column = get_column(model, field_name)
+
+            if op == 'or':
+                filters.append(or_(*_create_or_filters(column, op, value)))
+                continue
+
+            if op in _DYNAMIC_OPERATORS:
+                filters.append(and_(*_create_arithmetic_filters(column, op, value)))
+                continue
+
+            filters.append(*_create_and_filters(column, op, value))
 
     return filters
 

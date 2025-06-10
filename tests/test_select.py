@@ -396,23 +396,16 @@ async def test_select_model_by_column_with_or(create_test_model, async_db_sessio
 
 
 @pytest.mark.asyncio
-async def test_select_model_by_column_with_mor(create_test_model, async_db_session):
-    async with async_db_session() as session:
-        crud = CRUDPlus(Ins)
-        result = await crud.select_model_by_column(session, id__mor={'eq': [1, 2, 3, 4, 5, 6, 7, 8, 9]})
-        assert result.id == 1
-
-
-@pytest.mark.asyncio
-async def test_select_model_by_column_with___gor__(create_test_model, async_db_session):
+async def test_select_model_by_column_with__or__(create_test_model, async_db_session):
     async with async_db_session() as session:
         crud = CRUDPlus(Ins)
         result = await crud.select_model_by_column(
             session,
-            __gor__=[
+            __or__=[
                 {'id__eq': 1},
-                {'name__mor': {'endswith': ['1', '2']}},
                 {'id__mul': {'value': 1, 'condition': {'eq': 1}}},
+                {'name__endswith': '1'},
+                {'name__endswith': '2'},
             ],
         )
         assert result.id == 1
