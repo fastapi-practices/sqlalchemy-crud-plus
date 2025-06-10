@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from typing import Any, Generic, Iterable, Sequence, Type
+from typing import Any, Generic, Iterable, Sequence
 
 from sqlalchemy import (
     Column,
@@ -20,7 +20,7 @@ from sqlalchemy_crud_plus.utils import apply_sorting, parse_filters
 
 
 class CRUDPlus(Generic[Model]):
-    def __init__(self, model: Type[Model]):
+    def __init__(self, model: type[Model]):
         self.model = model
         self.primary_key = self._get_primary_key()
 
@@ -35,11 +35,11 @@ class CRUDPlus(Generic[Model]):
         else:
             return list(primary_key)
 
-    def _get_pk_filter(self, pk: Any | Sequence[Any]) -> list[bool]:
+    def _get_pk_filter(self, pk: Any | Sequence[Any]) -> list[ColumnExpressionArgument[bool]]:
         """
         Get the primary key filter(s).
 
-        :param pk: Single value for simple primary key, or tuple for composite primary key.
+        :param pk: Single value for simple primary key, or tuple for composite primary key
         :return:
         """
         if isinstance(self.primary_key, list):

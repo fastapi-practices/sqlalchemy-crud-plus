@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 import warnings
 
-from typing import Any, Callable, Type
+from typing import Any, Callable
 
 from sqlalchemy import ColumnElement, Select, and_, asc, desc, or_
+from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.orm.util import AliasedClass
 
 from sqlalchemy_crud_plus.errors import ColumnSortError, ModelColumnError, SelectOperatorError
@@ -72,7 +73,9 @@ _DYNAMIC_OPERATORS = [
 ]
 
 
-def get_sqlalchemy_filter(operator: str, value: Any, allow_arithmetic: bool = True) -> Callable[[str], Callable] | None:
+def get_sqlalchemy_filter(
+    operator: str, value: Any, allow_arithmetic: bool = True
+) -> Callable[[InstrumentedAttribute], Callable] | None:
     if operator in ['in', 'not_in', 'between']:
         if not isinstance(value, (tuple, list, set)):
             raise SelectOperatorError(f'The value of the <{operator}> filter must be tuple, list or set')
@@ -91,7 +94,7 @@ def get_sqlalchemy_filter(operator: str, value: Any, allow_arithmetic: bool = Tr
     return sqlalchemy_filter
 
 
-def get_column(model: Type[Model] | AliasedClass, field_name: str):
+def get_column(model: type[Model] | AliasedClass, field_name: str) -> InstrumentedAttribute:
     """
     Get column from model with validation.
 
@@ -110,7 +113,15 @@ def get_column(model: Type[Model] | AliasedClass, field_name: str):
     return column
 
 
-def _create_or_filters(column: str, op: str, value: Any) -> list[ColumnElement | None]:
+def _create_or_filters(column: InstrumentedAttribute, op: str, value: dict[str, Any]) -> list[ColumnElement | None]:
+    """
+    Create OR filter expressions.
+
+    :param column: The SQLAlchemy column
+    :param op: The operator (should be 'or')
+    :param value: Dictionary of operator-value pairs
+    :return:
+    """
     or_filters = []
     if op == 'or':
         for or_op, or_value in value.items():
@@ -120,7 +131,17 @@ def _create_or_filters(column: str, op: str, value: Any) -> list[ColumnElement |
     return or_filters
 
 
-def _create_arithmetic_filters(column: str, op: str, value: Any) -> list[ColumnElement | None]:
+def _create_arithmetic_filters(
+    column: InstrumentedAttribute, op: str, value: dict[str, Any]
+) -> list[ColumnElement | None]:
+    """
+    Create arithmetic filter expressions.
+
+    :param column: The SQLAlchemy column
+    :param op: The arithmetic operator
+    :param value: Dictionary containing 'value' and 'condition' keys
+    :return:
+    """
     arithmetic_filters = []
     if isinstance(value, dict) and {'value', 'condition'}.issubset(value):
         arithmetic_value = value['value']
@@ -129,15 +150,24 @@ def _create_arithmetic_filters(column: str, op: str, value: Any) -> list[ColumnE
         if sqlalchemy_filter is not None:
             for cond_op, cond_value in condition.items():
                 arithmetic_filter = get_sqlalchemy_filter(cond_op, cond_value, allow_arithmetic=False)
-                arithmetic_filters.append(
-                    arithmetic_filter(sqlalchemy_filter(column)(arithmetic_value))(cond_value)
-                    if cond_op != 'between'
-                    else arithmetic_filter(sqlalchemy_filter(column)(arithmetic_value))(*cond_value)
-                )
+                if arithmetic_filter is not None:
+                    arithmetic_filters.append(
+                        arithmetic_filter(sqlalchemy_filter(column)(arithmetic_value))(cond_value)
+                        if cond_op != 'between'
+                        else arithmetic_filter(sqlalchemy_filter(column)(arithmetic_value))(*cond_value)
+                    )
     return arithmetic_filters
 
 
-def _create_and_filters(column: str, op: str, value: Any) -> list[ColumnElement | None]:
+def _create_and_filters(column: InstrumentedAttribute, op: str, value: Any) -> list[ColumnElement | None]:
+    """
+    Create AND filter expressions.
+
+    :param column: The SQLAlchemy column
+    :param op: The filter operator
+    :param value: The filter value
+    :return:
+    """
     and_filters = []
     sqlalchemy_filter = get_sqlalchemy_filter(op, value)
     if sqlalchemy_filter is not None:
@@ -145,12 +175,18 @@ def _create_and_filters(column: str, op: str, value: Any) -> list[ColumnElement 
     return and_filters
 
 
-def parse_filters(model: Type[Model] | AliasedClass, **kwargs) -> list[ColumnElement]:
+def parse_filters(model: type[Model] | AliasedClass, **kwargs) -> list[ColumnElement]:
+    """
+    Parse filter expressions from keyword arguments.
+
+    :param model: The SQLAlchemy model class or aliased class
+    :param kwargs: Filter expressions using field__operator=value syntax
+    :return:
+    """
     filters = []
 
     for key, value in kwargs.items():
         if '__' not in key:
-            # NO FILTER
             column = get_column(model, key)
             filters.append(column == value)
             continue
@@ -161,45 +197,48 @@ def parse_filters(model: Type[Model] | AliasedClass, **kwargs) -> list[ColumnEle
         if field_name == '__or' and op == '':
             __or__filters = []
 
-            for field_or in value:
-                for _key, _value in field_or.items():
+            for _key, _value in value.items():
+                if '__' not in _key:
+                    _column = get_column(model, _key)
+                    if isinstance(_value, list):
+                        for single_value in _value:
+                            __or__filters.append(_column == single_value)
+                    else:
+                        __or__filters.append(_column == _value)
+                else:
                     _field_name, _op = _key.rsplit('__', 1)
                     _column = get_column(model, _field_name)
 
-                    if '__' not in _key:
-                        __or__filters.append(_column == _value)
+                    if isinstance(_value, list) and _op not in ['in', 'not_in', 'between']:
+                        for single_value in _value:
+                            __or__filters.extend(_create_and_filters(_column, _op, single_value))
+                    else:
+                        if _op == 'or':
+                            __or__filters.extend(_create_or_filters(_column, _op, _value))
+                        elif _op in _DYNAMIC_OPERATORS:
+                            __or__filters.extend(_create_arithmetic_filters(_column, _op, _value))
+                        else:
+                            __or__filters.extend(_create_and_filters(_column, _op, _value))
 
-                    if _op == 'or':
-                        __or__filters.extend(_create_or_filters(_column, _op, _value))
-                        continue
-
-                    if _op in _DYNAMIC_OPERATORS:
-                        __or__filters.extend(_create_arithmetic_filters(_column, _op, _value))
-                        continue
-
-                    __or__filters.extend(_create_and_filters(_column, _op, _value))
-
-            filters.append(or_(*__or__filters))
+            if __or__filters:
+                filters.append(or_(*__or__filters))
         else:
             column = get_column(model, field_name)
 
             if op == 'or':
                 filters.append(or_(*_create_or_filters(column, op, value)))
-                continue
-
-            if op in _DYNAMIC_OPERATORS:
+            elif op in _DYNAMIC_OPERATORS:
                 arithmetic_filters = _create_arithmetic_filters(column, op, value)
                 if arithmetic_filters:
                     filters.append(and_(*arithmetic_filters))
-                continue
-
-            filters.extend(_create_and_filters(column, op, value))
+            else:
+                filters.extend(_create_and_filters(column, op, value))
 
     return filters
 
 
 def apply_sorting(
-    model: Type[Model] | AliasedClass,
+    model: type[Model] | AliasedClass,
     stmt: Select,
     sort_columns: str | list[str],
     sort_orders: str | list[str] | None = None,

@@ -131,18 +131,17 @@ items = await item_crud.select_models(
 # 获取年龄等于 30 岁或 40 岁的员工
 items = await item_crud.select_models(
     session=db,
-    __or__=[
-        {'age__eq': 30},
-        {'age__eq': 40}
-    ]
+    __or__={
+        'age__eq': [30, 40]
+    }
 )
 
 # 获取年龄在 30 - 40 岁之间或薪资大于 20k 的员工
 items = await item_crud.select_models(
     session=db,
-    __or__=[
-        {'age__between': [30, 40]},
-        {'payroll__gt': 20000}
-    ]
+    __or__={
+        'age__between': [30, 40],
+        'payroll__gt': 20000
+    }
 )
 ```

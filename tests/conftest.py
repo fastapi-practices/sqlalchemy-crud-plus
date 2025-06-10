@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from typing import AsyncGenerator, Generator
+from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from sqlalchemy_crud_plus import CRUDPlus
 from tests.model import Base, Ins, InsPks
-from tests.schema import ModelTest, ModelTestPks
 
 # Database configuration
 _async_engine = create_async_engine(
@@ -53,18 +52,6 @@ def crud_ins() -> CRUDPlus[Ins]:
 def crud_ins_pks() -> CRUDPlus[InsPks]:
     """Provide CRUD instance for InsPks model."""
     return CRUDPlus(InsPks)
-
-
-@pytest.fixture
-def sample_schemas() -> Generator[list[ModelTest], None, None]:
-    """Provide sample Pydantic schemas for testing."""
-    return [ModelTest(name=f'test_item_{i}') for i in range(1, 6)]
-
-
-@pytest.fixture
-def sample_schemas_pks() -> Generator[list[ModelTestPks], None, None]:
-    """Provide sample Pydantic schemas for composite key testing."""
-    return [ModelTestPks(name=f'test_pk_item_{i}') for i in range(1, 4)]
 
 
 @pytest_asyncio.fixture
