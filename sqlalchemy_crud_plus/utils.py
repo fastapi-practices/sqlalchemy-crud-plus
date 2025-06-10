@@ -5,7 +5,6 @@ import warnings
 from typing import Any, Callable, Type
 
 from sqlalchemy import ColumnElement, Select, and_, asc, desc, or_
-from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.orm.util import AliasedClass
 
 from sqlalchemy_crud_plus.errors import ColumnSortError, ModelColumnError, SelectOperatorError
@@ -92,10 +91,22 @@ def get_sqlalchemy_filter(operator: str, value: Any, allow_arithmetic: bool = Tr
     return sqlalchemy_filter
 
 
-def get_column(model: Type[Model] | AliasedClass, field_name: str) -> InstrumentedAttribute | None:
+def get_column(model: Type[Model] | AliasedClass, field_name: str):
+    """
+    Get column from model with validation.
+
+    :param model: The SQLAlchemy model class or aliased class
+    :param field_name: The column name to retrieve
+    :return:
+    """
     column = getattr(model, field_name, None)
     if column is None:
         raise ModelColumnError(f'Column {field_name} is not found in {model}')
+
+    if hasattr(model, '__table__') and hasattr(column, 'property'):
+        if not hasattr(column.property, 'columns'):
+            raise ModelColumnError(f'{field_name} is not a valid column in {model}')
+
     return column
 
 
@@ -155,18 +166,18 @@ def parse_filters(model: Type[Model] | AliasedClass, **kwargs) -> list[ColumnEle
                     _field_name, _op = _key.rsplit('__', 1)
                     _column = get_column(model, _field_name)
 
-                    if '__' not in key:
+                    if '__' not in _key:
                         __or__filters.append(_column == _value)
 
                     if _op == 'or':
-                        __or__filters.append(*_create_or_filters(_column, _op, _value))
+                        __or__filters.extend(_create_or_filters(_column, _op, _value))
                         continue
 
                     if _op in _DYNAMIC_OPERATORS:
-                        __or__filters.append(*_create_arithmetic_filters(_column, _op, _value))
+                        __or__filters.extend(_create_arithmetic_filters(_column, _op, _value))
                         continue
 
-                    __or__filters.append(*_create_and_filters(_column, _op, _value))
+                    __or__filters.extend(_create_and_filters(_column, _op, _value))
 
             filters.append(or_(*__or__filters))
         else:
@@ -177,10 +188,12 @@ def parse_filters(model: Type[Model] | AliasedClass, **kwargs) -> list[ColumnEle
                 continue
 
             if op in _DYNAMIC_OPERATORS:
-                filters.append(and_(*_create_arithmetic_filters(column, op, value)))
+                arithmetic_filters = _create_arithmetic_filters(column, op, value)
+                if arithmetic_filters:
+                    filters.append(and_(*arithmetic_filters))
                 continue
 
-            filters.append(*_create_and_filters(column, op, value))
+            filters.extend(_create_and_filters(column, op, value))
 
     return filters
 
@@ -194,12 +207,10 @@ def apply_sorting(
     """
     Apply sorting to a SQLAlchemy query based on specified column names and sort orders.
 
-    :param model: The SQLAlchemy model.
-    :param stmt: The SQLAlchemy `Select` statement to which sorting will be applied.
-    :param sort_columns: A single column name or list of column names to sort the query results by.
-    Must be used in conjunction with sort_orders.
-    :param sort_orders: A single sort order ("asc" or "desc") or a list of sort orders, corresponding to each
-    column in sort_columns. If not specified, defaults to ascending order for all sort_columns.
+    :param model: The SQLAlchemy model
+    :param stmt: The SQLAlchemy Select statement to which sorting will be applied
+    :param sort_columns: Column name or list of column names to sort by
+    :param sort_orders: Sort order ("asc" or "desc") or list of sort orders
     :return:
     """
     if sort_orders and not sort_columns:
