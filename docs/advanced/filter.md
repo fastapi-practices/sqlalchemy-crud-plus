@@ -52,11 +52,13 @@ items = await item_crud.select_models(
 
 !!! note
 
-    此过滤器必须传递字典，且字典结构必须为 `{'value': xxx, 'condition': {'已支持的过滤器': xxx}}`
+    此过滤器必须传递字典，且字典结构必须为：
 
-    `value`：此值将与列值进行条件运算
-
-    `condition`：此值将作为运算条件和预期结果
+    `{'value': xxx, 'condition': {'已支持的条件过滤（不带前导 __）': xxx}}`
+    
+    | value           | condition      |
+    |-----------------|----------------|
+    | 此值将根据运算符与列值进行运算 | 此值将作为运算条件和预期结果 |
 
 - `__add`: Python `+` 运算符
 - `__radd`: Python `+` 反向运算
@@ -121,34 +123,24 @@ items = await item_crud.select_models(
 )
 ```
 
-## MOR
-
 !!! note
 
-    `or` 过滤器的高级用法，每个键都应是库已支持的过滤器，仅允许字典
+    `or` 过滤器的高级用法，每个值都应是一个已受支持的条件过滤器，它应该是一个数组
 
-```python title="__mor"
+```python title="__or__"
 # 获取年龄等于 30 岁或 40 岁的员工
 items = await item_crud.select_models(
     session=db,
-    age__mor={'eq': [30, 40]},  # (1)
+    __or__=[
+        {'age__eq': 30},
+        {'age__eq': 40}
+    ]
 )
-```
 
-1. 原因：在 python 字典中，不允许存在相同的键值；<br/>
-   场景：我有一个列，需要多个相同条件但不同条件值的查询，此时，你应该使用 `mor` 过滤器，正如此示例一样使用它
-
-## GOR
-
-!!! note
-
-    `or` 过滤器的更高级用法，每个值都应是一个已受支持的条件过滤器，它应该是一个数组
-
-```python title="__gor__"
 # 获取年龄在 30 - 40 岁之间或薪资大于 20k 的员工
 items = await item_crud.select_models(
     session=db,
-    __gor__=[
+    __or__=[
         {'age__between': [30, 40]},
         {'payroll__gt': 20000}
     ]
