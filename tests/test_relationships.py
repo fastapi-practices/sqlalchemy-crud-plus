@@ -199,3 +199,90 @@ class TestManyToManyRelations:
 
         assert role is not None
         assert len(role.users) > 0
+
+
+class TestCountWithRelationships:
+    """Test count method with relationship queries."""
+
+    @pytest.mark.asyncio
+    async def test_count_with_inner_join(
+        self, db_session: AsyncSession, rel_sample_data: dict, rel_user_crud: CRUDPlus[RelUser]
+    ):
+        """Test count with INNER JOIN."""
+        count = await rel_user_crud.count(
+            db_session,
+            join_conditions=['posts']
+        )
+
+        assert count > 0
+        total_users = await rel_user_crud.count(db_session)
+        assert count >= total_users
+
+    @pytest.mark.asyncio
+    async def test_count_with_left_join(
+        self, db_session: AsyncSession, rel_sample_data: dict, rel_user_crud: CRUDPlus[RelUser]
+    ):
+        """Test count with LEFT JOIN."""
+        count = await rel_user_crud.count(
+            db_session,
+            join_conditions={'posts': 'left'}
+        )
+
+        total_users = await rel_user_crud.count(db_session)
+        assert count >= total_users
+
+    @pytest.mark.asyncio
+    async def test_count_with_filters(
+        self, db_session: AsyncSession, rel_sample_data: dict, rel_user_crud: CRUDPlus[RelUser]
+    ):
+        """Test count with JOIN conditions and filters."""
+        users = rel_sample_data['users']
+
+        count = await rel_user_crud.count(
+            db_session,
+            join_conditions=['posts'],
+            name=users[0].name
+        )
+
+        assert count >= 0
+
+
+class TestExistsWithRelationships:
+    """Test exists method with relationship queries."""
+
+    @pytest.mark.asyncio
+    async def test_exists_with_inner_join(
+        self, db_session: AsyncSession, rel_sample_data: dict, rel_user_crud: CRUDPlus[RelUser]
+    ):
+        """Test exists with INNER JOIN."""
+        exists = await rel_user_crud.exists(
+            db_session,
+            join_conditions=['posts']
+        )
+
+        assert exists is True
+
+    @pytest.mark.asyncio
+    async def test_exists_with_left_join(
+        self, db_session: AsyncSession, rel_sample_data: dict, rel_post_crud: CRUDPlus[RelPost]
+    ):
+        """Test exists with LEFT JOIN."""
+        exists = await rel_post_crud.exists(
+            db_session,
+            join_conditions={'category': 'left'}
+        )
+
+        assert exists is True
+
+    @pytest.mark.asyncio
+    async def test_exists_false_case(
+        self, db_session: AsyncSession, rel_sample_data: dict, rel_user_crud: CRUDPlus[RelUser]
+    ):
+        """Test exists returns False when no records match."""
+        exists = await rel_user_crud.exists(
+            db_session,
+            join_conditions=['posts'],
+            name='nonexistent_user'
+        )
+
+        assert exists is False

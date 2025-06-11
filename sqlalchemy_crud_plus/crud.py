@@ -131,13 +131,15 @@ class CRUDPlus(Generic[Model]):
         self,
         session: AsyncSession,
         *whereclause: ColumnExpressionArgument[bool],
+        join_conditions: JoinConditionsConfig | None = None,
         **kwargs,
     ) -> int:
         """
         Count records that match specified filters.
 
-        :param session: The SQLAlchemy async session
-        :param whereclause: Additional WHERE clauses to apply to the query
+        :param session: SQLAlchemy async session
+        :param whereclause: Additional WHERE clauses
+        :param join_conditions: JOIN conditions for relationships
         :param kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
@@ -150,6 +152,9 @@ class CRUDPlus(Generic[Model]):
         if filters:
             stmt = stmt.where(*filters)
 
+        if join_conditions:
+            stmt = apply_join_conditions(self.model, stmt, join_conditions)
+
         query = await session.execute(stmt)
         total_count = query.scalar()
         return total_count if total_count is not None else 0
@@ -158,13 +163,15 @@ class CRUDPlus(Generic[Model]):
         self,
         session: AsyncSession,
         *whereclause: ColumnExpressionArgument[bool],
+        join_conditions: JoinConditionsConfig | None = None,
         **kwargs,
     ) -> bool:
         """
         Check whether records that match the specified filters exist.
 
-        :param session: The SQLAlchemy async session
-        :param whereclause: Additional WHERE clauses to apply to the query
+        :param session: SQLAlchemy async session
+        :param whereclause: Additional WHERE clauses
+        :param join_conditions: JOIN conditions for relationships
         :param kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
@@ -174,6 +181,10 @@ class CRUDPlus(Generic[Model]):
             filters.extend(parse_filters(self.model, **kwargs))
 
         stmt = select(self.model).where(*filters).limit(1)
+
+        if join_conditions:
+            stmt = apply_join_conditions(self.model, stmt, join_conditions)
+
         query = await session.execute(stmt)
         return query.scalars().first() is not None
 
@@ -241,37 +252,50 @@ class CRUDPlus(Generic[Model]):
         :param kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
-        filters = list(whereclause)
+        stmt = await self.select(
+            *whereclause,
+            options=options,
+            load_strategies=load_strategies,
+            join_conditions=join_conditions,
+            **kwargs
+        )
 
-        if kwargs:
-            filters.extend(parse_filters(self.model, **kwargs))
+        query = await session.execute(stmt)
+        return query.scalars().first()
 
+    async def select(
+        self,
+        *whereclause: ColumnExpressionArgument[bool],
+        options: QueryOptions | None = None,
+        load_strategies: LoadStrategiesConfig | None = None,
+        join_conditions: JoinConditionsConfig | None = None,
+        **kwargs
+    ) -> Select:
+        """
+        Construct the SQLAlchemy selection.
+
+        :param whereclause: WHERE clauses to apply to the query
+        :param options: SQLAlchemy loading options
+        :param load_strategies: Relationship loading strategies
+        :param join_conditions: JOIN conditions for relationships
+        :param kwargs: Query expressions
+        :return:
+        """
+        filters =  list(whereclause)
+        filters.extend(parse_filters(self.model, **kwargs))
         stmt = select(self.model).where(*filters)
-
-        if options:
-            stmt = stmt.options(*options)
 
         if join_conditions:
             stmt = apply_join_conditions(self.model, stmt, join_conditions)
+
+        if options:
+            stmt = stmt.options(*options)
 
         if load_strategies:
             rel_options = build_load_strategies(self.model, load_strategies)
             if rel_options:
                 stmt = stmt.options(*rel_options)
 
-        query = await session.execute(stmt)
-        return query.scalars().first()
-
-    async def select(self, *whereclause: ColumnExpressionArgument[bool], **kwargs) -> Select:
-        """
-        Construct the SQLAlchemy selection.
-
-        :param whereclause: WHERE clauses to apply to the query
-        :param kwargs: Query expressions
-        :return:
-        """
-        filters = parse_filters(self.model, **kwargs) + list(whereclause)
-        stmt = select(self.model).where(*filters)
         return stmt
 
     async def select_order(
@@ -279,6 +303,9 @@ class CRUDPlus(Generic[Model]):
         sort_columns: SortColumns,
         sort_orders: SortOrders = None,
         *whereclause: ColumnExpressionArgument[bool],
+        options: QueryOptions | None = None,
+        load_strategies: LoadStrategiesConfig | None = None,
+        join_conditions: JoinConditionsConfig | None = None,
         **kwargs: Any,
     ) -> Select:
         """
@@ -287,10 +314,19 @@ class CRUDPlus(Generic[Model]):
         :param sort_columns: Column names to sort by
         :param sort_orders: Sort orders ('asc' or 'desc')
         :param whereclause: WHERE clauses to apply to the query
+        :param options: SQLAlchemy loading options
+        :param load_strategies: Relationship loading strategies
+        :param join_conditions: JOIN conditions for relationships
         :param kwargs: Query expressions
         :return:
         """
-        stmt = await self.select(*whereclause, **kwargs)
+        stmt = await self.select(
+            *whereclause,
+            options=options,
+            load_strategies=load_strategies,
+            join_conditions=join_conditions,
+            **kwargs
+        )
         sorted_stmt = apply_sorting(self.model, stmt, sort_columns, sort_orders)
         return sorted_stmt
 
@@ -306,7 +342,7 @@ class CRUDPlus(Generic[Model]):
         **kwargs: Any,
     ) -> Sequence[Model]:
         """
-         Query all rows that match the specified filters with optional relationship loading and joins.
+        Query all rows that match the specified filters with optional relationship loading and joins.
 
         :param session: SQLAlchemy async session
         :param whereclause: Additional WHERE clauses
@@ -318,18 +354,13 @@ class CRUDPlus(Generic[Model]):
         :param kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
-        stmt = await self.select(*whereclause, **kwargs)
-
-        if options:
-            stmt = stmt.options(*options)
-
-        if join_conditions:
-            stmt = apply_join_conditions(self.model, stmt, join_conditions)
-
-        if load_strategies:
-            rel_options = build_load_strategies(self.model, load_strategies)
-            if rel_options:
-                stmt = stmt.options(*rel_options)
+        stmt = await self.select(
+            *whereclause,
+            options=options,
+            load_strategies=load_strategies,
+            join_conditions=join_conditions,
+            **kwargs
+        )
 
         if limit is not None:
             stmt = stmt.limit(limit)
@@ -368,18 +399,15 @@ class CRUDPlus(Generic[Model]):
         :param  kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
-        stmt = await self.select_order(sort_columns, sort_orders, *whereclause, **kwargs)
-
-        if options:
-            stmt = stmt.options(*options)
-
-        if join_conditions:
-            stmt = apply_join_conditions(self.model, stmt, join_conditions)
-
-        if load_strategies:
-            rel_options = build_load_strategies(self.model, load_strategies)
-            if rel_options:
-                stmt = stmt.options(*rel_options)
+        stmt = await self.select_order(
+            sort_columns,
+            sort_orders,
+            *whereclause,
+            options=options,
+            load_strategies=load_strategies,
+            join_conditions=join_conditions,
+            **kwargs
+        )
 
         if limit is not None:
             stmt = stmt.limit(limit)

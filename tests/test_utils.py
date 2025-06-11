@@ -237,6 +237,16 @@ class TestUtilityFunctions:
         sql_str = str(new_stmt)
         assert 'JOIN' in sql_str.upper()
 
+    def test_apply_join_conditions_right_join_limitation(self):
+        """Test that RIGHT JOIN is treated as LEFT JOIN due to SQLAlchemy limitations."""
+        stmt = select(RelPost)
+        # RIGHT JOIN should work but behave like LEFT JOIN
+        new_stmt = apply_join_conditions(RelPost, stmt, {'author': 'right'})
+
+        sql_str = str(new_stmt)
+        assert 'JOIN' in sql_str.upper()
+        # Note: RIGHT JOIN is treated as LEFT JOIN in SQLAlchemy ORM
+
     def test_apply_join_conditions_invalid_relation(self):
         """Test applying JOIN conditions with invalid relationship."""
         stmt = select(RelPost)

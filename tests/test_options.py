@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import pytest
 
 from sqlalchemy.ext.asyncio import AsyncSession

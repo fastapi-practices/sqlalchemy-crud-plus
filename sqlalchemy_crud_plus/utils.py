@@ -374,6 +374,8 @@ def apply_join_conditions(model: type[Model], stmt: Select, join_conditions: Joi
                 elif join_type == 'inner':
                     stmt = stmt.join(rel_attr)
                 elif join_type == 'right':
+                    # RIGHT OUTER JOIN: SQLAlchemy doesn't directly support RIGHT JOIN
+                    # The standard approach is to reverse the table order and use LEFT JOIN For ORM relationships
                     stmt = stmt.join(rel_attr, isouter=True)
                 elif join_type == 'full':
                     stmt = stmt.join(rel_attr, full=True)
