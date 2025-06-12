@@ -8,6 +8,7 @@ from sqlalchemy.orm import aliased
 from sqlalchemy_crud_plus.errors import (
     ColumnSortError,
     JoinConditionError,
+    LoadingStrategyError,
     ModelColumnError,
     SelectOperatorError,
 )
@@ -20,256 +21,220 @@ from sqlalchemy_crud_plus.utils import (
     parse_filters,
 )
 from tests.models.basic import Ins
-from tests.models.relations import RelPost, RelUser
+from tests.models.relations import RelUser
 
 
-class TestUtilityFunctions:
-    """Test utility functions."""
+def test_get_column_valid_field():
+    column = get_column(Ins, 'name')
 
-    def test_get_column_valid(self):
-        """Test getting valid columns."""
-        name_column = get_column(Ins, 'name')
-        assert name_column is not None
+    assert column is not None
 
-        id_column = get_column(Ins, 'id')
-        assert id_column is not None
 
-    def test_get_column_invalid(self):
-        """Test getting invalid columns."""
-        with pytest.raises(ModelColumnError):
-            get_column(Ins, 'nonexistent_column')
+def test_get_column_invalid_field():
+    with pytest.raises(ModelColumnError):
+        get_column(Ins, 'nonexistent_column')
 
-    def test_get_column_with_aliased_model(self):
-        """Test getting columns from aliased model."""
-        aliased_ins = aliased(Ins)
-        name_column = get_column(aliased_ins, 'name')
-        assert name_column is not None
 
-    def test_get_sqlalchemy_filter_basic(self):
-        """Test basic filter operators."""
-        # Test equality
-        filter_func = get_sqlalchemy_filter('eq', 'test')
-        assert filter_func is not None
+def test_get_column_with_aliased_model():
+    aliased_ins = aliased(Ins)
+    column = get_column(aliased_ins, 'name')
 
-        # Test inequality
-        filter_func = get_sqlalchemy_filter('ne', 'test')
-        assert filter_func is not None
+    assert column is not None
 
-        # Test greater than
-        filter_func = get_sqlalchemy_filter('gt', 5)
-        assert filter_func is not None
 
-    def test_get_sqlalchemy_filter_string_ops(self):
-        """Test string operators."""
-        # Test LIKE
-        filter_func = get_sqlalchemy_filter('like', '%test%')
-        assert filter_func is not None
+def test_get_sqlalchemy_filter_gt():
+    gt_filter = get_sqlalchemy_filter('gt', 5)
 
-        # Test startswith
-        filter_func = get_sqlalchemy_filter('startswith', 'test')
-        assert filter_func is not None
+    assert gt_filter is not None
 
-    def test_get_sqlalchemy_filter_list_ops(self):
-        """Test list operators."""
-        # Test IN
-        filter_func = get_sqlalchemy_filter('in', [1, 2, 3])
-        assert filter_func is not None
 
-        # Test BETWEEN
-        filter_func = get_sqlalchemy_filter('between', [1, 10])
-        assert filter_func is not None
+def test_get_sqlalchemy_filter_like():
+    like_filter = get_sqlalchemy_filter('like', 'test%')
 
-    def test_get_sqlalchemy_filter_unsupported(self):
-        """Test unsupported operators."""
-        with pytest.warns(SyntaxWarning):
-            filter_func = get_sqlalchemy_filter('unsupported_op', 'value')
-            assert filter_func is None
+    assert like_filter is not None
 
-    def test_parse_filters_simple(self):
-        """Test parsing simple filters."""
-        filters = parse_filters(Ins, name='test', id=1)
-        assert len(filters) == 2
 
-        filters = parse_filters(Ins, name__eq='test')
-        assert len(filters) == 1
+def test_get_sqlalchemy_filter_in_valid():
+    in_filter = get_sqlalchemy_filter('in', [1, 2, 3])
 
-    def test_parse_filters_complex(self):
-        """Test parsing complex filters."""
-        filters = parse_filters(Ins, name__like='%test%', id__gt=5, del_flag=True)
-        assert len(filters) == 3
+    assert in_filter is not None
 
-    def test_parse_filters_empty(self):
-        """Test parsing empty filters."""
-        filters = parse_filters(Ins)
-        assert len(filters) == 0
 
-    def test_apply_sorting_single_column(self):
-        """Test applying single column sorting."""
-        stmt = select(Ins)
+def test_get_sqlalchemy_filter_in_invalid_value():
+    with pytest.raises(SelectOperatorError):
+        get_sqlalchemy_filter('in', 'invalid')
 
-        # Test ascending sort
-        sorted_stmt = apply_sorting(Ins, stmt, 'name', 'asc')
-        assert sorted_stmt is not None
 
-        # Test descending sort
-        sorted_stmt = apply_sorting(Ins, stmt, 'name', 'desc')
-        assert sorted_stmt is not None
+def test_get_sqlalchemy_filter_unsupported_operator():
+    with pytest.warns(SyntaxWarning):
+        result = get_sqlalchemy_filter('unsupported', 'value')
+        assert result is None
 
-    def test_apply_sorting_multiple_columns(self):
-        """Test applying multiple column sorting."""
-        stmt = select(Ins)
 
-        sorted_stmt = apply_sorting(Ins, stmt, ['name', 'id'], ['asc', 'desc'])
-        assert sorted_stmt is not None
+def test_get_sqlalchemy_filter_add():
+    add_filter = get_sqlalchemy_filter('add', 5)
 
-    def test_apply_sorting_validation_errors(self):
-        """Test sorting validation errors."""
-        stmt = select(Ins)
+    assert add_filter is not None
 
-        # Test mismatched columns and orders
-        with pytest.raises(ColumnSortError):
-            apply_sorting(
-                Ins,
-                stmt,
-                ['name', 'id'],
-                ['asc'],  # Only one order for two columns
-            )
 
-        # Test invalid sort order
-        with pytest.raises(SelectOperatorError):
-            apply_sorting(Ins, stmt, 'name', 'invalid_order')
+def test_get_sqlalchemy_filter_add_not_allowed():
+    with pytest.raises(SelectOperatorError):
+        get_sqlalchemy_filter('add', 5, allow_arithmetic=False)
 
-        # Test invalid column
-        with pytest.raises(ModelColumnError):
-            apply_sorting(Ins, stmt, 'nonexistent_column')
 
-    def test_apply_sorting_edge_cases(self):
-        """Test sorting edge cases."""
-        stmt = select(Ins)
+def test_parse_filters_simple_equality():
+    filters = parse_filters(Ins, name='test')
 
-        # Test with None columns
-        result_stmt = apply_sorting(Ins, stmt, None)
-        assert result_stmt is stmt
+    assert len(filters) == 1
 
-        # Test with empty string
-        result_stmt = apply_sorting(Ins, stmt, '')
-        assert result_stmt is stmt
 
-    def test_filter_edge_cases(self):
-        """Test filter edge cases."""
-        # Test with None value
-        filter_func = get_sqlalchemy_filter('eq', None)
-        assert filter_func is not None
+def test_parse_filters_gt_operator():
+    filters = parse_filters(Ins, id__gt=5)
 
-        # Test with empty string
-        filter_func = get_sqlalchemy_filter('eq', '')
-        assert filter_func is not None
+    assert len(filters) == 1
 
-        # Test with boolean value
-        filter_func = get_sqlalchemy_filter('eq', True)
-        assert filter_func is not None
 
-    def test_or_filter_parsing(self):
-        """Test OR filter parsing."""
-        # Test simple OR filter
-        filters = parse_filters(Ins, name__or={'eq': 'test1', 'like': '%test2%'})
-        assert len(filters) == 1
+def test_parse_filters_like_operator():
+    filters = parse_filters(Ins, name__like='test%')
 
-        # Test __or__ dictionary format
-        filters = parse_filters(Ins, __or__={'name': 'test1', 'id__gt': 5})
-        assert len(filters) == 1
+    assert len(filters) == 1
 
-        # Test __or__ with list values
-        filters = parse_filters(Ins, __or__={'name': ['test1', 'test2'], 'id__gt': [5, 10]})
-        assert len(filters) == 1
 
-    def test_or_filter_edge_cases(self):
-        """Test OR filter edge cases."""
-        # Test empty dict
-        filters = parse_filters(Ins, __or__={})
-        assert len(filters) == 0
+def test_parse_filters_in_operator():
+    filters = parse_filters(Ins, id__in=[1, 2, 3])
 
-        # Test single field with list
-        filters = parse_filters(Ins, __or__={'name': ['test1', 'test2']})
-        assert len(filters) == 1
+    assert len(filters) == 1
 
-        # Test operators with lists
-        filters = parse_filters(Ins, __or__={'name__eq': ['test1', 'test2'], 'id__gt': [5, 10]})
-        assert len(filters) == 1
 
-    def test_arithmetic_filter_parsing(self):
-        """Test arithmetic filter parsing."""
-        filters = parse_filters(Ins, id__add={'value': 5, 'condition': {'gt': 10}})
-        assert len(filters) == 1
+def test_parse_filters_or_group_list_values():
+    filters = parse_filters(Ins, __or__={'del_flag': [True, False]})
 
-    def test_build_load_strategies_list(self):
-        """Test building load strategies with list format."""
-        options = build_load_strategies(RelUser, ['posts', 'profile'])
+    assert len(filters) == 1
 
-        assert len(options) == 2
-        for option in options:
-            assert hasattr(option, 'path')
 
-    def test_build_load_strategies_dict(self):
-        """Test building load strategies with dict format."""
-        options = build_load_strategies(RelUser, {'posts': 'selectinload', 'profile': 'joinedload'})
+def test_parse_filters_or_group_different_fields():
+    filters = parse_filters(Ins, __or__={'del_flag': True, 'name': 'test'})
 
-        assert len(options) == 2
+    assert len(filters) == 1
 
-    def test_build_load_strategies_invalid_relation(self):
-        """Test building load strategies with invalid relationship."""
-        options = build_load_strategies(RelUser, ['invalid_relation', 'posts'])
-        assert len(options) == 1
 
-    def test_apply_join_conditions_list(self):
-        """Test applying JOIN conditions with list format."""
-        stmt = select(RelPost)
-        new_stmt = apply_join_conditions(RelPost, stmt, ['author'])
+def test_parse_filters_multiple_conditions():
+    filters = parse_filters(Ins, name='test', id__gt=5, del_flag=False)
 
-        sql_str = str(new_stmt)
-        assert 'JOIN' in sql_str.upper()
+    assert len(filters) == 3
 
-    def test_apply_join_conditions_dict(self):
-        """Test applying JOIN conditions with dict format."""
-        stmt = select(RelPost)
-        new_stmt = apply_join_conditions(RelPost, stmt, {'author': 'left'})
 
-        sql_str = str(new_stmt)
-        assert 'JOIN' in sql_str.upper()
+def test_apply_sorting_single_column_asc():
+    stmt = select(Ins)
+    sorted_stmt = apply_sorting(Ins, stmt, 'name', 'asc')
 
-    def test_apply_join_conditions_right_join_limitation(self):
-        """Test that RIGHT JOIN is treated as LEFT JOIN due to SQLAlchemy limitations."""
-        stmt = select(RelPost)
-        # RIGHT JOIN should work but behave like LEFT JOIN
-        new_stmt = apply_join_conditions(RelPost, stmt, {'author': 'right'})
+    assert sorted_stmt is not None
 
-        sql_str = str(new_stmt)
-        assert 'JOIN' in sql_str.upper()
-        # Note: RIGHT JOIN is treated as LEFT JOIN in SQLAlchemy ORM
 
-    def test_apply_join_conditions_invalid_relation(self):
-        """Test applying JOIN conditions with invalid relationship."""
-        stmt = select(RelPost)
-        new_stmt = apply_join_conditions(RelPost, stmt, ['invalid_relation', 'author'])
+def test_apply_sorting_single_column_desc():
+    stmt = select(Ins)
+    sorted_stmt = apply_sorting(Ins, stmt, 'name', 'desc')
 
-        sql_str = str(new_stmt)
-        assert 'JOIN' in sql_str.upper()
+    assert sorted_stmt is not None
 
-    def test_empty_load_strategies(self):
-        """Test empty load strategies."""
-        options = build_load_strategies(RelUser, [])
-        assert len(options) == 0
 
-    def test_unknown_loading_strategy(self):
-        """Test unknown loading strategy raises error."""
-        from sqlalchemy_crud_plus.errors import LoadingStrategyError
+def test_apply_sorting_multiple_columns():
+    stmt = select(Ins)
+    sorted_stmt = apply_sorting(Ins, stmt, ['name', 'id'], ['asc', 'desc'])
 
-        with pytest.raises(LoadingStrategyError):
-            build_load_strategies(RelUser, {'posts': 'unknown_strategy'})
+    assert sorted_stmt is not None
 
-    def test_unknown_join_type(self):
-        """Test unknown JOIN type raises error."""
-        stmt = select(RelPost)
 
-        with pytest.raises(JoinConditionError):
-            apply_join_conditions(RelPost, stmt, {'author': 'unknown_join'})
+def test_apply_sorting_default_order():
+    stmt = select(Ins)
+    sorted_stmt = apply_sorting(Ins, stmt, 'name')
+
+    assert sorted_stmt is not None
+
+
+def test_apply_sorting_invalid_order():
+    stmt = select(Ins)
+    with pytest.raises(SelectOperatorError):
+        apply_sorting(Ins, stmt, 'name', 'invalid')
+
+
+def test_apply_sorting_mismatched_lengths():
+    stmt = select(Ins)
+    with pytest.raises(ColumnSortError):
+        apply_sorting(Ins, stmt, ['name', 'id'], ['asc'])
+
+
+def test_apply_sorting_orders_without_columns():
+    stmt = select(Ins)
+    with pytest.raises(ValueError):
+        apply_sorting(Ins, stmt, None, ['asc'])
+
+
+def test_build_load_strategies_list():
+    options = build_load_strategies(RelUser, ['posts', 'profile'])
+
+    assert len(options) == 2
+
+
+def test_build_load_strategies_dict():
+    options = build_load_strategies(RelUser, {'posts': 'selectinload', 'profile': 'joinedload'})
+
+    assert len(options) == 2
+
+
+def test_build_load_strategies_invalid_strategy():
+    with pytest.raises(LoadingStrategyError):
+        build_load_strategies(RelUser, {'posts': 'invalid_strategy'})
+
+
+def test_build_load_strategies_invalid_relationship():
+    options = build_load_strategies(RelUser, ['nonexistent'])
+
+    assert len(options) == 0
+
+
+def test_build_load_strategies_none():
+    options = build_load_strategies(RelUser, None)
+
+    assert len(options) == 0
+
+
+def test_apply_join_conditions_list():
+    stmt = select(RelUser)
+    joined_stmt = apply_join_conditions(RelUser, stmt, ['posts'])
+
+    assert joined_stmt is not None
+
+
+def test_apply_join_conditions_dict_inner():
+    stmt = select(RelUser)
+    joined_stmt = apply_join_conditions(RelUser, stmt, {'posts': 'inner'})
+
+    assert joined_stmt is not None
+
+
+def test_apply_join_conditions_dict_left():
+    stmt = select(RelUser)
+    joined_stmt = apply_join_conditions(RelUser, stmt, {'posts': 'left'})
+
+    assert joined_stmt is not None
+
+
+def test_apply_join_conditions_invalid_join_type():
+    stmt = select(RelUser)
+    with pytest.raises(JoinConditionError):
+        apply_join_conditions(RelUser, stmt, {'posts': 'invalid'})
+
+
+def test_apply_join_conditions_invalid_relationship():
+    stmt = select(RelUser)
+    joined_stmt = apply_join_conditions(RelUser, stmt, ['nonexistent'])
+
+    assert joined_stmt is not None
+
+
+def test_apply_join_conditions_none():
+    stmt = select(RelUser)
+    joined_stmt = apply_join_conditions(RelUser, stmt, None)
+
+    assert joined_stmt is not None

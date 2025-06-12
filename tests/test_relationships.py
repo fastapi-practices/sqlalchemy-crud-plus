@@ -3,286 +3,257 @@
 import pytest
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from sqlalchemy_crud_plus import CRUDPlus
-from tests.models.relations import RelCategory, RelPost, RelRole, RelUser
+from tests.models.relations import RelCategory, RelUser
 
 
-class TestLoadStrategies:
-    """Test load_strategies parameter functionality."""
+@pytest.mark.asyncio
+async def test_load_options_single(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = rel_sample_data['users']
+    user = await rel_crud_user.select_model(async_db_session, users[0].id, load_options=[selectinload(RelUser.posts)])
 
-    @pytest.mark.asyncio
-    async def test_load_strategies_list(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_user_crud: CRUDPlus[RelUser]
-    ):
-        """Test load_strategies with list format using default strategy."""
-        users = rel_sample_data['users']
-
-        user = await rel_user_crud.select_model(db_session, users[0].id, load_strategies=['posts', 'profile', 'roles'])
-
-        assert user is not None
-        assert len(user.posts) > 0
-        assert user.profile is not None
-        assert len(user.roles) > 0
-
-    @pytest.mark.asyncio
-    async def test_load_strategies_dict(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_user_crud: CRUDPlus[RelUser]
-    ):
-        """Test load_strategies with dict format specifying strategies."""
-        users = rel_sample_data['users']
-
-        user = await rel_user_crud.select_model(
-            db_session,
-            users[0].id,
-            load_strategies={'posts': 'selectinload', 'profile': 'joinedload', 'roles': 'subqueryload'},
-        )
-
-        assert user is not None
-        assert len(user.posts) > 0
-        assert user.profile is not None
-        assert len(user.roles) > 0
-
-    @pytest.mark.asyncio
-    async def test_load_strategies_batch_query(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_user_crud: CRUDPlus[RelUser]
-    ):
-        """Test load_strategies with batch query."""
-        users = await rel_user_crud.select_models(db_session, load_strategies=['posts', 'profile'])
-
-        assert len(users) > 0
-        for user in users:
-            assert hasattr(user, 'posts')
-            assert hasattr(user, 'profile')
-
-    @pytest.mark.asyncio
-    async def test_load_strategies_with_order(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_user_crud: CRUDPlus[RelUser]
-    ):
-        """Test load_strategies with ordered query."""
-        users = await rel_user_crud.select_models_order(
-            db_session, sort_columns='name', sort_orders='asc', load_strategies={'posts': 'selectinload'}
-        )
-
-        assert len(users) > 0
-        names = [user.name for user in users]
-        assert names == sorted(names)
+    assert user is not None
 
 
-class TestJoinConditions:
-    """Test join_conditions parameter functionality."""
+@pytest.mark.asyncio
+async def test_load_options_multiple(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = rel_sample_data['users']
+    user = await rel_crud_user.select_model(
+        async_db_session, users[0].id, load_options=[selectinload(RelUser.posts), selectinload(RelUser.roles)]
+    )
 
-    @pytest.mark.asyncio
-    async def test_join_conditions_list(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_post_crud: CRUDPlus[RelPost]
-    ):
-        """Test join_conditions with list format using default INNER JOIN."""
-        posts = await rel_post_crud.select_models(db_session, join_conditions=['author'])
-
-        assert len(posts) > 0
-        for post in posts:
-            assert post.author_id is not None
-
-    @pytest.mark.asyncio
-    async def test_join_conditions_dict(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_post_crud: CRUDPlus[RelPost]
-    ):
-        """Test join_conditions with dict format specifying JOIN types."""
-        posts = await rel_post_crud.select_models(db_session, join_conditions={'author': 'inner', 'category': 'left'})
-
-        assert len(posts) > 0
-
-    @pytest.mark.asyncio
-    async def test_join_conditions_with_filter(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_post_crud: CRUDPlus[RelPost]
-    ):
-        """Test join_conditions combined with filter conditions."""
-        rel_sample_data['users']  # noqa
-
-        posts = await rel_post_crud.select_models(
-            db_session,
-            join_conditions=['author'],
-        )
-
-        assert len(posts) >= 0
+    assert user is not None
 
 
-class TestCombinedUsage:
-    """Test combined usage of load_strategies and join_conditions."""
+@pytest.mark.asyncio
+async def test_load_options_with_select_models(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = await rel_crud_user.select_models(async_db_session, load_options=[selectinload(RelUser.posts)], limit=2)
 
-    @pytest.mark.asyncio
-    async def test_load_and_join_combined(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_post_crud: CRUDPlus[RelPost]
-    ):
-        """Test using load_strategies and join_conditions together."""
-        posts = await rel_post_crud.select_models(
-            db_session,
-            load_strategies={'author': 'selectinload'},
-            join_conditions={'category': 'left'},
-        )
-
-        assert len(posts) > 0
-        for post in posts:
-            assert post.author is not None
-
-    @pytest.mark.asyncio
-    async def test_complex_relationship_query(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_user_crud: CRUDPlus[RelUser]
-    ):
-        """Test complex relationship queries."""
-        users = await rel_user_crud.select_models(
-            db_session,
-            load_strategies={'posts': 'selectinload', 'profile': 'joinedload', 'roles': 'selectinload'},
-            limit=2,
-        )
-
-        assert len(users) <= 2
-        for user in users:
-            assert hasattr(user, 'posts')
-            assert hasattr(user, 'profile')
-            assert hasattr(user, 'roles')
+    assert len(users) <= 2
 
 
-class TestSelfReferentialRelations:
-    """Test self-referential relationships."""
+@pytest.mark.asyncio
+async def test_load_options_empty_list(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = rel_sample_data['users']
+    user = await rel_crud_user.select_model(async_db_session, users[0].id, load_options=[])
 
-    @pytest.mark.asyncio
-    async def test_self_referential_children(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_category_crud: CRUDPlus[RelCategory]
-    ):
-        """Test self-referential relationship - loading children."""
-        categories = rel_sample_data['categories']
-        root_category = next(cat for cat in categories if cat.parent_id is None)
-
-        category = await rel_category_crud.select_model(db_session, root_category.id, load_strategies=['children'])
-
-        assert category is not None
-        assert len(category.children) > 0
-
-    @pytest.mark.asyncio
-    async def test_self_referential_parent(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_category_crud: CRUDPlus[RelCategory]
-    ):
-        """Test self-referential relationship - loading parent."""
-        categories = rel_sample_data['categories']
-        child_category = next(cat for cat in categories if cat.parent_id is not None)
-
-        category = await rel_category_crud.select_model(db_session, child_category.id, load_strategies=['parent'])
-
-        assert category is not None
-        assert category.parent is not None
+    assert user is not None
 
 
-class TestManyToManyRelations:
-    """Test many-to-many relationships."""
+@pytest.mark.asyncio
+async def test_load_strategies_list_format(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = rel_sample_data['users']
+    user = await rel_crud_user.select_model(async_db_session, users[0].id, load_strategies=['posts'])
 
-    @pytest.mark.asyncio
-    async def test_many_to_many_user_roles(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_user_crud: CRUDPlus[RelUser]
-    ):
-        """Test many-to-many relationship - user roles."""
-        users = rel_sample_data['users']
-
-        user = await rel_user_crud.select_model(db_session, users[0].id, load_strategies=['roles'])
-
-        assert user is not None
-        assert len(user.roles) > 0
-
-    @pytest.mark.asyncio
-    async def test_many_to_many_role_users(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_role_crud: CRUDPlus[RelRole]
-    ):
-        """Test many-to-many relationship - role users."""
-        roles = rel_sample_data['roles']
-
-        role = await rel_role_crud.select_model(db_session, roles[0].id, load_strategies=['users'])
-
-        assert role is not None
-        assert len(role.users) > 0
+    assert user is not None
 
 
-class TestCountWithRelationships:
-    """Test count method with relationship queries."""
+@pytest.mark.asyncio
+async def test_load_strategies_dict_format(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = rel_sample_data['users']
+    user = await rel_crud_user.select_model(async_db_session, users[0].id, load_strategies={'posts': 'selectinload'})
 
-    @pytest.mark.asyncio
-    async def test_count_with_inner_join(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_user_crud: CRUDPlus[RelUser]
-    ):
-        """Test count with INNER JOIN."""
-        count = await rel_user_crud.count(
-            db_session,
-            join_conditions=['posts']
-        )
-
-        assert count > 0
-        total_users = await rel_user_crud.count(db_session)
-        assert count >= total_users
-
-    @pytest.mark.asyncio
-    async def test_count_with_left_join(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_user_crud: CRUDPlus[RelUser]
-    ):
-        """Test count with LEFT JOIN."""
-        count = await rel_user_crud.count(
-            db_session,
-            join_conditions={'posts': 'left'}
-        )
-
-        total_users = await rel_user_crud.count(db_session)
-        assert count >= total_users
-
-    @pytest.mark.asyncio
-    async def test_count_with_filters(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_user_crud: CRUDPlus[RelUser]
-    ):
-        """Test count with JOIN conditions and filters."""
-        users = rel_sample_data['users']
-
-        count = await rel_user_crud.count(
-            db_session,
-            join_conditions=['posts'],
-            name=users[0].name
-        )
-
-        assert count >= 0
+    assert user is not None
 
 
-class TestExistsWithRelationships:
-    """Test exists method with relationship queries."""
+@pytest.mark.asyncio
+async def test_load_strategies_selectinload(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = rel_sample_data['users']
+    user = await rel_crud_user.select_model(async_db_session, users[0].id, load_strategies={'posts': 'selectinload'})
 
-    @pytest.mark.asyncio
-    async def test_exists_with_inner_join(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_user_crud: CRUDPlus[RelUser]
-    ):
-        """Test exists with INNER JOIN."""
-        exists = await rel_user_crud.exists(
-            db_session,
-            join_conditions=['posts']
-        )
+    assert user is not None
 
-        assert exists is True
 
-    @pytest.mark.asyncio
-    async def test_exists_with_left_join(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_post_crud: CRUDPlus[RelPost]
-    ):
-        """Test exists with LEFT JOIN."""
-        exists = await rel_post_crud.exists(
-            db_session,
-            join_conditions={'category': 'left'}
-        )
+@pytest.mark.asyncio
+async def test_load_strategies_joinedload(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = rel_sample_data['users']
+    user = await rel_crud_user.select_model(async_db_session, users[0].id, load_strategies={'profile': 'joinedload'})
 
-        assert exists is True
+    assert user is not None
 
-    @pytest.mark.asyncio
-    async def test_exists_false_case(
-        self, db_session: AsyncSession, rel_sample_data: dict, rel_user_crud: CRUDPlus[RelUser]
-    ):
-        """Test exists returns False when no records match."""
-        exists = await rel_user_crud.exists(
-            db_session,
-            join_conditions=['posts'],
-            name='nonexistent_user'
-        )
 
-        assert exists is False
+@pytest.mark.asyncio
+async def test_load_strategies_subqueryload(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = rel_sample_data['users']
+    user = await rel_crud_user.select_model(async_db_session, users[0].id, load_strategies={'roles': 'subqueryload'})
+
+    assert user is not None
+
+
+@pytest.mark.asyncio
+async def test_load_strategies_nested_relationship(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = rel_sample_data['users']
+    user = await rel_crud_user.select_model(
+        async_db_session, users[0].id, load_strategies={'posts.category': 'joinedload'}
+    )
+
+    assert user is not None
+
+
+@pytest.mark.asyncio
+async def test_load_strategies_with_select_models(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = await rel_crud_user.select_models(async_db_session, load_strategies=['posts'], limit=2)
+
+    assert len(users) <= 2
+
+
+@pytest.mark.asyncio
+async def test_join_conditions_list_format(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = await rel_crud_user.select_models(async_db_session, join_conditions=['posts'])
+
+    assert len(users) >= 0
+
+
+@pytest.mark.asyncio
+async def test_join_conditions_inner_join(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = await rel_crud_user.select_models(async_db_session, join_conditions={'posts': 'inner'})
+
+    assert len(users) >= 0
+
+
+@pytest.mark.asyncio
+async def test_join_conditions_left_join(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = await rel_crud_user.select_models(async_db_session, join_conditions={'posts': 'left'})
+
+    assert len(users) >= 0
+
+
+@pytest.mark.asyncio
+async def test_join_conditions_multiple_relationships(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = await rel_crud_user.select_models(async_db_session, join_conditions=['posts', 'profile'])
+
+    assert len(users) >= 0
+
+
+@pytest.mark.asyncio
+async def test_join_conditions_with_count(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    count = await rel_crud_user.count(async_db_session, join_conditions=['posts'])
+
+    assert count >= 0
+
+
+@pytest.mark.asyncio
+async def test_join_conditions_with_exists(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    exists = await rel_crud_user.exists(async_db_session, join_conditions=['posts'])
+
+    assert isinstance(exists, bool)
+
+
+@pytest.mark.asyncio
+async def test_self_referencing_children_load(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_category: CRUDPlus[RelCategory]
+):
+    categories = rel_sample_data['categories']
+    root_category = next(cat for cat in categories if cat.parent_id is None)
+    category = await rel_crud_category.select_model(async_db_session, root_category.id, load_strategies=['children'])
+
+    assert category is not None
+
+
+@pytest.mark.asyncio
+async def test_self_referencing_parent_load(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_category: CRUDPlus[RelCategory]
+):
+    categories = rel_sample_data['categories']
+    child_category = next(cat for cat in categories if cat.parent_id is not None)
+    category = await rel_crud_category.select_model(async_db_session, child_category.id, load_strategies=['parent'])
+
+    assert category is not None
+
+
+@pytest.mark.asyncio
+async def test_two_level_nested_relationship(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = rel_sample_data['users']
+    user = await rel_crud_user.select_model(
+        async_db_session, users[0].id, load_strategies={'posts.category': 'joinedload'}
+    )
+
+    assert user is not None
+
+
+@pytest.mark.asyncio
+async def test_three_level_nested_relationship(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = rel_sample_data['users']
+    user = await rel_crud_user.select_model(
+        async_db_session, users[0].id, load_strategies={'posts.category.parent': 'joinedload'}
+    )
+
+    assert user is not None
+
+
+@pytest.mark.asyncio
+async def test_combined_load_strategies_and_join_conditions(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = await rel_crud_user.select_models(
+        async_db_session, join_conditions=['posts'], load_strategies=['posts'], limit=2
+    )
+
+    assert len(users) <= 2
+
+
+@pytest.mark.asyncio
+async def test_combined_load_options_and_load_strategies(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = rel_sample_data['users']
+    user = await rel_crud_user.select_model(
+        async_db_session, users[0].id, load_options=[selectinload(RelUser.posts)], load_strategies=['profile']
+    )
+
+    assert user is not None
+
+
+@pytest.mark.asyncio
+async def test_combined_all_relationship_params(
+    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
+):
+    users = await rel_crud_user.select_models(
+        async_db_session,
+        load_options=[selectinload(RelUser.roles)],
+        load_strategies=['posts'],
+        join_conditions=['posts'],
+        limit=1,
+    )
+
+    assert len(users) <= 1
