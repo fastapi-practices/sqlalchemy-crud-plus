@@ -193,7 +193,7 @@ class CRUDPlus(Generic[Model]):
         session: AsyncSession,
         pk: Any | Sequence[Any],
         *whereclause: ColumnExpressionArgument[bool],
-        options: QueryOptions | None = None,
+        load_options: QueryOptions | None = None,
         load_strategies: LoadStrategiesConfig | None = None,
         join_conditions: JoinConditionsConfig | None = None,
         **kwargs: Any,
@@ -204,7 +204,7 @@ class CRUDPlus(Generic[Model]):
         :param session: SQLAlchemy async session
         :param pk: Primary key value(s) - single value or tuple for composite keys
         :param whereclause: Additional WHERE clauses
-        :param options: SQLAlchemy loading options
+        :param load_options: SQLAlchemy loading options
         :param load_strategies: Relationship loading strategies
         :param join_conditions: JOIN conditions for relationships
         :param kwargs: Filter expressions using field__operator=value syntax
@@ -218,8 +218,8 @@ class CRUDPlus(Generic[Model]):
 
         stmt = select(self.model).where(*filters)
 
-        if options:
-            stmt = stmt.options(*options)
+        if load_options:
+            stmt = stmt.options(*load_options)
 
         if join_conditions:
             stmt = apply_join_conditions(self.model, stmt, join_conditions)
@@ -236,7 +236,7 @@ class CRUDPlus(Generic[Model]):
         self,
         session: AsyncSession,
         *whereclause: ColumnExpressionArgument[bool],
-        options: QueryOptions | None = None,
+        load_options: QueryOptions | None = None,
         load_strategies: LoadStrategiesConfig | None = None,
         join_conditions: JoinConditionsConfig | None = None,
         **kwargs: Any,
@@ -246,7 +246,7 @@ class CRUDPlus(Generic[Model]):
 
         :param session: SQLAlchemy async session
         :param whereclause: Additional WHERE clauses
-        :param options: SQLAlchemy loading options
+        :param load_options: SQLAlchemy loading options
         :param load_strategies: Relationship loading strategies
         :param join_conditions: JOIN conditions for relationships
         :param kwargs: Filter expressions using field__operator=value syntax
@@ -254,10 +254,10 @@ class CRUDPlus(Generic[Model]):
         """
         stmt = await self.select(
             *whereclause,
-            options=options,
+            load_options=load_options,
             load_strategies=load_strategies,
             join_conditions=join_conditions,
-            **kwargs
+            **kwargs,
         )
 
         query = await session.execute(stmt)
@@ -266,30 +266,30 @@ class CRUDPlus(Generic[Model]):
     async def select(
         self,
         *whereclause: ColumnExpressionArgument[bool],
-        options: QueryOptions | None = None,
+        load_options: QueryOptions | None = None,
         load_strategies: LoadStrategiesConfig | None = None,
         join_conditions: JoinConditionsConfig | None = None,
-        **kwargs
+        **kwargs,
     ) -> Select:
         """
         Construct the SQLAlchemy selection.
 
         :param whereclause: WHERE clauses to apply to the query
-        :param options: SQLAlchemy loading options
+        :param load_options: SQLAlchemy loading options
         :param load_strategies: Relationship loading strategies
         :param join_conditions: JOIN conditions for relationships
         :param kwargs: Query expressions
         :return:
         """
-        filters =  list(whereclause)
+        filters = list(whereclause)
         filters.extend(parse_filters(self.model, **kwargs))
         stmt = select(self.model).where(*filters)
 
         if join_conditions:
             stmt = apply_join_conditions(self.model, stmt, join_conditions)
 
-        if options:
-            stmt = stmt.options(*options)
+        if load_options:
+            stmt = stmt.options(*load_options)
 
         if load_strategies:
             rel_options = build_load_strategies(self.model, load_strategies)
@@ -303,7 +303,7 @@ class CRUDPlus(Generic[Model]):
         sort_columns: SortColumns,
         sort_orders: SortOrders = None,
         *whereclause: ColumnExpressionArgument[bool],
-        options: QueryOptions | None = None,
+        load_options: QueryOptions | None = None,
         load_strategies: LoadStrategiesConfig | None = None,
         join_conditions: JoinConditionsConfig | None = None,
         **kwargs: Any,
@@ -314,7 +314,7 @@ class CRUDPlus(Generic[Model]):
         :param sort_columns: Column names to sort by
         :param sort_orders: Sort orders ('asc' or 'desc')
         :param whereclause: WHERE clauses to apply to the query
-        :param options: SQLAlchemy loading options
+        :param load_options: SQLAlchemy loading options
         :param load_strategies: Relationship loading strategies
         :param join_conditions: JOIN conditions for relationships
         :param kwargs: Query expressions
@@ -322,10 +322,10 @@ class CRUDPlus(Generic[Model]):
         """
         stmt = await self.select(
             *whereclause,
-            options=options,
+            load_options=load_options,
             load_strategies=load_strategies,
             join_conditions=join_conditions,
-            **kwargs
+            **kwargs,
         )
         sorted_stmt = apply_sorting(self.model, stmt, sort_columns, sort_orders)
         return sorted_stmt
@@ -334,7 +334,7 @@ class CRUDPlus(Generic[Model]):
         self,
         session: AsyncSession,
         *whereclause: ColumnExpressionArgument[bool],
-        options: QueryOptions | None = None,
+        load_options: QueryOptions | None = None,
         load_strategies: LoadStrategiesConfig | None = None,
         join_conditions: JoinConditionsConfig | None = None,
         limit: int | None = None,
@@ -346,7 +346,7 @@ class CRUDPlus(Generic[Model]):
 
         :param session: SQLAlchemy async session
         :param whereclause: Additional WHERE clauses
-        :param options: SQLAlchemy loading options
+        :param load_options: SQLAlchemy loading options
         :param load_strategies: Relationship loading strategies
         :param join_conditions: JOIN conditions for relationships
         :param limit: Maximum number of results to return
@@ -356,10 +356,10 @@ class CRUDPlus(Generic[Model]):
         """
         stmt = await self.select(
             *whereclause,
-            options=options,
+            load_options=load_options,
             load_strategies=load_strategies,
             join_conditions=join_conditions,
-            **kwargs
+            **kwargs,
         )
 
         if limit is not None:
@@ -376,7 +376,7 @@ class CRUDPlus(Generic[Model]):
         sort_columns: SortColumns,
         sort_orders: SortOrders = None,
         *whereclause: ColumnExpressionArgument[bool],
-        options: QueryOptions | None = None,
+        load_options: QueryOptions | None = None,
         load_strategies: LoadStrategiesConfig | None = None,
         join_conditions: JoinConditionsConfig | None = None,
         limit: int | None = None,
@@ -390,23 +390,23 @@ class CRUDPlus(Generic[Model]):
         :param session: SQLAlchemy async session
         :param sort_columns: Column names to sort by
         :param sort_orders: Sort orders ('asc' or 'desc')
-        :param   whereclause: Additional WHERE clauses
-        :param   options: SQLAlchemy loading options
-        :param   load_strategies: Relationship loading strategies
-        :param  join_conditions: JOIN conditions for relationships
-        :param   limit: Maximum number of results to return
-        :param  offset: Number of results to skip
-        :param  kwargs: Filter expressions using field__operator=value syntax
+        :param whereclause: Additional WHERE clauses
+        :param load_options: SQLAlchemy loading options
+        :param load_strategies: Relationship loading strategies
+        :param join_conditions: JOIN conditions for relationships
+        :param limit: Maximum number of results to return
+        :param offset: Number of results to skip
+        :param kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
         stmt = await self.select_order(
             sort_columns,
             sort_orders,
             *whereclause,
-            options=options,
+            load_options=load_options,
             load_strategies=load_strategies,
             join_conditions=join_conditions,
-            **kwargs
+            **kwargs,
         )
 
         if limit is not None:
