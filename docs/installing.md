@@ -1,26 +1,70 @@
-## 依赖
+# 安装
 
-在安装 sqlalchemy-crud-plus 之前，请确保您满足以下先决条件：
+## 系统要求
 
-- **Python:** 版本 3.10 或更高
-- **SQLAlchemy:** sqlalchemy-crud-plus 使用 SQLAlchemy 2.0 进行数据库操作，因此您需要 SQLAlchemy 2.0 或更高版本
+- Python 3.10+
+- SQLAlchemy 2.0+
+- Pydantic 2.0+
 
-## 安装
+## 从 PyPI 安装
 
-=== "pip"
+```bash
+pip install sqlalchemy-crud-plus
+```
 
-    ```sh
-    pip install sqlalchemy-crud-plus
-    ```
+## 从源码安装
 
-=== "pdm"
+```bash
+git clone https://github.com/wu-clan/sqlalchemy-crud-plus.git
+cd sqlalchemy-crud-plus
+pip install -e .
+```
 
-    ```sh
-    pdm add sqlalchemy-crud-plus
-    ```
+## 可选依赖
 
-=== "uv"
+### 数据库驱动
 
-    ```sh
-    uv add sqlalchemy-crud-plus
-    ```
+对于不同的数据库，您需要安装相应的驱动程序：
+
+**PostgreSQL**
+```bash
+pip install asyncpg
+```
+
+**MySQL**
+```bash
+pip install aiomysql
+```
+
+**SQLite**
+```bash
+# Python 内置，无需额外驱动
+pip install aiosqlite  # 异步支持
+```
+
+### 开发依赖
+
+如果您想要贡献代码或运行测试：
+
+```bash
+pip install sqlalchemy-crud-plus[dev]
+```
+
+包含以下工具：
+- pytest
+- pytest-asyncio
+- black
+- isort
+- mypy
+
+## 验证安装
+
+```python
+import sqlalchemy_crud_plus
+print(f"版本: {sqlalchemy_crud_plus.__version__}")
+```
+
+## 下一步
+
+- [快速开始](getting-started/quick-start.md) - 5分钟上手指南
+- [基础用法](usage/crud.md) - CRUD 操作详解

@@ -1,104 +1,179 @@
----
+# SQLAlchemy CRUD Plus
 
-**Documentation**: <a href="https://fastapi-practices.github.io/sqlalchemy-crud-plus" target="_blank">https://fastapi-practices.github.io/sqlalchemy-crud-plus</a>
+强大的 SQLAlchemy CRUD 库，支持高级关系查询功能。
 
-**Source Code**: <a href="https://github.com/fastapi-practices/sqlalchemy-crud-plus" target="_blank">https://github.com/fastapi-practices/sqlalchemy-crud-plus</a>
+## 核心特性
 
----
+**完整的 CRUD 操作**
+- 创建、查询、更新、删除操作
+- 支持单条和批量操作
+- 丰富的过滤操作符
 
-## Installing
+**强大的关系查询**
+- 三参数系统：`load_options`、`load_strategies`、`join_conditions`
+- 预防 N+1 查询问题
+- 多种加载策略支持
 
-=== "pip"
+**类型安全**
+- 完整的类型提示
+- 泛型支持 `CRUDPlus[Model]`
+- Pydantic 模式验证
 
-    ```sh
-    pip install sqlalchemy-crud-plus
-    ```
+**高性能**
+- 基于 SQLAlchemy 2.0 异步引擎
+- 智能查询优化
+- 高效的批量操作
 
-=== "pdm"
+## 安装
 
-    ```sh
-    pdm add sqlalchemy-crud-plus
-    ```
+```bash
+pip install sqlalchemy-crud-plus
+```
 
-=== "uv"
+## 快速开始
 
-    ```sh
-    uv add sqlalchemy-crud-plus
-    ```
+### 定义模型
 
-## 示例
+```python
+from __future__ import annotations
 
-=== "api.py"
-
-    ```py
-    from typing import Annotated
-    
-    from fastapi import APIRouter
-
-    router = APIRouter()
+from sqlalchemy import ForeignKey, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
-    @router.get('/{pk}', summary="获取实例")
-    async def get_ins(pk: Annotated[int, Path(...)]) -> InsParam:
-        ins = await ins_service.get_ins()
-        return InsParam(ins)
-    ```
+class Base(DeclarativeBase):
+    pass
 
-=== "model.py"
 
-    ```py
-    from sqlalchemy.orm import declarative_base
+class User(Base):
+    __tablename__ = 'users'
 
-    Base = declarative_base()
-    
-    
-    class ModelIns(Base):
-        # sqlalchemy model
-        pass
-    ```
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(50))
+    email: Mapped[str] = mapped_column(String(100))
 
-=== "schema.py"
+    posts: Mapped[list[Post]] = relationship(back_populates="author")
 
-    ```py
-    from pydantic import BaseModel
 
-    
-    class InsParam(BaseModel):
-        # field
-        pass
-    ```
+class Post(Base):
+    __tablename__ = 'posts'
 
-=== ":star: crud.py"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(100))
+    content: Mapped[str] = mapped_column(String(1000))
+    author_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
 
-    ```py hl_lines="7"
-    from sqlalchemy.ext.asyncio import AsyncSession
+    author: Mapped[User] = relationship(back_populates="posts")
+```
 
-    from sqlalchemy_crud_plus import CRUDPlus
-    
-    
-    # 在使用 IDE 时，传入类参数，将获得更友好的键入提示
-    class CRUDIns(CRUDPlus[ModelIns]):
-        async def get(self, db: AsyncSession, pk: int) -> ModelIns:
-            return await self.select_model(db, pk)
+### 创建 CRUD 实例
 
-    ins_dao: CRUDIns = CRUDIns(ModelIns)
-    ```
+```python
+from sqlalchemy_crud_plus import CRUDPlus
 
-=== "service.py"
+user_crud = CRUDPlus(User)
+post_crud = CRUDPlus(Post)
+```
 
-    ```py
-    class InsService:
-        async def get_ins():
-            async with async_db_session(pk: int) as db:
-                ins = ins_dao.get(db, pk)
+### 基础操作
 
-    ins_service = InsService()
-    ```
+```python
+from sqlalchemy.ext.asyncio import AsyncSession
 
-## 互动
+# 创建用户
+async with async_session.begin():
+    user_data = UserCreate(name="张三", email="zhangsan@example.com")
+    user = await user_crud.create_model(async_session, user_data)
 
-[Discord](https://wu-clan.github.io/homepage/)
+# 查询用户
+user = await user_crud.select_model(async_session, user.id)
 
-## 赞助
+# 更新用户
+async with async_session.begin():
+    user_update = UserUpdate(name="张三丰")
+    result = await user_crud.update_model(async_session, user.id, user_update)
 
-如果此项目能够帮助到你，你可以赞助作者一些咖啡豆表示鼓励：[Sponsor](https://wu-clan.github.io/sponsor/)
+# 删除用户
+async with async_session.begin():
+    count = await user_crud.delete_model(async_session, user.id)
+```
+
+### 关系查询
+
+```python
+# 查询用户及其文章
+user = await user_crud.select_model(
+    async_session, user_id,
+    load_strategies=['posts']  # 预加载文章，防止 N+1 查询
+)
+
+# 高级关系查询
+user = await user_crud.select_model(
+    async_session, user_id,
+    load_strategies={
+        'posts': 'selectinload',    # 一对多使用 selectinload
+        'profile': 'joinedload'     # 一对一使用 joinedload
+    },
+    join_conditions={
+        'posts': 'left'             # LEFT JOIN posts
+    }
+)
+```
+
+### 高级查询
+
+```python
+# 条件查询
+users = await user_crud.select_models(
+    async_session,
+    name__like='%张%',           # name LIKE '%张%'
+    email__endswith='@qq.com',   # email LIKE '%@qq.com'
+    limit=10
+)
+
+# 计数和存在检查
+count = await user_crud.count(async_session, is_active=True)
+exists = await user_crud.exists(async_session, email='test@example.com')
+```
+
+## 对比传统方式
+
+**传统 SQLAlchemy 查询**
+```python
+from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy import select
+
+stmt = (
+    select(User)
+    .options(
+        selectinload(User.posts),
+        joinedload(User.profile)
+    )
+    .join(User.posts)
+    .where(User.id == user_id)
+)
+result = await async_session.execute(stmt)
+user = result.scalar_one_or_none()
+```
+
+**SQLAlchemy CRUD Plus**
+```python
+user = await user_crud.select_model(
+    async_session, user_id,
+    load_strategies=['posts', 'profile'],
+    join_conditions=['posts']
+)
+```
+
+## 文档导航
+
+- [安装指南](installing.md) - 安装和配置
+- [快速开始](getting-started/quick-start.md) - 5分钟上手
+- [基础用法](usage/create.md) - CRUD 操作
+- [关系查询](relationships/overview.md) - 关系查询指南
+- [API 参考](api/crud-plus.md) - 完整 API 文档
+
+## 社区
+
+- [GitHub](https://github.com/wu-clan/sqlalchemy-crud-plus) - 源代码和问题反馈
+- [Discord](https://wu-clan.github.io/homepage/) - 社区讨论
