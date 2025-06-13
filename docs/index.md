@@ -1,104 +1,76 @@
----
+# SQLAlchemy CRUD Plus
 
-**Documentation**: <a href="https://fastapi-practices.github.io/sqlalchemy-crud-plus" target="_blank">https://fastapi-practices.github.io/sqlalchemy-crud-plus</a>
+SQLAlchemy CRUD Plus 是一个强大的 Python 库，为 SQLAlchemy 提供了增强的 CRUD（创建、读取、更新、删除）操作功能
 
-**Source Code**: <a href="https://github.com/fastapi-practices/sqlalchemy-crud-plus" target="_blank">https://github.com/fastapi-practices/sqlalchemy-crud-plus</a>
+## 核心特性
 
----
+**简化的 CRUD 操作**
 
-## Installing
+- 统一的 API 接口处理所有 CRUD 操作
+- 支持单条和批量操作
+- 完整的类型提示支持
 
-=== "pip"
+**强大的关系查询操作**
 
-    ```sh
-    pip install sqlalchemy-crud-plus
-    ```
+- 通过 `load_options`、`load_strategies`、`join_conditions` 参数实现灵活的关系查询
+- 支持多种预加载策略：`selectinload`、`joinedload`、`subqueryload` 等
+- 支持多种 JOIN 类型：`inner`、`left`、`right`、`full`
 
-=== "pdm"
+**丰富的过滤功能**
 
-    ```sh
-    pdm add sqlalchemy-crud-plus
-    ```
+- 支持 34+ 种过滤操作符
+- 支持 OR 条件、算术运算、字符串匹配等复杂查询
 
-=== "uv"
+**企业级特性**
 
-    ```sh
-    uv add sqlalchemy-crud-plus
-    ```
+- 完整的事务控制功能
+- 详细的错误类型和处理机制
+- 基于 SQLAlchemy 2.0 异步引擎
 
-## 示例
+## 快速开始
 
-=== "api.py"
+### 安装
 
-    ```py
-    from typing import Annotated
-    
-    from fastapi import APIRouter
+```bash
+pip install sqlalchemy-crud-plus
+```
 
-    router = APIRouter()
+### 基本使用
 
+```python
+from sqlalchemy_crud_plus import CRUDPlus
 
-    @router.get('/{pk}', summary="获取实例")
-    async def get_ins(pk: Annotated[int, Path(...)]) -> InsParam:
-        ins = await ins_service.get_ins()
-        return InsParam(ins)
-    ```
+# 创建 CRUD 实例
+crud_user = CRUDPlus(User)
 
-=== "model.py"
+# 基础 CRUD 操作
+user = await crud_user.create_model(session, user_data)
+user = await crud_user.select_model(session, user_id=1)
+await crud_user.update_model(session, user_id=1, update_data)
+await crud_user.delete_model(session, user_id=1)
+```
 
-    ```py
-    from sqlalchemy.orm import declarative_base
+### 关系查询
 
-    Base = declarative_base()
-    
-    
-    class ModelIns(Base):
-        # sqlalchemy model
-        pass
-    ```
+```python
+# 预加载关系
+user = await crud_user.select_model(
+    session,
+    user_id=1,
+    load_strategies=['posts', 'profile']
+)
 
-=== "schema.py"
+# JOIN 查询
+users = await crud_user.select_models(
+    session,
+    join_conditions={'posts': 'inner'},
+    name__like='%admin%'
+)
+```
 
-    ```py
-    from pydantic import BaseModel
+## 下一步
 
-    
-    class InsParam(BaseModel):
-        # field
-        pass
-    ```
-
-=== ":star: crud.py"
-
-    ```py hl_lines="7"
-    from sqlalchemy.ext.asyncio import AsyncSession
-
-    from sqlalchemy_crud_plus import CRUDPlus
-    
-    
-    # 在使用 IDE 时，传入类参数，将获得更友好的键入提示
-    class CRUDIns(CRUDPlus[ModelIns]):
-        async def get(self, db: AsyncSession, pk: int) -> ModelIns:
-            return await self.select_model(db, pk)
-
-    ins_dao: CRUDIns = CRUDIns(ModelIns)
-    ```
-
-=== "service.py"
-
-    ```py
-    class InsService:
-        async def get_ins():
-            async with async_db_session(pk: int) as db:
-                ins = ins_dao.get(db, pk)
-
-    ins_service = InsService()
-    ```
-
-## 互动
-
-[Discord](https://wu-clan.github.io/homepage/)
-
-## 赞助
-
-如果此项目能够帮助到你，你可以赞助作者一些咖啡豆表示鼓励：[Sponsor](https://wu-clan.github.io/sponsor/)
+- [安装指南](installing.md) - 了解如何安装
+- [快速开始](getting-started/quick-start.md) - 5分钟上手指南
+- [基础用法](usage/crud.md) - 学习核心 CRUD 操作
+- [关系查询](relationships/overview.md) - 掌握关系查询操作

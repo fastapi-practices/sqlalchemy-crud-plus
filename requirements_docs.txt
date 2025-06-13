@@ -1,1 +1,2 @@
-mkdocs-material==9.5.31
+mkdocs-material
+mkdocstrings[python]
