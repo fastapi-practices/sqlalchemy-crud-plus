@@ -448,7 +448,7 @@ class CRUDPlus(Generic[Model]):
         if commit:
             await session.commit()
 
-        return result.rowcount  # type: ignore
+        return result.rowcount
 
     async def update_model_by_column(
         self,
@@ -489,7 +489,7 @@ class CRUDPlus(Generic[Model]):
         if commit:
             await session.commit()
 
-        return result.rowcount  # type: ignore
+        return result.rowcount
 
     async def delete_model(
         self,
@@ -517,7 +517,7 @@ class CRUDPlus(Generic[Model]):
         if commit:
             await session.commit()
 
-        return result.rowcount  # type: ignore
+        return result.rowcount
 
     async def delete_model_by_column(
         self,
@@ -568,4 +568,4 @@ class CRUDPlus(Generic[Model]):
         if commit:
             await session.commit()
 
-        return result.rowcount  # type: ignore
+        return result.rowcount
