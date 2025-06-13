@@ -1,10 +1,10 @@
-# 类型
+# 类型定义
 
 本页面记录了 SQLAlchemy CRUD Plus 中使用的类型定义。
 
-## Core Types
+## 核心类型
 
-### Model Types
+### 模型类型
 
 ```python
 from typing import TypeVar
@@ -18,7 +18,7 @@ CreateSchemaType = TypeVar("CreateSchemaType")
 UpdateSchemaType = TypeVar("UpdateSchemaType")
 ```
 
-### CRUDPlus Generic
+### CRUDPlus 泛型
 
 ```python
 from typing import Generic, TypeVar
@@ -29,7 +29,7 @@ user_crud: CRUDPlus[User] = CRUDPlus(User)
 post_crud: CRUDPlus[Post] = CRUDPlus(Post)
 ```
 
-## Relationship Types
+## 关系类型
 
 ### LoadStrategiesConfig
 
@@ -37,9 +37,9 @@ post_crud: CRUDPlus[Post] = CRUDPlus(Post)
 from typing import Union, Dict, List
 
 LoadStrategiesConfig = Union[
-    List[str],                          # Simple list format
-    Dict[str, str],                     # Strategy mapping
-    Dict[str, Dict[str, str]]           # Nested strategies
+    List[str],  # Simple list format
+    Dict[str, str],  # Strategy mapping
+    Dict[str, Dict[str, str]]  # Nested strategies
 ]
 
 # Examples
@@ -56,8 +56,8 @@ load_strategies: LoadStrategiesConfig = {
 from typing import Union, Dict, List
 
 JoinConditionsConfig = Union[
-    List[str],                          # Simple list format
-    Dict[str, str]                      # JOIN type mapping
+    List[str],  # Simple list format
+    Dict[str, str]  # JOIN type mapping
 ]
 
 # Examples
@@ -85,24 +85,7 @@ load_options: QueryOptions = [
 ]
 ```
 
-## Filter Types
-
-### FilterOperators
-
-```python
-from typing import Any, Dict, List, Union
-
-# Basic filter value
-FilterValue = Union[str, int, float, bool, None, List[Any]]
-
-# OR filter structure
-OrFilter = Dict[str, List[Any]]
-
-# Filter parameters
-FilterParams = Dict[str, Union[FilterValue, OrFilter]]
-```
-
-### Common Filter Patterns
+### 常用过滤器模式
 
 ```python
 # Comparison operators
@@ -133,7 +116,7 @@ __or__: Dict[str, List[Any]] = {
 }
 ```
 
-## Session Types
+## 会话类型
 
 ### AsyncSession
 
@@ -150,34 +133,9 @@ _async_db_session: AsyncSessionFactory = async_sessionmaker(
 )
 ```
 
-## Return Types
+## 工具类型
 
-### CRUD Operation Returns
-
-```python
-from typing import Optional, List, Union
-
-# Single model operations
-async def select_model(...) -> Optional[ModelType]: ...
-async def create_model(...) -> ModelType: ...
-async def update_model(...) -> Optional[ModelType]: ...
-
-# Multiple model operations
-async def select_models(...) -> List[ModelType]: ...
-async def create_models(...) -> List[ModelType]: ...
-
-# Count and existence
-async def count(...) -> int: ...
-async def exists(...) -> bool: ...
-
-# Delete operations
-async def delete_model(...) -> int: ...
-async def delete_model_by_column(...) -> int: ...
-```
-
-## Utility Types
-
-### Primary Key Types
+### 主键类型
 
 ```python
 from typing import Union, Tuple, Any
@@ -186,12 +144,12 @@ from typing import Union, Tuple, Any
 PrimaryKeyType = Union[Any, Tuple[Any, ...]]
 
 # Examples
-pk: PrimaryKeyType = 1                    # Single primary key
-pk: PrimaryKeyType = (1, 2)               # Composite primary key
-pk: PrimaryKeyType = "uuid-string"        # String primary key
+pk: PrimaryKeyType = 1  # Single primary key
+pk: PrimaryKeyType = (1, 2)  # Composite primary key
+pk: PrimaryKeyType = "uuid-string"  # String primary key
 ```
 
-### Sort Configuration
+### 排序配置
 
 ```python
 from typing import Union, List
@@ -200,47 +158,9 @@ SortColumns = Union[str, List[str]]
 SortOrders = Union[str, List[str]]
 
 # Examples
-sort_columns: SortColumns = "created_at"
-sort_columns: SortColumns = ["created_at", "name"]
+sort_columns: SortColumns = "created_time"
+sort_columns: SortColumns = ["created_time", "name"]
 
 sort_orders: SortOrders = "desc"
 sort_orders: SortOrders = ["desc", "asc"]
-```
-
-## Type Checking
-
-### Runtime Type Validation
-
-```python
-from typing import get_type_hints
-from sqlalchemy_crud_plus import CRUDPlus
-
-def validate_crud_types(crud_instance: CRUDPlus) -> bool:
-    """Validate CRUD instance types at runtime"""
-    hints = get_type_hints(crud_instance.__class__)
-    return all(hint for hint in hints.values())
-```
-
-### IDE Support
-
-```python
-# Full type hints for IDE support
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from models import User, Post
-    from schemas import UserCreate, UserUpdate, PostCreate, PostUpdate
-
-# Type-safe CRUD instances
-user_crud: CRUDPlus[User] = CRUDPlus(User)
-post_crud: CRUDPlus[Post] = CRUDPlus(Post)
-
-# IDE will provide full autocomplete and type checking
-async def typed_operations():
-    async with _async_db_session() as session:
-        # IDE knows the return type is Optional[User]
-        user = await user_crud.select_model(session, 1)
-        
-        # IDE knows the return type is List[User]
-        users = await user_crud.select_models(session, limit=10)
 ```

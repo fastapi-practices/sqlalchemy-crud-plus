@@ -1,179 +1,76 @@
 # SQLAlchemy CRUD Plus
 
-强大的 SQLAlchemy CRUD 库，支持高级关系查询功能。
+SQLAlchemy CRUD Plus 是一个强大的 Python 库，为 SQLAlchemy 提供了增强的 CRUD（创建、读取、更新、删除）操作功能
 
 ## 核心特性
 
-**完整的 CRUD 操作**
-- 创建、查询、更新、删除操作
+**简化的 CRUD 操作**
+
+- 统一的 API 接口处理所有 CRUD 操作
 - 支持单条和批量操作
-- 丰富的过滤操作符
+- 完整的类型提示支持
 
-**强大的关系查询**
-- 三参数系统：`load_options`、`load_strategies`、`join_conditions`
-- 预防 N+1 查询问题
-- 多种加载策略支持
+**强大的关系查询操作**
 
-**类型安全**
-- 完整的类型提示
-- 泛型支持 `CRUDPlus[Model]`
-- Pydantic 模式验证
+- 通过 `load_options`、`load_strategies`、`join_conditions` 参数实现灵活的关系查询
+- 支持多种预加载策略：`selectinload`、`joinedload`、`subqueryload` 等
+- 支持多种 JOIN 类型：`inner`、`left`、`right`、`full`
 
-**高性能**
+**丰富的过滤功能**
+
+- 支持 34+ 种过滤操作符
+- 支持 OR 条件、算术运算、字符串匹配等复杂查询
+
+**企业级特性**
+
+- 完整的事务控制功能
+- 详细的错误类型和处理机制
 - 基于 SQLAlchemy 2.0 异步引擎
-- 智能查询优化
-- 高效的批量操作
 
-## 安装
+## 快速开始
+
+### 安装
 
 ```bash
 pip install sqlalchemy-crud-plus
 ```
 
-## 快速开始
-
-### 定义模型
-
-```python
-from __future__ import annotations
-
-from sqlalchemy import ForeignKey, String
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-
-
-class Base(DeclarativeBase):
-    pass
-
-
-class User(Base):
-    __tablename__ = 'users'
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(50))
-    email: Mapped[str] = mapped_column(String(100))
-
-    posts: Mapped[list[Post]] = relationship(back_populates="author")
-
-
-class Post(Base):
-    __tablename__ = 'posts'
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    title: Mapped[str] = mapped_column(String(100))
-    content: Mapped[str] = mapped_column(String(1000))
-    author_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
-
-    author: Mapped[User] = relationship(back_populates="posts")
-```
-
-### 创建 CRUD 实例
+### 基本使用
 
 ```python
 from sqlalchemy_crud_plus import CRUDPlus
 
-user_crud = CRUDPlus(User)
-post_crud = CRUDPlus(Post)
-```
+# 创建 CRUD 实例
+crud_user = CRUDPlus(User)
 
-### 基础操作
-
-```python
-from sqlalchemy.ext.asyncio import AsyncSession
-
-# 创建用户
-async with async_session.begin():
-    user_data = UserCreate(name="张三", email="zhangsan@example.com")
-    user = await user_crud.create_model(async_session, user_data)
-
-# 查询用户
-user = await user_crud.select_model(async_session, user.id)
-
-# 更新用户
-async with async_session.begin():
-    user_update = UserUpdate(name="张三丰")
-    result = await user_crud.update_model(async_session, user.id, user_update)
-
-# 删除用户
-async with async_session.begin():
-    count = await user_crud.delete_model(async_session, user.id)
+# 基础 CRUD 操作
+user = await crud_user.create_model(session, user_data)
+user = await crud_user.select_model(session, user_id=1)
+await crud_user.update_model(session, user_id=1, update_data)
+await crud_user.delete_model(session, user_id=1)
 ```
 
 ### 关系查询
 
 ```python
-# 查询用户及其文章
-user = await user_crud.select_model(
-    async_session, user_id,
-    load_strategies=['posts']  # 预加载文章，防止 N+1 查询
+# 预加载关系
+user = await crud_user.select_model(
+    session,
+    user_id=1,
+    load_strategies=['posts', 'profile']
 )
 
-# 高级关系查询
-user = await user_crud.select_model(
-    async_session, user_id,
-    load_strategies={
-        'posts': 'selectinload',    # 一对多使用 selectinload
-        'profile': 'joinedload'     # 一对一使用 joinedload
-    },
-    join_conditions={
-        'posts': 'left'             # LEFT JOIN posts
-    }
+# JOIN 查询
+users = await crud_user.select_models(
+    session,
+    join_conditions={'posts': 'inner'},
+    name__like='%admin%'
 )
 ```
 
-### 高级查询
+## 下一步
 
-```python
-# 条件查询
-users = await user_crud.select_models(
-    async_session,
-    name__like='%张%',           # name LIKE '%张%'
-    email__endswith='@qq.com',   # email LIKE '%@qq.com'
-    limit=10
-)
-
-# 计数和存在检查
-count = await user_crud.count(async_session, is_active=True)
-exists = await user_crud.exists(async_session, email='test@example.com')
-```
-
-## 对比传统方式
-
-**传统 SQLAlchemy 查询**
-```python
-from sqlalchemy.orm import selectinload, joinedload
-from sqlalchemy import select
-
-stmt = (
-    select(User)
-    .options(
-        selectinload(User.posts),
-        joinedload(User.profile)
-    )
-    .join(User.posts)
-    .where(User.id == user_id)
-)
-result = await async_session.execute(stmt)
-user = result.scalar_one_or_none()
-```
-
-**SQLAlchemy CRUD Plus**
-```python
-user = await user_crud.select_model(
-    async_session, user_id,
-    load_strategies=['posts', 'profile'],
-    join_conditions=['posts']
-)
-```
-
-## 文档导航
-
-- [安装指南](installing.md) - 安装和配置
-- [快速开始](getting-started/quick-start.md) - 5分钟上手
-- [基础用法](usage/create.md) - CRUD 操作
-- [关系查询](relationships/overview.md) - 关系查询指南
-- [API 参考](api/crud-plus.md) - 完整 API 文档
-
-## 社区
-
-- [GitHub](https://github.com/wu-clan/sqlalchemy-crud-plus) - 源代码和问题反馈
-- [Discord](https://wu-clan.github.io/homepage/) - 社区讨论
+- [安装指南](installing.md) - 了解如何安装
+- [快速开始](getting-started/quick-start.md) - 5分钟上手指南
+- [基础用法](usage/crud.md) - 学习核心 CRUD 操作
+- [关系查询](relationships/overview.md) - 掌握关系查询操作

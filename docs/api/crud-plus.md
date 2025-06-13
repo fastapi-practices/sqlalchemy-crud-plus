@@ -15,7 +15,7 @@ from myapp.models import User
 user_crud = CRUDPlus(User)
 ```
 
-## Query Methods
+## 查询方法
 
 ### select_model
 
@@ -41,7 +41,7 @@ user_crud = CRUDPlus(User)
 
 ::: sqlalchemy_crud_plus.CRUDPlus.exists
 
-## Create Methods
+## 创建方法
 
 ### create_model
 
@@ -51,7 +51,7 @@ user_crud = CRUDPlus(User)
 
 ::: sqlalchemy_crud_plus.CRUDPlus.create_models
 
-## Update Methods
+## 更新方法
 
 ### update_model
 
@@ -61,7 +61,7 @@ user_crud = CRUDPlus(User)
 
 ::: sqlalchemy_crud_plus.CRUDPlus.update_model_by_column
 
-## Delete Methods
+## 删除方法
 
 ### delete_model
 
@@ -71,7 +71,7 @@ user_crud = CRUDPlus(User)
 
 ::: sqlalchemy_crud_plus.CRUDPlus.delete_model_by_column
 
-## Low-level Methods
+## 底层方法
 
 ### select
 
@@ -81,73 +81,4 @@ user_crud = CRUDPlus(User)
 
 ::: sqlalchemy_crud_plus.CRUDPlus.select_order
 
-## Usage Examples
 
-### Basic CRUD
-
-```python
-from sqlalchemy_crud_plus import CRUDPlus
-from myapp.models import User
-from myapp.schemas import UserCreate, UserUpdate
-
-user_crud = CRUDPlus(User)
-
-# Create
-user_data = UserCreate(name="Alice", email="alice@example.com")
-user = await user_crud.create_model(session, user_data)
-
-# Read
-user = await user_crud.select_model(session, user.id)
-
-# Update
-user_update = UserUpdate(name="Alice Smith")
-updated_user = await user_crud.update_model(session, user.id, user_update)
-
-# Delete
-await user_crud.delete_model(session, user.id)
-```
-
-### Relationship Queries
-
-```python
-# Load with relationships
-user = await user_crud.select_model(
-    session, user_id,
-    load_strategies=['posts', 'profile'],
-    join_conditions={'posts': 'inner'}
-)
-
-# Count with relationships
-count = await user_crud.count(
-    session,
-    join_conditions=['posts']
-)
-
-# Check existence with relationships
-exists = await user_crud.exists(
-    session,
-    join_conditions={'posts': 'inner'},
-    name='Alice'
-)
-```
-
-### Advanced Filtering
-
-```python
-# Complex filters
-users = await user_crud.select_models(
-    session,
-    name__like='%smith%',
-    age__gte=18,
-    is_active=True,
-    __or__={'email__like': ['%@gmail.com', '%@yahoo.com']}
-)
-
-# With relationships
-users = await user_crud.select_models(
-    session,
-    load_strategies={'posts': 'selectinload'},
-    join_conditions={'profile': 'left'},
-    name__ilike='alice%'
-)
-```

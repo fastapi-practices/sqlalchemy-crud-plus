@@ -1,70 +1,40 @@
 # 安装
 
+本页面将指导您如何安装 SQLAlchemy CRUD Plus。
+
 ## 系统要求
 
 - Python 3.10+
 - SQLAlchemy 2.0+
 - Pydantic 2.0+
 
-## 从 PyPI 安装
+## 安装
+
+使用 pip 安装 SQLAlchemy CRUD Plus：
 
 ```bash
 pip install sqlalchemy-crud-plus
 ```
 
-## 从源码安装
+这将安装核心库及其必需的依赖项：
 
-```bash
-git clone https://github.com/wu-clan/sqlalchemy-crud-plus.git
-cd sqlalchemy-crud-plus
-pip install -e .
-```
-
-## 可选依赖
-
-### 数据库驱动
-
-对于不同的数据库，您需要安装相应的驱动程序：
-
-**PostgreSQL**
-```bash
-pip install asyncpg
-```
-
-**MySQL**
-```bash
-pip install aiomysql
-```
-
-**SQLite**
-```bash
-# Python 内置，无需额外驱动
-pip install aiosqlite  # 异步支持
-```
-
-### 开发依赖
-
-如果您想要贡献代码或运行测试：
-
-```bash
-pip install sqlalchemy-crud-plus[dev]
-```
-
-包含以下工具：
-- pytest
-- pytest-asyncio
-- black
-- isort
-- mypy
+- `sqlalchemy>=2.0.0`
+- `pydantic>=2.0.0`
 
 ## 验证安装
 
+安装完成后，您可以验证安装是否成功：
+
 ```python
 import sqlalchemy_crud_plus
-print(f"版本: {sqlalchemy_crud_plus.__version__}")
+
+print(sqlalchemy_crud_plus.__version__)
 ```
 
 ## 下一步
 
-- [快速开始](getting-started/quick-start.md) - 5分钟上手指南
-- [基础用法](usage/crud.md) - CRUD 操作详解
+安装完成后，您可以：
+
+- 查看 [快速开始](getting-started/quick-start.md) 了解基本用法
+- 阅读 [基础用法](usage/crud.md) 学习 CRUD 操作
+- 探索 [关系查询](relationships/overview.md) 了解关系查询功能
