@@ -80,5 +80,3 @@ user_crud = CRUDPlus(User)
 ### select_order
 
 ::: sqlalchemy_crud_plus.CRUDPlus.select_order
-
-
