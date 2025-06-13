@@ -1,120 +1,76 @@
-# 错误
+# 错误类型
 
-本页面记录了 SQLAlchemy CRUD Plus 可能抛出的错误类型和异常。
+本页面记录了 SQLAlchemy CRUD Plus 中定义的错误类型和异常。
 
-## Exception Hierarchy
+## 库内置异常
+
+SQLAlchemy CRUD Plus 定义了以下自定义异常类型：
+
+::: sqlalchemy_crud_plus.errors.SelectOperatorError
+
+::: sqlalchemy_crud_plus.errors.ColumnSortError
+
+::: sqlalchemy_crud_plus.errors.ModelColumnError
+
+::: sqlalchemy_crud_plus.errors.JoinConditionError
+
+::: sqlalchemy_crud_plus.errors.LoadingStrategyError
+
+::: sqlalchemy_crud_plus.errors.MultipleResultsError
+
+## 异常层次结构
 
 ```
 Exception
-├── SQLAlchemyError (from SQLAlchemy)
-│   ├── IntegrityError
-│   ├── DataError
-│   └── OperationalError
-├── ValidationError (from Pydantic)
-└── CRUDPlusError (custom)
-    ├── ModelNotFoundError
-    ├── MultipleResultsFoundError
-    └── InvalidFilterError
+├── SelectOperatorError          # 选择操作符错误
+├── ColumnSortError             # 列排序错误
+├── ModelColumnError            # 模型列错误
+├── JoinConditionError          # JOIN 条件错误
+├── LoadingStrategyError        # 加载策略错误
+└── MultipleResultsFoundError   # 多结果发现错误
 ```
 
-## Common Exceptions
+## 常见异常场景
 
-### ValidationError
+### SelectOperatorError
 
-Raised when Pydantic schema validation fails.
+当使用不支持的过滤操作符时抛出。
 
 ```python
-from pydantic import ValidationError
+from sqlalchemy_crud_plus.errors import SelectOperatorError
 
 try:
-    user_data = UserCreate(name="", email="invalid-email")
-except ValidationError as e:
-    print(f"Validation failed: {e}")
+    users = await user_crud.select_models(session, name__invalid_op='test')
+except SelectOperatorError as e:
+    print(f"不支持的操作符: {e}")
 ```
 
-### IntegrityError
+### ModelColumnError
 
-Raised when database constraints are violated.
+当访问模型中不存在的列时抛出。
 
 ```python
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy_crud_plus.errors import ModelColumnError
 
 try:
-    user = await user_crud.create_model(session, user_data)
-except IntegrityError as e:
-    if "UNIQUE constraint failed" in str(e):
-        print("Email already exists")
+    users = await user_crud.select_models(session, nonexistent_column='value')
+except ModelColumnError as e:
+    print(f"列不存在: {e}")
 ```
 
-### ModelNotFoundError
+### MultipleResultsFoundError
 
-Custom exception for when a model is not found.
+当期望单个结果但找到多个结果时抛出。
 
 ```python
-user = await user_crud.select_model(session, 999)
-if not user:
-    # Handle not found case
-    pass
+from sqlalchemy_crud_plus.errors import MultipleResultsFoundError
+
+try:
+    user = await user_crud.update_model_by_column(
+        session,
+        obj_in={"name": "新名称"},
+        name__like='%张%'  # 可能匹配多条记录
+    )
+except MultipleResultsFoundError as e:
+    print(f"找到多条记录: {e}")
 ```
-
-## Error Handling Patterns
-
-### Basic Error Handling
-
-```python
-async def safe_create_user(user_data: dict):
-    try:
-        validated_data = UserCreate(**user_data)
-        async with _async_db_session() as session:
-            async with session.begin():
-                user = await user_crud.create_model(session, validated_data)
-        return {"success": True, "user": user}
-    
-    except ValidationError as e:
-        return {"success": False, "error": "Invalid data", "details": str(e)}
-    
-    except IntegrityError as e:
-        return {"success": False, "error": "Database constraint violation", "details": str(e)}
-    
-    except Exception as e:
-        return {"success": False, "error": "Unexpected error", "details": str(e)}
-```
-
-### Transaction Error Handling
-
-```python
-async def transaction_with_error_handling():
-    async with _async_db_session() as session:
-        try:
-            async with session.begin():
-                # Multiple operations
-                user = await user_crud.create_model(session, user_data)
-                profile = await profile_crud.create_model(session, profile_data)
-                
-        except Exception as e:
-            # Transaction automatically rolled back
-            print(f"Transaction failed: {e}")
-            raise
-```
-
-## Best Practices
-
-1. **Catch Specific Exceptions**
-   - Always catch the most specific exception type first
-   - Provide meaningful error messages
-   - Log detailed error information for debugging
-
-2. **Use Transaction Context**
-   - Let `session.begin()` handle rollbacks automatically
-   - Don't manually manage transaction state unless necessary
-   - Keep transactions as short as possible
-
-3. **Validate Early**
-   - Use Pydantic schemas to validate input data
-   - Check for required conditions before database operations
-   - Provide clear validation error messages
-
-4. **Error Logging**
-   - Log errors with sufficient context
-   - Include request IDs or user information
-   - Use appropriate log levels (ERROR, WARNING, INFO)

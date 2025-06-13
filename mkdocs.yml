@@ -9,21 +9,15 @@ nav:
   - 首页: index.md
   - 安装: installing.md
   - 快速开始: getting-started/quick-start.md
-  - 基础用法:
-      - CRUD 操作: usage/crud.md
-  - 关系查询:
-      - 概览: relationships/overview.md
+  - 基础用法: usage/crud.md
+  - 关系查询: relationships/overview.md
   - 高级功能:
       - 过滤条件: advanced/filter.md
       - 事务控制: advanced/transaction.md
-      - 错误处理: advanced/error-handling.md
-  - 示例:
-      - 基础示例: examples/basic.md
-      - 关系查询示例: examples/relationships.md
-  - API Reference:
-      - CRUDPlus: api/crud-plus.md
-      - Types: api/types.md
-      - Errors: api/errors.md
+  - API 参考:
+      - CRUDPlus 类: api/crud-plus.md
+      - 类型定义: api/types.md
+      - 错误类型: api/errors.md
   - 更新日志: changelog.md
 
 theme:

@@ -274,6 +274,73 @@ users = await user_crud.select_models(
 )
 ```
 
+## 复合主键支持
+
+!!! note "主键参数命名"
+
+    由于在 python 内部 `id` 为关键字，因此，我们设定默认主键入参为 `pk`。这仅用于函数入参，并不要求模型主键必须定义为 `pk`
+
+!!! tip "自动主键"
+
+    我们在 SQLAlchemy CRUD Plus 内部通过 [inspect()](https://docs.sqlalchemy.org/en/20/core/inspection.html) 自动搜索表主键，
+    而非强制绑定主键列必须命名为 `id`
+
+### 单个主键
+
+```python
+class User(Base):
+    __tablename__ = 'users'
+
+    # 定义主键
+    id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(50))
+    email: Mapped[str] = mapped_column(String(100))
+
+
+class UserProfile(Base):
+    __tablename__ = 'user_profiles'
+
+    # 字符串主键
+    uuid: Mapped[str] = mapped_column(primary_key=True, index=True)
+    bio: Mapped[str] = mapped_column(String(500))
+```
+
+### 复合主键
+
+```python
+class UserRole(Base):
+    __tablename__ = 'user_roles'
+
+    # 复合主键
+    user_id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    role_id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    assigned_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+```
+
+### 复合主键操作
+
+```python
+# 创建复合主键记录
+user_role_data = {"user_id": 1, "role_id": 2, "assigned_at": datetime.now()}
+user_role = await user_role_crud.create_model(session, user_role_data)
+
+# 查询复合主键记录
+user_role = await user_role_crud.select_model(session, pk=(1, 2))
+
+# 更新复合主键记录
+updated_user_role = await user_role_crud.update_model(
+    session,
+    pk=(1, 2),
+    obj_in={"assigned_at": datetime.now()}
+)
+
+# 删除复合主键记录
+deleted_count = await user_role_crud.delete_model(session, pk=(1, 2))
+
+# 批量查询复合主键记录
+user_roles = await user_role_crud.select_models(session, user_id=1)
+```
+
 ## 性能建议
 
 1. **索引优化**：为常用的过滤字段创建数据库索引
@@ -281,3 +348,4 @@ users = await user_crud.select_models(
 3. **使用 IN 查询**：对于多个值的查询，使用 `__in` 而不是多个 OR 条件
 4. **限制结果集**：使用 `limit` 参数限制返回的记录数
 5. **合理使用 OR**：过多的 OR 条件可能影响性能
+6. **复合主键索引**：为复合主键创建联合索引以提高查询性能
