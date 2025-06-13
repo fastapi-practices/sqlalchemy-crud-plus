@@ -2,15 +2,6 @@
 
 SQLAlchemy CRUD Plus 提供完整的 CRUD（创建、读取、更新、删除）操作。
 
-!!! note "主键参数命名"
-
-    由于在 python 内部 `id` 为关键字，因此，我们设定默认主键入参为 `pk`。这仅用于函数入参，并不要求模型主键必须定义为 `pk`
-
-!!! tip "自动主键"
-
-    我们在 SQLAlchemy CRUD Plus 内部通过 [inspect()](https://docs.sqlalchemy.org/en/20/core/inspection.html) 自动搜索表主键，
-    而非强制绑定主键列必须命名为 `id`
-
 ## 创建记录
 
 ### 单条记录
