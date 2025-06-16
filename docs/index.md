@@ -45,9 +45,9 @@ crud_user = CRUDPlus(User)
 
 # 基础 CRUD 操作
 user = await crud_user.create_model(session, user_data)
-user = await crud_user.select_model(session, user_id=1)
-await crud_user.update_model(session, user_id=1, update_data)
-await crud_user.delete_model(session, user_id=1)
+user = await crud_user.select_model(session, pk=1)
+await crud_user.update_model(session, pk=1, obj=update_data)
+await crud_user.delete_model(session, pk=1)
 ```
 
 ### 关系查询
@@ -56,7 +56,7 @@ await crud_user.delete_model(session, user_id=1)
 # 预加载关系
 user = await crud_user.select_model(
     session,
-    user_id=1,
+    pk=1,
     load_strategies=['posts', 'profile']
 )
 

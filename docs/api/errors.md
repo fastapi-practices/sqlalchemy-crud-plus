@@ -66,9 +66,9 @@ except ModelColumnError as e:
 from sqlalchemy_crud_plus.errors import MultipleResultsFoundError
 
 try:
-    user = await user_crud.update_model_by_column(
+    count = await user_crud.update_model_by_column(
         session,
-        obj_in={"name": "新名称"},
+        obj={"name": "新名称"},
         name__like='%张%'  # 可能匹配多条记录
     )
 except MultipleResultsFoundError as e:

@@ -19,7 +19,8 @@ from sqlalchemy.orm import selectinload, joinedload
 
 # 使用原生 SQLAlchemy 选项
 user = await user_crud.select_model(
-    session, user_id,
+    session,
+    pk=user_id,
     load_options=[
         selectinload(User.posts),
         joinedload(User.profile)
@@ -28,7 +29,8 @@ user = await user_crud.select_model(
 
 # 嵌套关系
 user = await user_crud.select_model(
-    session, user_id,
+    session,
+    pk=user_id,
     load_options=[
         selectinload(User.posts).selectinload(Post.comments),
         joinedload(User.profile)
@@ -43,13 +45,15 @@ user = await user_crud.select_model(
 ```python
 # 列表格式（使用默认策略）
 user = await user_crud.select_model(
-    session, user_id,
+    session,
+    pk=user_id,
     load_strategies=['posts', 'profile']
 )
 
 # 字典格式（指定具体策略）
 user = await user_crud.select_model(
-    session, user_id,
+    session,
+    pk=user_id,
     load_strategies={
         'posts': 'selectinload',
         'profile': 'joinedload',
@@ -59,7 +63,8 @@ user = await user_crud.select_model(
 
 # 嵌套关系
 user = await user_crud.select_model(
-    session, user_id,
+    session,
+    pk=user_id,
     load_strategies={
         'posts': 'selectinload',
         'posts.category': 'joinedload',
@@ -106,13 +111,15 @@ users = await user_crud.select_models(
 ```python
 # 用户的多篇文章
 user = await user_crud.select_model(
-    session, user_id,
+    session,
+    pk=user_id,
     load_strategies={'posts': 'selectinload'}
 )
 
 # 文章的多条评论
 post = await post_crud.select_model(
-    session, post_id,
+    session,
+    pk=user_id,
     load_strategies={'comments': 'selectinload'}
 )
 ```
@@ -130,13 +137,15 @@ post = await post_crud.select_model(
 ```python
 # 用户的个人资料
 user = await user_crud.select_model(
-    session, user_id,
+    session,
+    pk=user_id,
     load_strategies={'profile': 'joinedload'}
 )
 
 # 文章的分类
 post = await post_crud.select_model(
-    session, post_id,
+    session,
+    pk=user_id,
     load_strategies={'category': 'joinedload'}
 )
 ```
@@ -154,13 +163,15 @@ post = await post_crud.select_model(
 ```python
 # 用户的多个角色
 user = await user_crud.select_model(
-    session, user_id,
+    session,
+    pk=user_id,
     load_strategies={'roles': 'subqueryload'}
 )
 
 # 文章的多个标签
 post = await post_crud.select_model(
-    session, post_id,
+    session,
+    pk=user_id,
     load_strategies={'tags': 'subqueryload'}
 )
 ```
@@ -191,13 +202,15 @@ users = await user_crud.select_models(
 ```python
 # 禁止访问关系（抛出异常）
 user = await user_crud.select_model(
-    session, user_id,
+    session,
+    pk=user_id,
     load_strategies={'posts': 'raiseload'}
 )
 
 # 禁止加载关系（返回 None）
 user = await user_crud.select_model(
-    session, user_id,
+    session,
+    pk=user_id,
     load_strategies={'posts': 'noload'}
 )
 ```

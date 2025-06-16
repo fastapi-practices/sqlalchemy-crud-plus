@@ -59,13 +59,13 @@ post_crud = CRUDPlus(Post)
 
 ```python
 # 创建单个用户
-user_data = {"name": "张三", "email": "zhangsan@example.com"}
+user_data = UserCreate(name="张三", email="zhangsan@example.com")
 user = await user_crud.create_model(session, user_data)
 
 # 批量创建
 users_data = [
-    {"name": "李四", "email": "lisi@example.com"},
-    {"name": "王五", "email": "wangwu@example.com"}
+    UserCreate(name="李四", email="lisi@example.com"),
+    UserCreate(name="王五", email="wangwu@example.com")
 ]
 users = await user_crud.create_models(session, users_data)
 ```

@@ -321,17 +321,17 @@ class UserRole(Base):
 
 ```python
 # 创建复合主键记录
-user_role_data = {"user_id": 1, "role_id": 2, "assigned_at": datetime.now()}
+user_role_data = UserRoleCreate(user_id=1, role_id=2, assigned_at=datetime.now())
 user_role = await user_role_crud.create_model(session, user_role_data)
 
 # 查询复合主键记录
 user_role = await user_role_crud.select_model(session, pk=(1, 2))
 
 # 更新复合主键记录
-updated_user_role = await user_role_crud.update_model(
+updated_count = await user_role_crud.update_model(
     session,
     pk=(1, 2),
-    obj_in={"assigned_at": datetime.now()}
+    obj={"assigned_at": datetime.now()}
 )
 
 # 删除复合主键记录

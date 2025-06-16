@@ -7,15 +7,9 @@ SQLAlchemy CRUD Plus 提供完整的 CRUD（创建、读取、更新、删除）
 ### 单条记录
 
 ```python
-# 基础创建
-user_data = {"name": "张三", "email": "zhangsan@example.com"}
-user = await user_crud.create_model(session, user_data)
-
-# 使用 Pydantic 模型
+# 使用 Pydantic 模型创建
 user_data = UserCreate(name="张三", email="zhangsan@example.com")
 user = await user_crud.create_model(session, user_data)
-
-
 ```
 
 ### 批量创建
@@ -23,9 +17,9 @@ user = await user_crud.create_model(session, user_data)
 ```python
 # 批量创建多条记录
 users_data = [
-    {"name": "用户1", "email": "user1@example.com"},
-    {"name": "用户2", "email": "user2@example.com"},
-    {"name": "用户3", "email": "user3@example.com"}
+    UserCreate(name="用户1", email="user1@example.com"),
+    UserCreate(name="用户2", email="user2@example.com"),
+    UserCreate(name="用户3", email="user3@example.com")
 ]
 users = await user_crud.create_models(session, users_data)
 ```
@@ -123,18 +117,18 @@ exists = await user_crud.exists(session, email="test@example.com")
 ### 主键更新
 
 ```python
-# 根据主键更新
-updated_user = await user_crud.update_model(session, pk=1, obj_in={"name": "新名称"})
+# 使用字典更新
+updated_count = await user_crud.update_model(session, pk=1, obj={"name": "新名称"})
 
 # 使用 Pydantic 模型
 user_update = UserUpdate(name="新名称", email="new@example.com")
-updated_user = await user_crud.update_model(session, pk=1, obj_in=user_update)
+updated_count = await user_crud.update_model(session, pk=1, obj=user_update)
 
 # 使用 whereclause 位置参数（额外条件）
-updated_user = await user_crud.update_model(
+updated_count = await user_crud.update_model(
     session,
     pk=1,
-    obj_in={"name": "新名称"},
+    obj={"name": "新名称"},
     user_crud.model.is_active == True
 )
 ```
@@ -143,16 +137,16 @@ updated_user = await user_crud.update_model(
 
 ```python
 # 根据条件更新单条记录
-updated_user = await user_crud.update_model_by_column(
+updated_count = await user_crud.update_model_by_column(
     session,
-    obj_in={"is_active": False},
+    obj={"is_active": False},
     email="user@example.com"
 )
 
 # 使用 whereclause 位置参数（额外条件）
-updated_user = await user_crud.update_model_by_column(
+updated_count = await user_crud.update_model_by_column(
     session,
-    obj_in={"name": "新名称"},
+    obj={"name": "新名称"},
     user_crud.model.is_active == True,
     email="user@example.com"
 )
