@@ -23,8 +23,6 @@ nav:
 theme:
   name: material
   language: zh
-  font:
-    code: Roboto Mono
   palette:
     - media: '(prefers-color-scheme)'
       toggle:
@@ -50,7 +48,6 @@ theme:
     - navigation.instant.progress
     - navigation.path
     - navigation.tracking
-    - navigation.tabs
     - navigation.tabs.sticky
     - navigation.top
     - navigation.footer
@@ -65,9 +62,16 @@ plugins:
         python:
           options:
             docstring_style: sphinx
-            show_source: true
+            filters: [ "!^_" ]
+            parameter_headings: true
             show_root_heading: true
-            show_root_toc_entry: true
+            show_root_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+            separate_signature: true
+            show_signature_annotations: true
+            signature_crossrefs: true
 
 markdown_extensions:
   - toc:
@@ -96,3 +100,6 @@ extra:
       link: https://github.com/wu-clan/sqlalchemy-crud-plus
     - icon: fontawesome/brands/discord
       link: https://wu-clan.github.io/homepage/
+
+extra_css:
+  - 'extra/custom.css'
