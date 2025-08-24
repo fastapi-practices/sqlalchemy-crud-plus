@@ -2,14 +2,17 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-from typing import Any, Generic, Iterable, Sequence
+from typing import Any, Generic, Sequence
 
 from sqlalchemy import (
     Column,
     ColumnExpressionArgument,
+    Row,
+    RowMapping,
     Select,
     delete,
     func,
+    insert,
     inspect,
     select,
     update,
@@ -19,8 +22,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus.errors import CompositePrimaryKeysError, ModelColumnError, MultipleResultsError
 from sqlalchemy_crud_plus.types import (
     CreateSchema,
-    JoinConditionsConfig,
-    LoadStrategiesConfig,
+    JoinConditions,
+    LoadStrategies,
     Model,
     QueryOptions,
     SortColumns,
@@ -95,7 +98,7 @@ class CRUDPlus(Generic[Model]):
     async def create_models(
         self,
         session: AsyncSession,
-        objs: Iterable[CreateSchema],
+        objs: list[CreateSchema],
         flush: bool = False,
         commit: bool = False,
         **kwargs,
@@ -127,11 +130,41 @@ class CRUDPlus(Generic[Model]):
 
         return ins_list
 
+    async def bulk_create_models(
+        self,
+        session: AsyncSession,
+        objs: list[dict[str, Any]],
+        render_nulls: bool = False,
+        flush: bool = False,
+        commit: bool = False,
+        **kwargs,
+    ) -> Sequence[Row[Any] | RowMapping | Any]:
+        """
+        Create new instances of a model.
+
+        :param session: The SQLAlchemy async session
+        :param objs: The dict list containing data to be saved，The dict data should be aligned with the model column
+        :param render_nulls: render null values instead of ignoring them
+        :param flush: If `True`, flush all object changes to the database
+        :param commit: If `True`, commits the transaction immediately
+        :param kwargs: Additional model data not included in the dict
+        :return:
+        """
+        stmt = insert(self.model).values(**kwargs).execution_options(render_nulls=render_nulls).returning(self.model)
+        result = await session.execute(stmt, objs)
+
+        if flush:
+            await session.flush()
+        if commit:
+            await session.commit()
+
+        return result.scalars().all()
+
     async def count(
         self,
         session: AsyncSession,
         *whereclause: ColumnExpressionArgument[bool],
-        join_conditions: JoinConditionsConfig | None = None,
+        join_conditions: JoinConditions | None = None,
         **kwargs,
     ) -> int:
         """
@@ -163,7 +196,7 @@ class CRUDPlus(Generic[Model]):
         self,
         session: AsyncSession,
         *whereclause: ColumnExpressionArgument[bool],
-        join_conditions: JoinConditionsConfig | None = None,
+        join_conditions: JoinConditions | None = None,
         **kwargs,
     ) -> bool:
         """
@@ -194,8 +227,8 @@ class CRUDPlus(Generic[Model]):
         pk: Any | Sequence[Any],
         *whereclause: ColumnExpressionArgument[bool],
         load_options: QueryOptions | None = None,
-        load_strategies: LoadStrategiesConfig | None = None,
-        join_conditions: JoinConditionsConfig | None = None,
+        load_strategies: LoadStrategies | None = None,
+        join_conditions: JoinConditions | None = None,
         **kwargs: Any,
     ) -> Model | None:
         """
@@ -237,8 +270,8 @@ class CRUDPlus(Generic[Model]):
         session: AsyncSession,
         *whereclause: ColumnExpressionArgument[bool],
         load_options: QueryOptions | None = None,
-        load_strategies: LoadStrategiesConfig | None = None,
-        join_conditions: JoinConditionsConfig | None = None,
+        load_strategies: LoadStrategies | None = None,
+        join_conditions: JoinConditions | None = None,
         **kwargs: Any,
     ) -> Model | None:
         """
@@ -267,8 +300,8 @@ class CRUDPlus(Generic[Model]):
         self,
         *whereclause: ColumnExpressionArgument[bool],
         load_options: QueryOptions | None = None,
-        load_strategies: LoadStrategiesConfig | None = None,
-        join_conditions: JoinConditionsConfig | None = None,
+        load_strategies: LoadStrategies | None = None,
+        join_conditions: JoinConditions | None = None,
         **kwargs,
     ) -> Select:
         """
@@ -304,8 +337,8 @@ class CRUDPlus(Generic[Model]):
         sort_orders: SortOrders = None,
         *whereclause: ColumnExpressionArgument[bool],
         load_options: QueryOptions | None = None,
-        load_strategies: LoadStrategiesConfig | None = None,
-        join_conditions: JoinConditionsConfig | None = None,
+        load_strategies: LoadStrategies | None = None,
+        join_conditions: JoinConditions | None = None,
         **kwargs: Any,
     ) -> Select:
         """
@@ -335,8 +368,8 @@ class CRUDPlus(Generic[Model]):
         session: AsyncSession,
         *whereclause: ColumnExpressionArgument[bool],
         load_options: QueryOptions | None = None,
-        load_strategies: LoadStrategiesConfig | None = None,
-        join_conditions: JoinConditionsConfig | None = None,
+        load_strategies: LoadStrategies | None = None,
+        join_conditions: JoinConditions | None = None,
         limit: int | None = None,
         offset: int | None = None,
         **kwargs: Any,
@@ -377,8 +410,8 @@ class CRUDPlus(Generic[Model]):
         sort_orders: SortOrders = None,
         *whereclause: ColumnExpressionArgument[bool],
         load_options: QueryOptions | None = None,
-        load_strategies: LoadStrategiesConfig | None = None,
-        join_conditions: JoinConditionsConfig | None = None,
+        load_strategies: LoadStrategies | None = None,
+        join_conditions: JoinConditions | None = None,
         limit: int | None = None,
         offset: int | None = None,
         **kwargs: Any,
@@ -438,9 +471,9 @@ class CRUDPlus(Generic[Model]):
         :return:
         """
         filters = self._get_pk_filter(pk)
-        instance_data = obj if isinstance(obj, dict) else obj.model_dump(exclude_unset=True)
-        instance_data.update(kwargs)
-        stmt = update(self.model).where(*filters).values(**instance_data)
+        data = obj if isinstance(obj, dict) else obj.model_dump(exclude_unset=True)
+        data.update(kwargs)
+        stmt = update(self.model).where(*filters).values(**data)
         result = await session.execute(stmt)
 
         if flush:
@@ -480,8 +513,8 @@ class CRUDPlus(Generic[Model]):
             if total_count > 1:
                 raise MultipleResultsError(f'Only one record is expected to be updated, found {total_count} records.')
 
-        instance_data = obj if isinstance(obj, dict) else obj.model_dump(exclude_unset=True)
-        stmt = update(self.model).where(*filters).values(**instance_data)
+        data = obj if isinstance(obj, dict) else obj.model_dump(exclude_unset=True)
+        stmt = update(self.model).where(*filters).values(**data)
         result = await session.execute(stmt)
 
         if flush:
@@ -490,6 +523,47 @@ class CRUDPlus(Generic[Model]):
             await session.commit()
 
         return result.rowcount
+
+    async def bulk_update_models(
+        self,
+        session: AsyncSession,
+        objs: list[UpdateSchema | dict[str, Any]],
+        pk_mode: bool = True,
+        flush: bool = False,
+        commit: bool = False,
+        **kwargs,
+    ) -> int:
+        """
+        Bulk update multiple instances with different data for each record.
+        Each update item should have 'pk' key and other fields to update.
+
+        :param session: The SQLAlchemy async session
+        :param objs: To save a list of Pydantic schemas or dict for data
+        :param pk_mode: Primary key mode, when enabled, the data must contain the primary key data
+        :param flush: If `True`, flush all object changes to the database
+        :param commit: If `True`, commits the transaction immediately
+        :return: Total number of updated records
+        """
+        if not pk_mode:
+            filters = parse_filters(self.model, **kwargs)
+
+            if not filters:
+                raise ValueError('At least one filter condition must be provided for update operation')
+
+            datas = [obj if isinstance(obj, dict) else obj.model_dump(exclude_unset=True) for obj in objs]
+            stmt = update(self.model).where(*filters)
+            conn = await session.connection()
+            await conn.execute(stmt, datas)
+        else:
+            datas = [obj if isinstance(obj, dict) else obj.model_dump(exclude_unset=True) for obj in objs]
+            await session.execute(update(self.model), datas)
+
+        if flush:
+            await session.flush()
+        if commit:
+            await session.commit()
+
+        return len(datas)
 
     async def delete_model(
         self,

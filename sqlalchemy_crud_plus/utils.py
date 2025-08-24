@@ -10,11 +10,20 @@ from sqlalchemy import ColumnElement, Select, and_, asc, desc, or_
 from sqlalchemy.orm import (
     InstrumentedAttribute,
     contains_eager,
+    defaultload,
+    defer,
+    immediateload,
     joinedload,
+    lazyload,
+    load_only,
     noload,
     raiseload,
+    selectin_polymorphic,
     selectinload,
     subqueryload,
+    undefer,
+    undefer_group,
+    with_expression,
 )
 from sqlalchemy.orm.util import AliasedClass
 
@@ -25,7 +34,7 @@ from sqlalchemy_crud_plus.errors import (
     ModelColumnError,
     SelectOperatorError,
 )
-from sqlalchemy_crud_plus.types import JoinConditionsConfig, LoadStrategiesConfig, Model
+from sqlalchemy_crud_plus.types import JoinConditions, LoadStrategies, Model
 
 _SUPPORTED_FILTERS = {
     # Comparison: https://docs.sqlalchemy.org/en/20/core/operators.html#comparison-operators
@@ -297,7 +306,7 @@ def apply_sorting(
     return stmt
 
 
-def build_load_strategies(model: type[Model], load_strategies: LoadStrategiesConfig | None) -> list:
+def build_load_strategies(model: type[Model], load_strategies: LoadStrategies | None) -> list:
     """
     Build relationship loading strategy options.
 
@@ -306,44 +315,54 @@ def build_load_strategies(model: type[Model], load_strategies: LoadStrategiesCon
     :return:
     """
 
-    strategy_map = {
-        'selectinload': selectinload,
-        'joinedload': joinedload,
-        'subqueryload': subqueryload,
+    strategies_map = {
         'contains_eager': contains_eager,
-        'raiseload': raiseload,
+        'defaultload': defaultload,
+        'immediateload': immediateload,
+        'joinedload': joinedload,
+        'lazyload': lazyload,
         'noload': noload,
+        'raiseload': raiseload,
+        'selectinload': selectinload,
+        'subqueryload': subqueryload,
+        # Load
+        'defer': defer,
+        'load_only': load_only,
+        'selectin_polymorphic': selectin_polymorphic,
+        'undefer': undefer,
+        'undefer_group': undefer_group,
+        'with_expression': with_expression,
     }
 
     options = []
     default_strategy = 'selectinload'
 
     if isinstance(load_strategies, list):
-        for rel_name in load_strategies:
+        for column in load_strategies:
             try:
-                rel_attr = getattr(model, rel_name)
-                strategy_func = strategy_map[default_strategy]
-                options.append(strategy_func(rel_attr))
+                attr = getattr(model, column)
+                strategy_func = strategies_map[default_strategy]
+                options.append(strategy_func(attr))
             except AttributeError:
-                continue
+                raise ModelColumnError(f'Invalid relationship column: {column}')
 
     elif isinstance(load_strategies, dict):
-        for rel_name, strategy_name in load_strategies.items():
-            if strategy_name not in strategy_map:
+        for column, strategy_name in load_strategies.items():
+            if strategy_name not in strategies_map:
                 raise LoadingStrategyError(
-                    f'Invalid loading strategy: {strategy_name}, only supports {list(strategy_map.keys())}'
+                    f'Invalid loading strategy: {strategy_name}, only supports {list(strategies_map.keys())}'
                 )
             try:
-                rel_attr = getattr(model, rel_name)
-                strategy_func = strategy_map.get(strategy_name)
-                options.append(strategy_func(rel_attr))
+                attr = getattr(model, column)
+                strategy_func = strategies_map.get(strategy_name)
+                options.append(strategy_func(attr))
             except AttributeError:
-                continue
+                raise ModelColumnError(f'Invalid relationship column: {column}')
 
     return options
 
 
-def apply_join_conditions(model: type[Model], stmt: Select, join_conditions: JoinConditionsConfig | None):
+def apply_join_conditions(model: type[Model], stmt: Select, join_conditions: JoinConditions | None):
     """
     Apply JOIN conditions to the query statement.
 
@@ -353,32 +372,29 @@ def apply_join_conditions(model: type[Model], stmt: Select, join_conditions: Joi
     :return:
     """
     if isinstance(join_conditions, list):
-        for rel_name in join_conditions:
+        for column in join_conditions:
             try:
-                rel_attr = getattr(model, rel_name)
-                stmt = stmt.join(rel_attr)
+                attr = getattr(model, column)
+                stmt = stmt.join(attr)
             except AttributeError:
-                continue
+                raise ModelColumnError(f'Invalid model column: {column}')
 
     elif isinstance(join_conditions, dict):
-        for rel_name, join_type in join_conditions.items():
-            if join_type not in ['left', 'inner', 'right', 'full']:
-                raise JoinConditionError(
-                    f'Invalid join type: {join_type}, only supports `left`, `inner`, `right`, `full`'
-                )
+        for column, join_type in join_conditions.items():
+            allowed_join_types = ['inner', 'left', 'full']
+            if join_type not in allowed_join_types:
+                raise JoinConditionError(f'Invalid join type: {join_type}, only supports {allowed_join_types}')
             try:
-                rel_attr = getattr(model, rel_name)
+                attr = getattr(model, column)
                 if join_type == 'left':
-                    stmt = stmt.join(rel_attr, isouter=True)
+                    stmt = stmt.join(attr, isouter=True)
                 elif join_type == 'inner':
-                    stmt = stmt.join(rel_attr)
-                elif join_type == 'right':
-                    stmt = stmt.join(rel_attr, isouter=True)
+                    stmt = stmt.join(attr)
                 elif join_type == 'full':
-                    stmt = stmt.join(rel_attr, full=True)
+                    stmt = stmt.join(attr, full=True)
                 else:
-                    stmt = stmt.join(rel_attr)
+                    stmt = stmt.join(attr)
             except AttributeError:
-                continue
+                raise ModelColumnError(f'Invalid model column: {column}')
 
     return stmt
