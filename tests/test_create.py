@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from datetime import datetime
+
 import pytest
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy_crud_plus import CRUDPlus
-from tests.models.basic import Ins
+from tests.models.basic import Ins, InsPks
 from tests.schemas.basic import InsCreate
 
 
@@ -94,3 +96,39 @@ async def test_create_models_with_kwargs(async_db_session: AsyncSession, crud_in
 
     assert len(results) == 2
     assert all(r.del_flag is True for r in results)
+
+
+@pytest.mark.asyncio
+async def test_bulk_create_models_basic(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
+    async with async_db_session.begin():
+        data = [
+            {'name': 'bulk_item_1', 'del_flag': False, 'created_time': datetime.now()},
+            {'name': 'bulk_item_2', 'del_flag': True, 'created_time': datetime.now()},
+            {'name': 'bulk_item_3', 'del_flag': False, 'created_time': datetime.now()},
+        ]
+        results = await crud_ins.bulk_create_models(async_db_session, data)
+
+    assert len(results) == 3
+    assert results[0].name == 'bulk_item_1'
+    assert results[1].name == 'bulk_item_2'
+    assert results[2].name == 'bulk_item_3'
+    assert results[0].del_flag is False
+    assert results[1].del_flag is True
+    assert results[2].del_flag is False
+
+
+@pytest.mark.asyncio
+async def test_bulk_create_models_composite_keys(async_db_session: AsyncSession, crud_ins_pks: CRUDPlus[InsPks]):
+    data = [
+        {'id': 1000, 'name': 'bulk_pks_1', 'sex': 'male', 'created_time': datetime.now()},
+        {'id': 1001, 'name': 'bulk_pks_2', 'sex': 'female', 'created_time': datetime.now()},
+        {'id': 1002, 'name': 'bulk_pks_3', 'sex': 'male', 'created_time': datetime.now()},
+    ]
+
+    async with async_db_session.begin():
+        results = await crud_ins_pks.bulk_create_models(async_db_session, data)
+
+    assert len(results) == 3
+    assert results[0].id == 1000
+    assert results[0].name == 'bulk_pks_1'
+    assert results[0].sex == 'male'

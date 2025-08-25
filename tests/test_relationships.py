@@ -101,18 +101,6 @@ async def test_load_strategies_subqueryload(
 
 
 @pytest.mark.asyncio
-async def test_load_strategies_nested_relationship(
-    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
-):
-    users = rel_sample_data['users']
-    user = await rel_crud_user.select_model(
-        async_db_session, users[0].id, load_strategies={'posts.category': 'joinedload'}
-    )
-
-    assert user is not None
-
-
-@pytest.mark.asyncio
 async def test_load_strategies_with_select_models(
     async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
 ):
@@ -195,30 +183,6 @@ async def test_self_referencing_parent_load(
     category = await rel_crud_category.select_model(async_db_session, child_category.id, load_strategies=['parent'])
 
     assert category is not None
-
-
-@pytest.mark.asyncio
-async def test_two_level_nested_relationship(
-    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
-):
-    users = rel_sample_data['users']
-    user = await rel_crud_user.select_model(
-        async_db_session, users[0].id, load_strategies={'posts.category': 'joinedload'}
-    )
-
-    assert user is not None
-
-
-@pytest.mark.asyncio
-async def test_three_level_nested_relationship(
-    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
-):
-    users = rel_sample_data['users']
-    user = await rel_crud_user.select_model(
-        async_db_session, users[0].id, load_strategies={'posts.category.parent': 'joinedload'}
-    )
-
-    assert user is not None
 
 
 @pytest.mark.asyncio

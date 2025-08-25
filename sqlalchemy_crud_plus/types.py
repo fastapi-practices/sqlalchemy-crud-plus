@@ -8,7 +8,6 @@ from pydantic import BaseModel
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.sql.base import ExecutableOption
 
-# Base type variables for generic CRUD operations
 Model = TypeVar('Model', bound=DeclarativeBase)
 CreateSchema = TypeVar('CreateSchema', bound=BaseModel)
 UpdateSchema = TypeVar('UpdateSchema', bound=BaseModel)
@@ -33,12 +32,18 @@ RelationshipLoadingStrategyType = Literal[
     'with_expression',
 ]
 
-LoadStrategies = list[str] | dict[str, RelationshipLoadingStrategyType]
-
 # https://docs.sqlalchemy.org/en/20/orm/queryguide/columns.html#column-loading-api
 ColumnLoadingStrategyType = Literal[
-    'defer', 'deferred', 'load_only', 'query_expression', 'undefer', 'undefer_group', 'with_expression'
+    'defer',
+    'deferred',
+    'load_only',
+    'query_expression',
+    'undefer',
+    'undefer_group',
+    'with_expression',
 ]
+
+LoadStrategies = list[str] | dict[str, RelationshipLoadingStrategyType] | dict[str, ColumnLoadingStrategyType]
 
 JoinType = Literal[
     'inner',
@@ -48,7 +53,7 @@ JoinType = Literal[
 
 JoinConditions = list[str] | dict[str, JoinType]
 
-QueryOptions = list[ExecutableOption]
+LoadOptions = list[ExecutableOption]
 
 SortColumns = str | list[str]
 SortOrders = str | list[str] | None

@@ -8,7 +8,6 @@ from typing import Any, Callable
 
 from sqlalchemy import ColumnElement, Select, and_, asc, desc, or_
 from sqlalchemy.orm import (
-    InstrumentedAttribute,
     contains_eager,
     defaultload,
     defer,
@@ -26,6 +25,8 @@ from sqlalchemy.orm import (
     with_expression,
 )
 from sqlalchemy.orm.util import AliasedClass
+from sqlalchemy.sql.operators import ColumnOperators
+from sqlalchemy.sql.schema import Column
 
 from sqlalchemy_crud_plus.errors import (
     ColumnSortError,
@@ -98,9 +99,7 @@ _DYNAMIC_OPERATORS = [
 ]
 
 
-def get_sqlalchemy_filter(
-    operator: str, value: Any, allow_arithmetic: bool = True
-) -> Callable[[InstrumentedAttribute], Callable] | None:
+def get_sqlalchemy_filter(operator: str, value: Any, allow_arithmetic: bool = True) -> Callable[..., Any] | None:
     if operator in ['in', 'not_in', 'between']:
         if not isinstance(value, (tuple, list, set)):
             raise SelectOperatorError(f'The value of the <{operator}> filter must be tuple, list or set')
@@ -119,7 +118,7 @@ def get_sqlalchemy_filter(
     return sqlalchemy_filter
 
 
-def get_column(model: type[Model] | AliasedClass, field_name: str) -> InstrumentedAttribute:
+def get_column(model: type[Model] | AliasedClass, field_name: str) -> Column:
     """
     Get column from model with validation.
 
@@ -138,7 +137,7 @@ def get_column(model: type[Model] | AliasedClass, field_name: str) -> Instrument
     return column
 
 
-def _create_or_filters(column: InstrumentedAttribute, op: str, value: dict[str, Any]) -> list[ColumnElement | None]:
+def _create_or_filters(column: Column, op: str, value: dict[str, Any]) -> list[ColumnOperators | None]:
     """
     Create OR filter expressions.
 
@@ -156,9 +155,7 @@ def _create_or_filters(column: InstrumentedAttribute, op: str, value: dict[str, 
     return or_filters
 
 
-def _create_arithmetic_filters(
-    column: InstrumentedAttribute, op: str, value: dict[str, Any]
-) -> list[ColumnElement | None]:
+def _create_arithmetic_filters(column: Column, op: str, value: dict[str, Any]) -> list[ColumnOperators | None]:
     """
     Create arithmetic filter expressions.
 
@@ -184,7 +181,7 @@ def _create_arithmetic_filters(
     return arithmetic_filters
 
 
-def _create_and_filters(column: InstrumentedAttribute, op: str, value: Any) -> list[ColumnElement | None]:
+def _create_and_filters(column: Column, op: str, value: Any) -> list[ColumnElement | None]:
     """
     Create AND filter expressions.
 
@@ -381,7 +378,7 @@ def apply_join_conditions(model: type[Model], stmt: Select, join_conditions: Joi
 
     elif isinstance(join_conditions, dict):
         for column, join_type in join_conditions.items():
-            allowed_join_types = ['inner', 'left', 'full']
+            allowed_join_types = ['inner', 'left', 'full']  # SQLAlchemy doesn't support right join
             if join_type not in allowed_join_types:
                 raise JoinConditionError(f'Invalid join type: {join_type}, only supports {allowed_join_types}')
             try:
