@@ -356,9 +356,8 @@ def test_build_load_strategies_invalid_strategy():
 
 
 def test_build_load_strategies_invalid_relationship():
-    options = build_load_strategies(RelUser, ['nonexistent'])
-
-    assert len(options) == 0
+    with pytest.raises(ModelColumnError):
+        build_load_strategies(RelUser, ['nonexistent'])
 
 
 def test_apply_join_conditions_list():
@@ -384,9 +383,9 @@ def test_apply_join_conditions_dict_left():
 
 def test_apply_join_conditions_right_join():
     stmt = select(RelUser)
-    joined_stmt = apply_join_conditions(RelUser, stmt, {'posts': 'right'})
 
-    assert joined_stmt is not None
+    with pytest.raises(JoinConditionError):
+        apply_join_conditions(RelUser, stmt, {'posts': 'right'})
 
 
 def test_apply_join_conditions_full_join():
@@ -425,6 +424,6 @@ def test_apply_join_conditions_invalid_join_type():
 
 def test_apply_join_conditions_invalid_relationship():
     stmt = select(RelUser)
-    joined_stmt = apply_join_conditions(RelUser, stmt, ['nonexistent'])
 
-    assert joined_stmt is not None
+    with pytest.raises(ModelColumnError):
+        apply_join_conditions(RelUser, stmt, ['nonexistent'])
