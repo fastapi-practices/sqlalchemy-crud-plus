@@ -2,11 +2,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-import dataclasses
-
 from typing import Any, Literal, TypeVar
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm.util import AliasedClass
 from sqlalchemy.sql.base import ExecutableOption
@@ -60,7 +58,7 @@ class JoinConfig(BaseModel):
 
     model: type[Model] | AliasedClass
     join_on: Any
-    join_type: JoinType = dataclasses.field(default='inner')
+    join_type: JoinType = Field(default='inner')
 
 
 JoinConditions = list[str | JoinConfig] | dict[str, JoinType]
