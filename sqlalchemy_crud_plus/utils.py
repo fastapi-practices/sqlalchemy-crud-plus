@@ -219,6 +219,9 @@ def parse_filters(model: type[Model] | AliasedClass, **kwargs) -> list[ColumnEle
         if field_name == '__or' and op == '':
             __or__filters = []
 
+            if not isinstance(value, dict):
+                raise SelectOperatorError('__or__ filter value must be a dictionary')
+
             for _key, _value in value.items():
                 if '__' not in _key:
                     _column = get_column(model, _key)
@@ -312,6 +315,8 @@ def build_load_strategies(model: type[Model], load_strategies: LoadStrategies | 
     :param load_strategies: Loading strategies configuration
     :return:
     """
+    if load_strategies is None:
+        return []
 
     strategies_map = {
         'contains_eager': contains_eager,
@@ -360,7 +365,7 @@ def build_load_strategies(model: type[Model], load_strategies: LoadStrategies | 
     return options
 
 
-def apply_join_conditions(model: type[Model], stmt: Select, join_conditions: JoinConditions | None):
+def apply_join_conditions(model: type[Model], stmt: Select, join_conditions: JoinConditions | None) -> Select:
     """
     Apply JOIN conditions to the query statement.
 
@@ -369,6 +374,9 @@ def apply_join_conditions(model: type[Model], stmt: Select, join_conditions: Joi
     :param join_conditions: JOIN conditions configuration
     :return:
     """
+    if join_conditions is None:
+        return stmt
+
     if isinstance(join_conditions, list):
         for v in join_conditions:
             if isinstance(v, str):
