@@ -217,25 +217,15 @@ class TestBuildLoadStrategies:
             'raiseload',
             'selectinload',
             'subqueryload',
-            'with_expression',
+            'defer',
+            'load_only',
+            'undefer',
+            'undefer_group',
         ]
 
         for strategy_type in strategy_types:
-            try:
-                strategies = build_load_strategies(RelUser, {'posts': strategy_type})
-                assert len(strategies) == 1
-            except (TypeError, LoadingStrategyError, AttributeError):
-                pass
-
-    def test_column_loading_strategies(self):
-        column_strategies = ['defer', 'load_only', 'undefer', 'undefer_group']
-
-        for strategy_type in column_strategies:
-            try:
-                strategies = build_load_strategies(RelUser, {'posts': strategy_type})
-                assert len(strategies) == 1
-            except (LoadingStrategyError, AttributeError):
-                pass
+            strategies = build_load_strategies(RelUser, {'posts': strategy_type})
+            assert len(strategies) == 1
 
     def test_invalid_strategy(self):
         with pytest.raises(LoadingStrategyError):

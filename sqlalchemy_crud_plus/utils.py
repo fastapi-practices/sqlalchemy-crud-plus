@@ -333,7 +333,7 @@ def build_load_strategies(model: type[Model], load_strategies: LoadStrategies | 
         # 'selectin_polymorphic': selectin_polymorphic,
         'undefer': undefer,
         'undefer_group': undefer_group,
-        'with_expression': with_expression,
+        # 'with_expression': with_expression,
     }
 
     options = []
