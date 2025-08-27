@@ -17,7 +17,6 @@ from sqlalchemy.orm import (
     load_only,
     noload,
     raiseload,
-    selectin_polymorphic,
     selectinload,
     subqueryload,
     undefer,
@@ -331,7 +330,7 @@ def build_load_strategies(model: type[Model], load_strategies: LoadStrategies | 
         # Load
         'defer': defer,
         'load_only': load_only,
-        'selectin_polymorphic': selectin_polymorphic,
+        # 'selectin_polymorphic': selectin_polymorphic,
         'undefer': undefer,
         'undefer_group': undefer_group,
         'with_expression': with_expression,

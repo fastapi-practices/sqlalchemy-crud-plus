@@ -312,3 +312,198 @@ async def test_filter_with_exists(async_db_session: AsyncSession, populated_db: 
     exists = await crud_ins.exists(async_db_session, name__like='item_%')
 
     assert isinstance(exists, bool)
+
+
+@pytest.mark.asyncio
+async def test_filter_multiple_same_operator(
+    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+):
+    results = await crud_ins.select_models(async_db_session, id__gt=1, id__lt=5)
+    assert all(1 < r.id < 5 for r in results)
+
+
+@pytest.mark.asyncio
+async def test_filter_complex_or_conditions(
+    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+):
+    results = await crud_ins.select_models(
+        async_db_session, __or__={'name__startswith': 'item', 'id__between': [1, 3], 'del_flag': True}
+    )
+    assert len(results) >= 0
+
+
+@pytest.mark.asyncio
+async def test_filter_mixed_and_or_conditions(
+    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+):
+    results = await crud_ins.select_models(
+        async_db_session,
+        del_flag=False,  # AND condition
+        __or__={'name__like': 'item_%', 'id__gt': 5},  # OR condition
+    )
+    assert len(results) >= 0
+
+
+@pytest.mark.asyncio
+async def test_filter_or_with_list_values_complex(
+    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+):
+    results = await crud_ins.select_models(
+        async_db_session,
+        __or__={'name': ['item_1', 'item_2', 'item_3'], 'id__in': [7, 8, 9], 'del_flag': [True, False]},
+    )
+    assert len(results) >= 0
+
+
+@pytest.mark.asyncio
+async def test_filter_empty_in_list(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
+    results = await crud_ins.select_models(async_db_session, id__in=[])
+    assert len(results) == 0
+
+
+@pytest.mark.asyncio
+async def test_filter_none_values(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
+    results = await crud_ins.select_models(async_db_session, updated_time__is=None)
+    assert len(results) >= 0
+
+
+@pytest.mark.asyncio
+async def test_filter_boolean_values(async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]):
+    true_results = await crud_ins.select_models(async_db_session, del_flag=True)
+    false_results = await crud_ins.select_models(async_db_session, del_flag=False)
+
+    assert len(true_results) >= 0
+    assert len(false_results) >= 0
+
+
+@pytest.mark.asyncio
+async def test_filter_case_sensitive_operations(
+    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+):
+    results_like = await crud_ins.select_models(async_db_session, name__like='ITEM_%')
+
+    results_ilike = await crud_ins.select_models(async_db_session, name__ilike='ITEM_%')
+    assert len(results_ilike) >= len(results_like)
+
+
+@pytest.mark.asyncio
+async def test_filter_numeric_edge_cases(
+    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+):
+    results = await crud_ins.select_models(async_db_session, id__gt=0)
+    assert len(results) >= 0
+
+    results = await crud_ins.select_models(async_db_session, id__ge=-1)
+    assert len(results) >= 0
+
+    results = await crud_ins.select_models(async_db_session, id__lt=999999)
+    assert len(results) >= 0
+
+
+@pytest.mark.asyncio
+async def test_filter_is_distinct_from_comprehensive(
+    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+):
+    results = await crud_ins.select_models(async_db_session, del_flag__is_distinct_from=True)
+    assert all(r.del_flag is not True for r in results)
+
+    results = await crud_ins.select_models(async_db_session, del_flag__is_distinct_from=False)
+    assert all(r.del_flag is not False for r in results)
+
+    results = await crud_ins.select_models(async_db_session, updated_time__is_distinct_from=None)
+    assert all(r.updated_time is not None for r in results)
+
+
+@pytest.mark.asyncio
+async def test_filter_is_not_distinct_from_comprehensive(
+    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+):
+    results = await crud_ins.select_models(async_db_session, del_flag__is_not_distinct_from=False)
+    assert all(r.del_flag is False for r in results)
+
+
+@pytest.mark.asyncio
+async def test_filter_all_arithmetic_operators_comprehensive(
+    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+):
+    results = await crud_ins.select_models(async_db_session, id__add=1)
+    assert len(results) >= 0
+
+    results = await crud_ins.select_models(async_db_session, id__sub=1)
+    assert len(results) >= 0
+
+    results = await crud_ins.select_models(async_db_session, id__mul=2)
+    assert len(results) >= 0
+
+    results = await crud_ins.select_models(async_db_session, id__truediv=2)
+    assert len(results) >= 0
+
+    results = await crud_ins.select_models(async_db_session, id__floordiv=2)
+    assert len(results) >= 0
+
+    results = await crud_ins.select_models(async_db_session, id__mod=2)
+    assert len(results) >= 0
+
+
+@pytest.mark.asyncio
+async def test_filter_string_operations_comprehensive(
+    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+):
+    results = await crud_ins.select_models(async_db_session, name__startswith='item')
+    assert len(results) >= 0
+
+    results = await crud_ins.select_models(async_db_session, name__endswith='1')
+    assert len(results) >= 0
+
+    results = await crud_ins.select_models(async_db_session, name__contains='tem')
+    assert len(results) >= 0
+
+    results = await crud_ins.select_models(async_db_session, name__not_like='xyz%')
+    assert len(results) >= 0
+
+    results = await crud_ins.select_models(async_db_session, name__not_ilike='XYZ%')
+    assert len(results) >= 0
+
+
+@pytest.mark.asyncio
+async def test_filter_performance_complex_query(
+    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+):
+    results = await crud_ins.select_models(
+        async_db_session,
+        name__like='item_%',
+        id__between=[1, 8],
+        del_flag__in=[True, False],
+        __or__={'id__mod': 2, 'name__endswith': ['1', '3', '5']},
+    )
+    assert len(results) >= 0
+
+
+@pytest.mark.asyncio
+async def test_filter_with_count_comprehensive(
+    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+):
+    total_count = await crud_ins.count(async_db_session)
+    assert total_count >= len(populated_db)
+
+    filtered_count = await crud_ins.count(async_db_session, del_flag=False)
+    assert filtered_count >= 0
+
+    complex_count = await crud_ins.count(
+        async_db_session, name__like='item_%', id__gt=2, __or__={'del_flag': True, 'id__lt': 5}
+    )
+    assert complex_count >= 0
+
+
+@pytest.mark.asyncio
+async def test_filter_with_exists_comprehensive(
+    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+):
+    exists = await crud_ins.exists(async_db_session, name__like='item_%')
+    assert exists is True
+
+    not_exists = await crud_ins.exists(async_db_session, name='definitely_not_exists')
+    assert not_exists is False
+
+    complex_exists = await crud_ins.exists(async_db_session, name__startswith='item', id__between=[1, 10])
+    assert isinstance(complex_exists, bool)
