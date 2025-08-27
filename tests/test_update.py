@@ -283,3 +283,42 @@ async def test_bulk_update_models_composite_keys(async_db_session: AsyncSession,
 
     assert updated_item1.name == 'updated_pks_1'
     assert updated_item2.name == 'updated_pks_2'
+
+
+@pytest.mark.asyncio
+async def test_bulk_update_models_pk_mode_false_with_flush(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
+    create_data = [
+        InsCreate(name='bulk_update_flush_1'),
+        InsCreate(name='bulk_update_flush_2'),
+    ]
+
+    async with async_db_session.begin():
+        await crud_ins.create_models(async_db_session, create_data)
+
+    update_data = [{'name': 'updated_flush_1'}, {'name': 'updated_flush_2'}]
+
+    async with async_db_session.begin():
+        result = await crud_ins.bulk_update_models(
+            async_db_session, update_data, pk_mode=False, flush=True, name__like='bulk_update_flush_%'
+        )
+
+    assert result == 2
+
+
+@pytest.mark.asyncio
+async def test_bulk_update_models_pk_mode_false_with_commit(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
+    create_data = [
+        InsCreate(name='bulk_update_commit_1'),
+        InsCreate(name='bulk_update_commit_2'),
+    ]
+
+    async with async_db_session.begin():
+        await crud_ins.create_models(async_db_session, create_data)
+
+    update_data = [{'name': 'updated_commit_1'}, {'name': 'updated_commit_2'}]
+
+    result = await crud_ins.bulk_update_models(
+        async_db_session, update_data, pk_mode=False, commit=True, name__like='bulk_update_commit_%'
+    )
+
+    assert result == 2

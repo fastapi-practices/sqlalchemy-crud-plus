@@ -132,3 +132,32 @@ async def test_bulk_create_models_composite_keys(async_db_session: AsyncSession,
     assert results[0].id == 1000
     assert results[0].name == 'bulk_pks_1'
     assert results[0].sex == 'male'
+
+
+@pytest.mark.asyncio
+async def test_bulk_create_models_with_flush(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
+    data = [
+        {'name': 'bulk_flush_1', 'del_flag': False, 'created_time': datetime.now()},
+        {'name': 'bulk_flush_2', 'del_flag': False, 'created_time': datetime.now()},
+    ]
+
+    async with async_db_session.begin():
+        results = await crud_ins.bulk_create_models(async_db_session, data, flush=True)
+
+    assert len(results) == 2
+    assert results[0].name == 'bulk_flush_1'
+    assert results[1].name == 'bulk_flush_2'
+
+
+@pytest.mark.asyncio
+async def test_bulk_create_models_with_commit(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
+    data = [
+        {'name': 'bulk_commit_1', 'del_flag': False, 'created_time': datetime.now()},
+        {'name': 'bulk_commit_2', 'del_flag': False, 'created_time': datetime.now()},
+    ]
+
+    results = await crud_ins.bulk_create_models(async_db_session, data, commit=True)
+
+    assert len(results) == 2
+    assert results[0].name == 'bulk_commit_1'
+    assert results[1].name == 'bulk_commit_2'

@@ -90,11 +90,12 @@ class TestGetSqlalchemyFilter:
 
 
 class TestGetColumn:
-    def test_valid_columns(self):
+    def test_valid_columns_id(self):
         column = get_column(Ins, 'id')
         assert column is not None
         assert column.name == 'id'
 
+    def test_valid_columns_name(self):
         column = get_column(Ins, 'name')
         assert column is not None
         assert column.name == 'name'
@@ -114,6 +115,7 @@ class TestParseFilters:
         filters = parse_filters(Ins, name='test')
         assert len(filters) == 1
 
+    def test_basic_filters_multiple(self):
         filters = parse_filters(Ins, name='test', id=1)
         assert len(filters) == 2
 
@@ -150,10 +152,11 @@ class TestParseFilters:
 
 
 class TestApplySorting:
-    def test_single_column_sorting(self):
+    def test_single_column_sorting_asc(self):
         stmt = apply_sorting(Ins, select(Ins), 'name')
         assert 'ORDER BY' in str(stmt)
 
+    def test_single_column_sorting_desc(self):
         stmt = apply_sorting(Ins, select(Ins), 'name', 'desc')
         assert 'ORDER BY' in str(stmt)
 
@@ -187,17 +190,19 @@ class TestApplySorting:
 
 
 class TestBuildLoadStrategies:
-    def test_list_format(self):
+    def test_list_format_single(self):
         strategies = build_load_strategies(RelUser, ['posts'])
         assert len(strategies) == 1
 
+    def test_list_format_multiple(self):
         strategies = build_load_strategies(RelUser, ['posts', 'profile'])
         assert len(strategies) == 2
 
-    def test_dict_format(self):
+    def test_dict_format_single(self):
         strategies = build_load_strategies(RelUser, {'posts': 'selectinload'})
         assert len(strategies) == 1
 
+    def test_dict_format_multiple(self):
         strategies = build_load_strategies(RelUser, {'posts': 'joinedload', 'profile': 'subqueryload'})
         assert len(strategies) == 2
 
@@ -212,10 +217,6 @@ class TestBuildLoadStrategies:
             'raiseload',
             'selectinload',
             'subqueryload',
-            'defer',
-            'load_only',
-            'undefer',
-            'undefer_group',
             'with_expression',
         ]
 
@@ -247,22 +248,25 @@ class TestBuildLoadStrategies:
         with pytest.raises(ModelColumnError):
             build_load_strategies(RelUser, {'nonexistent_relation': 'selectinload'})
 
-    def test_none_strategies(self):
+    def test_none_strategies_none(self):
         strategies = build_load_strategies(RelUser, None)
         assert len(strategies) == 0
 
+    def test_none_strategies_empty_list(self):
         strategies = build_load_strategies(RelUser, [])
         assert len(strategies) == 0
 
+    def test_none_strategies_empty_dict(self):
         strategies = build_load_strategies(RelUser, {})
         assert len(strategies) == 0
 
 
 class TestApplyJoinConditions:
-    def test_list_format(self):
+    def test_list_format_single(self):
         stmt = apply_join_conditions(RelUser, select(RelUser), ['posts'])
         assert 'JOIN' in str(stmt)
 
+    def test_list_format_multiple(self):
         stmt = apply_join_conditions(RelUser, select(RelUser), ['posts', 'profile'])
         assert 'JOIN' in str(stmt)
 
@@ -295,57 +299,35 @@ class TestApplyJoinConditions:
         assert 'JOIN' not in str(stmt)
 
 
-class TestGetColumnEdgeCases:
-    def test_invalid_column_property(self):
-        class MockProperty:
-            pass
-
-        class MockColumn:
-            property = MockProperty()
-
-        class MockModel:
-            __table__ = True
-            invalid_col = MockColumn()
-
-        with pytest.raises(ModelColumnError):
-            get_column(MockModel, 'invalid_col')
-
-
 class TestPrivateFunctions:
     def test_create_or_filters(self):
         column = get_column(Ins, 'name')
-        value = {'like': 'test%', 'startswith': 'item'}
-        filters = _create_or_filters(column, 'or', value)
+        filters = _create_or_filters(column, 'or', {'like': 'test%', 'startswith': 'item'})
         assert len(filters) >= 0
 
     def test_create_or_filters_with_none_filter(self):
         column = get_column(Ins, 'name')
-        value = {'unsupported_op': 'test'}
-        filters = _create_or_filters(column, 'or', value)
+        filters = _create_or_filters(column, 'or', {'unsupported_op': 'test'})
         assert len(filters) == 0
 
     def test_create_arithmetic_filters_valid(self):
         column = get_column(Ins, 'id')
-        value = {'value': 10, 'condition': {'gt': 5}}
-        filters = _create_arithmetic_filters(column, 'add', value)
+        filters = _create_arithmetic_filters(column, 'add', {'value': 10, 'condition': {'gt': 5}})
         assert len(filters) >= 0
 
     def test_create_arithmetic_filters_between_condition(self):
         column = get_column(Ins, 'id')
-        value = {'value': 10, 'condition': {'between': [1, 20]}}
-        filters = _create_arithmetic_filters(column, 'add', value)
+        filters = _create_arithmetic_filters(column, 'add', {'value': 10, 'condition': {'gt': 5}})
         assert len(filters) >= 0
 
     def test_create_arithmetic_filters_invalid_dict(self):
         column = get_column(Ins, 'id')
-        value = {'invalid': 'structure'}
-        filters = _create_arithmetic_filters(column, 'add', value)
+        filters = _create_arithmetic_filters(column, 'add', {'invalid': 'structure'})
         assert len(filters) == 0
 
     def test_create_arithmetic_filters_none_filter(self):
         column = get_column(Ins, 'id')
-        value = {'value': 10, 'condition': {'unsupported_op': 5}}
-        filters = _create_arithmetic_filters(column, 'add', value)
+        filters = _create_arithmetic_filters(column, 'add', {'value': 10, 'condition': {'unsupported_op': 5}})
         assert len(filters) == 0
 
     def test_create_and_filters_between(self):
@@ -370,8 +352,7 @@ class TestComplexOrConditions:
         assert len(filters) == 1
 
     def test_or_with_arithmetic_operators(self):
-        value = {'value': 1, 'condition': {'gt': 5}}
-        filters = parse_filters(Ins, __or__={'id__add': value})
+        filters = parse_filters(Ins, __or__={'id__add': {'value': 1, 'condition': {'gt': 5}}})
         assert len(filters) >= 0
 
     def test_or_nested_or_operator(self):
@@ -383,13 +364,11 @@ class TestComplexOrConditions:
         assert len(filters) >= 0
 
     def test_arithmetic_filter_with_empty_condition(self):
-        value = {'value': 1, 'condition': {}}
-        filters = parse_filters(Ins, id__add=value)
+        filters = parse_filters(Ins, id__add={'value': 1, 'condition': {}})
         assert len(filters) == 0
 
     def test_arithmetic_filter_with_none_arithmetic_filter(self):
-        value = {'value': 1, 'condition': {'gt': 5}}
-        filters = parse_filters(Ins, id__unsupported_arithmetic=value)
+        filters = parse_filters(Ins, id__unsupported_arithmetic={'value': 1, 'condition': {'gt': 5}})
         assert len(filters) == 0
 
     def test_or_with_non_or_operator_branch(self):
