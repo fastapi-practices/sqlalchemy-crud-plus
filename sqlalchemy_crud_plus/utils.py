@@ -21,7 +21,6 @@ from sqlalchemy.orm import (
     subqueryload,
     undefer,
     undefer_group,
-    with_expression,
 )
 from sqlalchemy.orm.util import AliasedClass
 from sqlalchemy.sql.base import ExecutableOption

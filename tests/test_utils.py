@@ -12,6 +12,7 @@ from sqlalchemy_crud_plus.errors import (
     ModelColumnError,
     SelectOperatorError,
 )
+from sqlalchemy_crud_plus.types import JoinConfig
 from sqlalchemy_crud_plus.utils import (
     _create_and_filters,
     _create_arithmetic_filters,
@@ -24,7 +25,7 @@ from sqlalchemy_crud_plus.utils import (
     parse_filters,
 )
 from tests.models.basic import Ins
-from tests.models.relations import RelUser
+from tests.models.relations import RelPost, RelProfile, RelUser
 
 
 class TestGetSqlalchemyFilter:
@@ -287,6 +288,83 @@ class TestApplyJoinConditions:
         stmt = apply_join_conditions(RelUser, select(RelUser), [])
         assert stmt is not None
         assert 'JOIN' not in str(stmt)
+
+
+class TestJoinConfig:
+    def test_join_config_inner_join(self):
+        stmt = apply_join_conditions(
+            RelUser,
+            select(RelUser),
+            [JoinConfig(model=RelPost, join_on=RelUser.id == RelPost.author_id, join_type='inner')],
+        )
+        assert 'JOIN' in str(stmt)
+        assert stmt is not None
+
+    def test_join_config_left_join(self):
+        stmt = apply_join_conditions(
+            RelUser,
+            select(RelUser),
+            [JoinConfig(model=RelPost, join_on=RelUser.id == RelPost.author_id, join_type='left')],
+        )
+        assert 'JOIN' in str(stmt)
+        assert stmt is not None
+
+    def test_join_config_full_join(self):
+        stmt = apply_join_conditions(
+            RelUser,
+            select(RelUser),
+            [JoinConfig(model=RelPost, join_on=RelUser.id == RelPost.author_id, join_type='full')],
+        )
+        assert 'JOIN' in str(stmt)
+        assert stmt is not None
+
+    def test_join_config_default_join_type(self):
+        join_config = JoinConfig(model=RelPost, join_on=RelUser.id == RelPost.author_id)
+        assert join_config.join_type == 'inner'
+        stmt = apply_join_conditions(RelUser, select(RelUser), [join_config])
+        assert 'JOIN' in str(stmt)
+
+    def test_join_config_with_aliased_model(self):
+        aliased_post = aliased(RelPost)
+        stmt = apply_join_conditions(
+            RelUser,
+            select(RelUser),
+            [JoinConfig(model=aliased_post, join_on=RelUser.id == aliased_post.author_id, join_type='left')],
+        )
+        assert 'JOIN' in str(stmt)
+
+    def test_join_config_multiple_in_list(self):
+        stmt = apply_join_conditions(
+            RelUser,
+            select(RelUser),
+            [
+                JoinConfig(model=RelPost, join_on=RelUser.id == RelPost.author_id, join_type='inner'),
+                JoinConfig(model=RelProfile, join_on=RelUser.id == RelProfile.user_id, join_type='left'),
+            ],
+        )
+        assert 'JOIN' in str(stmt)
+
+    def test_join_config_mixed_with_string(self):
+        stmt = apply_join_conditions(
+            RelUser,
+            select(RelUser),
+            [
+                'posts',
+                JoinConfig(model=RelPost, join_on=RelUser.id == RelPost.author_id, join_type='inner'),
+            ],
+        )
+        assert 'JOIN' in str(stmt)
+
+    def test_join_config_creation(self):
+        join_config = JoinConfig(model=RelPost, join_on=RelUser.id == RelPost.author_id, join_type='inner')
+        assert join_config.model == RelPost
+        assert join_config.join_type == 'inner'
+        assert join_config.join_on is not None
+
+    def test_join_config_pydantic_validation(self):
+        join_config = JoinConfig(model=RelPost, join_on=RelUser.id == RelPost.author_id, join_type='left')
+        assert isinstance(join_config.model, type)
+        assert join_config.join_type in ['inner', 'left', 'full']
 
 
 class TestPrivateFunctions:
