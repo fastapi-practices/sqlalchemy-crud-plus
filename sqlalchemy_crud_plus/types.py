@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-from typing import Literal, TypeVar
+from typing import Any, Literal, TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm.util import AliasedClass
 from sqlalchemy.sql.base import ExecutableOption
 
 Model = TypeVar('Model', bound=DeclarativeBase)
@@ -51,7 +52,16 @@ JoinType = Literal[
     'full',
 ]
 
-JoinConditions = list[str] | dict[str, JoinType]
+
+class JoinConfig(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    model: type[Model] | AliasedClass
+    join_on: Any
+    join_type: JoinType = Field(default='inner')
+
+
+JoinConditions = list[str | JoinConfig] | dict[str, JoinType]
 
 LoadOptions = list[ExecutableOption]
 

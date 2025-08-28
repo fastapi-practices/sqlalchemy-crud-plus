@@ -17,14 +17,13 @@ from sqlalchemy.orm import (
     load_only,
     noload,
     raiseload,
-    selectin_polymorphic,
     selectinload,
     subqueryload,
     undefer,
     undefer_group,
-    with_expression,
 )
 from sqlalchemy.orm.util import AliasedClass
+from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.operators import ColumnOperators
 from sqlalchemy.sql.schema import Column
 
@@ -35,7 +34,7 @@ from sqlalchemy_crud_plus.errors import (
     ModelColumnError,
     SelectOperatorError,
 )
-from sqlalchemy_crud_plus.types import JoinConditions, LoadStrategies, Model
+from sqlalchemy_crud_plus.types import JoinConditions, JoinConfig, LoadStrategies, Model
 
 _SUPPORTED_FILTERS = {
     # Comparison: https://docs.sqlalchemy.org/en/20/core/operators.html#comparison-operators
@@ -181,7 +180,7 @@ def _create_arithmetic_filters(column: Column, op: str, value: dict[str, Any]) -
     return arithmetic_filters
 
 
-def _create_and_filters(column: Column, op: str, value: Any) -> list[ColumnElement | None]:
+def _create_and_filters(column: Column, op: str, value: Any) -> list[ColumnElement[Any] | None]:
     """
     Create AND filter expressions.
 
@@ -197,7 +196,7 @@ def _create_and_filters(column: Column, op: str, value: Any) -> list[ColumnEleme
     return and_filters
 
 
-def parse_filters(model: type[Model] | AliasedClass, **kwargs) -> list[ColumnElement]:
+def parse_filters(model: type[Model] | AliasedClass, **kwargs) -> list[ColumnElement[Any]]:
     """
     Parse filter expressions from keyword arguments.
 
@@ -217,6 +216,9 @@ def parse_filters(model: type[Model] | AliasedClass, **kwargs) -> list[ColumnEle
 
         if field_name == '__or' and op == '':
             __or__filters = []
+
+            if not isinstance(value, dict):
+                raise SelectOperatorError('__or__ filter value must be a dictionary')
 
             for _key, _value in value.items():
                 if '__' not in _key:
@@ -303,7 +305,7 @@ def apply_sorting(
     return stmt
 
 
-def build_load_strategies(model: type[Model], load_strategies: LoadStrategies | None) -> list:
+def build_load_strategies(model: type[Model], load_strategies: LoadStrategies | None) -> list[ExecutableOption]:
     """
     Build relationship loading strategy options.
 
@@ -311,6 +313,8 @@ def build_load_strategies(model: type[Model], load_strategies: LoadStrategies | 
     :param load_strategies: Loading strategies configuration
     :return:
     """
+    if load_strategies is None:
+        return []
 
     strategies_map = {
         'contains_eager': contains_eager,
@@ -325,10 +329,10 @@ def build_load_strategies(model: type[Model], load_strategies: LoadStrategies | 
         # Load
         'defer': defer,
         'load_only': load_only,
-        'selectin_polymorphic': selectin_polymorphic,
+        # 'selectin_polymorphic': selectin_polymorphic,
         'undefer': undefer,
         'undefer_group': undefer_group,
-        'with_expression': with_expression,
+        # 'with_expression': with_expression,
     }
 
     options = []
@@ -359,7 +363,7 @@ def build_load_strategies(model: type[Model], load_strategies: LoadStrategies | 
     return options
 
 
-def apply_join_conditions(model: type[Model], stmt: Select, join_conditions: JoinConditions | None):
+def apply_join_conditions(model: type[Model], stmt: Select, join_conditions: JoinConditions | None) -> Select:
     """
     Apply JOIN conditions to the query statement.
 
@@ -368,13 +372,24 @@ def apply_join_conditions(model: type[Model], stmt: Select, join_conditions: Joi
     :param join_conditions: JOIN conditions configuration
     :return:
     """
+    if join_conditions is None:
+        return stmt
+
     if isinstance(join_conditions, list):
-        for column in join_conditions:
-            try:
-                attr = getattr(model, column)
-                stmt = stmt.join(attr)
-            except AttributeError:
-                raise ModelColumnError(f'Invalid model column: {column}')
+        for v in join_conditions:
+            if isinstance(v, str):
+                try:
+                    attr = getattr(model, v)
+                    stmt = stmt.join(attr)
+                except AttributeError:
+                    raise ModelColumnError(f'Invalid model column: {v}')
+            elif isinstance(v, JoinConfig):
+                if v.join_type == 'inner':
+                    stmt = stmt.join(v.model, v.join_on)
+                elif v.join_type == 'left':
+                    stmt = stmt.join(v.model, v.join_on, isouter=True)
+                elif v.join_type == 'full':
+                    stmt = stmt.join(v.model, v.join_on, full=True)
 
     elif isinstance(join_conditions, dict):
         for column, join_type in join_conditions.items():
@@ -383,10 +398,10 @@ def apply_join_conditions(model: type[Model], stmt: Select, join_conditions: Joi
                 raise JoinConditionError(f'Invalid join type: {join_type}, only supports {allowed_join_types}')
             try:
                 attr = getattr(model, column)
-                if join_type == 'left':
-                    stmt = stmt.join(attr, isouter=True)
-                elif join_type == 'inner':
+                if join_type == 'inner':
                     stmt = stmt.join(attr)
+                elif join_type == 'left':
+                    stmt = stmt.join(attr, isouter=True)
                 elif join_type == 'full':
                     stmt = stmt.join(attr, full=True)
                 else:

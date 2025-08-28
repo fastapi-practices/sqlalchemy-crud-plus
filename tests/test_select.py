@@ -77,6 +77,22 @@ async def test_select_model_by_column_with_whereclause(
 
 
 @pytest.mark.asyncio
+async def test_select_model_by_column_comprehensive(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
+    from tests.schemas.basic import InsCreate
+
+    create_data = InsCreate(name='comprehensive_test_select')
+
+    async with async_db_session.begin():
+        created_item = await crud_ins.create_model(async_db_session, create_data)
+
+    result = await crud_ins.select_model_by_column(async_db_session, name='comprehensive_test_select')
+
+    assert result is not None
+    assert result.name == 'comprehensive_test_select'
+    assert result.id == created_item.id
+
+
+@pytest.mark.asyncio
 async def test_select_models_basic(async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]):
     results = await crud_ins.select_models(async_db_session)
 

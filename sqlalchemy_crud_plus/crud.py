@@ -181,7 +181,11 @@ class CRUDPlus(Generic[Model]):
         if kwargs:
             filters.extend(parse_filters(self.model, **kwargs))
 
-        stmt = select(func.count()).select_from(self.model)
+        if isinstance(self.primary_key, list):
+            stmt = select(func.count()).select_from(self.model)
+        else:
+            stmt = select(func.count(self.primary_key)).select_from(self.model)
+
         if filters:
             stmt = stmt.where(*filters)
 
@@ -535,14 +539,14 @@ class CRUDPlus(Generic[Model]):
     ) -> int:
         """
         Bulk update multiple instances with different data for each record.
-        Each update item should have 'pk' key and other fields to update.
 
         :param session: The SQLAlchemy async session
         :param objs: To save a list of Pydantic schemas or dict for data
         :param pk_mode: Primary key mode, when enabled, the data must contain the primary key data
         :param flush: If `True`, flush all object changes to the database
         :param commit: If `True`, commits the transaction immediately
-        :return: Total number of updated records
+        :param kwargs: Filter expressions using field__operator=value syntax
+        :return:
         """
         if not pk_mode:
             filters = parse_filters(self.model, **kwargs)
