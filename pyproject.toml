@@ -1,14 +1,13 @@
 [project]
 name = "sqlalchemy-crud-plus"
 description = "Asynchronous CRUD operation based on SQLAlchemy2 model"
-version = '1.10.0'
 authors = [
     { name = "Wu Clan", email = "jianhengwu0407@gmail.com" },
 ]
-dependencies = [
-    "sqlalchemy>=2.0.0",
-    "pydantic>=2.0",
-]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dynamic = ['version']
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3 :: Only",
@@ -16,9 +15,10 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-requires-python = ">=3.10"
-readme = "README.md"
-license = { text = "MIT" }
+dependencies = [
+    "sqlalchemy>=2.0.0",
+    "pydantic>=2.0",
+]
 
 [project.urls]
 homepage = "https://github.com/fastapi-practices/sqlalchemy-crud-plus"
@@ -61,6 +61,12 @@ docstring-code-format = true
 
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "session"
+
+[tool.hatch.build.targets.wheel]
+packages = ["sqlalchemy_crud_plus"]
+
+[tool.hatch.version]
+path = "sqlalchemy_crud_plus/__init__.py"
 
 [build-system]
 requires = ["hatchling"]
