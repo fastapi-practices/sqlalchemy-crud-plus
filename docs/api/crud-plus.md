@@ -4,4 +4,4 @@
 
 ## 类定义
 
-::: sqlalchemy_crud_plus.CRUDPlus
+::: sqlalchemy_crud_plus.crud.CRUDPlus

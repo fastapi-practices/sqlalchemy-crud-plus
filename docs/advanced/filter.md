@@ -1,6 +1,18 @@
 # 过滤条件
 
-SQLAlchemy CRUD Plus 支持 34+ 种过滤操作符，允许构建复杂的查询条件。
+SQLAlchemy CRUD Plus 支持 30+ 种过滤操作符，用于构建复杂的查询条件。
+
+## 基础用法
+
+```python
+# 使用过滤条件查询
+users = await user_crud.select_models(
+    session,
+    name="张三",           # 等于
+    age__gt=18,           # 大于
+    email__like="%@qq.com" # 模糊匹配
+)
+```
 
 ## 比较操作符
 
@@ -8,24 +20,24 @@ SQLAlchemy CRUD Plus 支持 34+ 种过滤操作符，允许构建复杂的查询
 # 数值比较
 users = await user_crud.select_models(
     session,
-    age__gt=30,         # 大于
-    age__ge=18,         # 大于等于
-    age__lt=65,         # 小于
-    age__le=60,         # 小于等于
-    id__eq=1,           # 等于
-    status__ne=0        # 不等于
+    age__gt=30,         # 大于 30
+    age__ge=18,         # 大于等于 18
+    age__lt=65,         # 小于 65
+    age__le=60,         # 小于等于 60
+    id__eq=1,           # 等于 1
+    status__ne=0        # 不等于 0
 )
 ```
 
 ## 范围操作符
 
 ```python
-# 范围查询
+# 包含查询
 users = await user_crud.select_models(
     session,
-    id__in=[1, 2, 3, 4, 5],     # 包含在列表中
-    status__not_in=[0, -1],     # 不包含在列表中
-    age__between=[30, 40]       # 在范围内
+    id__in=[1, 2, 3, 4, 5],     # ID 在列表中
+    status__not_in=[0, -1],     # 状态不在列表中
+    age__between=[18, 65]       # 年龄在 18-65 之间
 )
 ```
 
@@ -38,64 +50,29 @@ users = await user_crud.select_models(
     name__like='%张%',              # 包含"张"
     name__not_like='%test%',        # 不包含"test"
     name__ilike='%ADMIN%',          # 不区分大小写包含
-    name__not_ilike='%TEST%',       # 不区分大小写不包含
     email__startswith='admin',      # 以"admin"开头
     email__endswith='@qq.com',      # 以"@qq.com"结尾
     bio__contains='程序员',          # 包含"程序员"
-    name__match='pattern'           # 正则匹配（依赖数据库支持）
 )
 ```
 
-## 身份比较操作符
+## 空值检查
 
 ```python
-# NULL 值检查
+# NULL 值处理
 users = await user_crud.select_models(
     session,
-    deleted_at__is=None,                    # 为 NULL
-    profile_id__is_not=None,                # 不为 NULL
-    status__is_distinct_from=0,             # 与 0 不同（包括 NULL）
-    status__is_not_distinct_from=1          # 与 1 相同（不包括 NULL）
+    deleted_at__is=None,            # 为 NULL
+    profile_id__is_not=None,        # 不为 NULL
 )
 ```
 
-## 字符串变换操作符
-
-```python
-# 字符串连接
-users = await user_crud.select_models(
-    session,
-    name__concat='_suffix'          # 连接后缀
-)
-```
-
-## 算术操作符
-
-```python
-# 算术运算
-users = await user_crud.select_models(
-    session,
-    age__add=5,                     # age + 5
-    age__radd=10,                   # 10 + age
-    score__sub=10,                  # score - 10
-    score__rsub=100,                # 100 - score
-    price__mul=2,                   # price * 2
-    price__rmul=3,                  # 3 * price
-    price__truediv=2,               # price / 2
-    price__rtruediv=100,            # 100 / price
-    count__floordiv=10,             # count // 10
-    count__rfloordiv=100,           # 100 // count
-    number__mod=3,                  # number % 3
-    number__rmod=10                 # 10 % number
-)
-```
-
-## OR 条件
+## OR 条件查询
 
 ### 同字段多值
 
 ```python
-# 邮箱域名为 gmail.com 或 qq.com
+# 邮箱域名为 gmail.com 或 qq.com 的用户
 users = await user_crud.select_models(
     session,
     __or__={
@@ -107,7 +84,7 @@ users = await user_crud.select_models(
 ### 不同字段条件
 
 ```python
-# 名字包含"张"或邮箱以admin开头
+# 名字包含"张"或邮箱以admin开头的用户
 users = await user_crud.select_models(
     session,
     __or__={
@@ -120,55 +97,22 @@ users = await user_crud.select_models(
 ### 复杂 OR 条件
 
 ```python
-# 混合使用
+# 多种条件组合
 users = await user_crud.select_models(
     session,
+    is_active=True,  # 必须是活跃用户
     __or__={
-        'status': [1, 2, 3],           # status 等于 1 或 2 或 3
-        'is_vip': True,                # 或者是 VIP
-        'created_time__gt': '2023-01-01' # 或者创建时间大于指定日期
+        'level__ge': 5,              # 等级大于等于5
+        'is_vip': True,              # 或者是VIP
+        'total_spent__gt': 1000      # 或者消费大于1000
     }
 )
 ```
 
-### 字段级 OR 操作
-
-```python
-# 单个字段的多种条件
-users = await user_crud.select_models(
-    session,
-    name__or={
-        'like': '%张%',
-        'startswith': 'admin'
-    }
-)
-```
-
-## 组合条件
-
-```python
-# AND 条件（默认）
-users = await user_crud.select_models(
-    session,
-    age__gt=30,                 # 年龄大于 30
-    is_active=True,             # 并且是活跃用户
-    name__like='%张%'           # 并且名字包含"张"
-)
-
-# AND + OR 组合
-users = await user_crud.select_models(
-    session,
-    is_active=True,             # 必须是活跃用户
-    __or__={                    # 并且满足以下任一条件
-        'age__gt': 40,
-        'is_vip': True
-    }
-)
-```
-
-## 支持的操作符
+## 操作符参考
 
 ### 比较操作符
+
 | 操作符 | 说明 | 示例 |
 |--------|------|------|
 | `__gt` | 大于 | `age__gt=18` |
@@ -177,23 +121,17 @@ users = await user_crud.select_models(
 | `__le` | 小于等于 | `age__le=65` |
 | `__eq` | 等于 | `id__eq=1` |
 | `__ne` | 不等于 | `status__ne=0` |
-| `__between` | 在范围内 | `age__between=[18,65]` |
 
 ### 包含操作符
+
 | 操作符 | 说明 | 示例 |
 |--------|------|------|
 | `__in` | 在列表中 | `id__in=[1,2,3]` |
 | `__not_in` | 不在列表中 | `id__not_in=[1,2,3]` |
-
-### 身份比较操作符
-| 操作符 | 说明 | 示例 |
-|--------|------|------|
-| `__is` | 为空检查 | `deleted_at__is=None` |
-| `__is_not` | 不为空检查 | `deleted_at__is_not=None` |
-| `__is_distinct_from` | 身份不同 | `status__is_distinct_from=0` |
-| `__is_not_distinct_from` | 身份相同 | `status__is_not_distinct_from=1` |
+| `__between` | 在范围内 | `age__between=[18,65]` |
 
 ### 字符串操作符
+
 | 操作符 | 说明 | 示例 |
 |--------|------|------|
 | `__like` | 模糊匹配 | `name__like='%张%'` |
@@ -203,149 +141,150 @@ users = await user_crud.select_models(
 | `__startswith` | 开头匹配 | `email__startswith='admin'` |
 | `__endswith` | 结尾匹配 | `email__endswith='@qq.com'` |
 | `__contains` | 包含 | `name__contains='张'` |
-| `__match` | 正则匹配 | `name__match='pattern'` |
-| `__concat` | 字符串连接 | `name__concat='_suffix'` |
 
-### 算术操作符
+### 空值操作符
+
 | 操作符 | 说明 | 示例 |
 |--------|------|------|
-| `__add` | 加法 | `age__add=5` |
-| `__radd` | 反向加法 | `age__radd=10` |
-| `__sub` | 减法 | `score__sub=10` |
-| `__rsub` | 反向减法 | `score__rsub=100` |
-| `__mul` | 乘法 | `price__mul=2` |
-| `__rmul` | 反向乘法 | `price__rmul=3` |
-| `__truediv` | 除法 | `price__truediv=2` |
-| `__rtruediv` | 反向除法 | `price__rtruediv=100` |
-| `__floordiv` | 整除 | `count__floordiv=10` |
-| `__rfloordiv` | 反向整除 | `count__rfloordiv=100` |
-| `__mod` | 取模 | `number__mod=3` |
-| `__rmod` | 反向取模 | `number__rmod=10` |
+| `__is` | 为空检查 | `deleted_at__is=None` |
+| `__is_not` | 不为空检查 | `deleted_at__is_not=None` |
 
-## 实际应用
+## 实际应用示例
 
-### 用户搜索
+### 用户搜索功能
 
 ```python
-def search_users(
+async def search_users(
+    session: AsyncSession,
     keyword: str = None,
     age_min: int = None,
     age_max: int = None,
-    email_domain: str = None,
     is_active: bool = None
 ):
     filters = {}
-
+    
+    # 关键词搜索（姓名或邮箱）
     if keyword:
         filters['__or__'] = {
             'name__like': f'%{keyword}%',
             'email__like': f'%{keyword}%'
         }
-
+    
+    # 年龄范围
     if age_min is not None:
         filters['age__ge'] = age_min
-
     if age_max is not None:
         filters['age__le'] = age_max
-
-    if email_domain:
-        filters['email__endswith'] = f'@{email_domain}'
-
+    
+    # 状态筛选
     if is_active is not None:
         filters['is_active'] = is_active
-
-    users = await user_crud.select_models(session, **filters)
-    return users
+    
+    return await user_crud.select_models(session, **filters)
 ```
 
-### 复杂查询
+### 高级筛选
 
 ```python
 # 查找活跃的高级用户
 users = await user_crud.select_models(
     session,
     is_active=True,
+    created_at__ge='2024-01-01',
     __or__={
         'level__ge': 5,
         'is_vip': True,
-        'total_spent__gt': 1000
-    },
-    created_time__gt='2023-01-01'
+        'total_orders__gt': 10
+    }
 )
 ```
 
 ## 复合主键支持
 
-!!! note "主键参数命名"
+SQLAlchemy CRUD Plus 自动检测模型主键，支持单个主键和复合主键。
 
-    由于在 python 内部 `id` 为关键字，因此，我们设定默认主键入参为 `pk`。这仅用于函数入参，并不要求模型主键必须定义为 `pk`
-
-!!! tip "自动主键"
-
-    我们在 SQLAlchemy CRUD Plus 内部通过 [inspect()](https://docs.sqlalchemy.org/en/20/core/inspection.html) 自动搜索表主键，
-    而非强制绑定主键列必须命名为 `id`
-
-### 单个主键
-
-```python
-class User(Base):
-    __tablename__ = 'users'
-
-    # 定义主键
-    id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(50))
-    email: Mapped[str] = mapped_column(String(100))
-
-
-class UserProfile(Base):
-    __tablename__ = 'user_profiles'
-
-    # 字符串主键
-    uuid: Mapped[str] = mapped_column(primary_key=True, index=True)
-    bio: Mapped[str] = mapped_column(String(500))
-```
-
-### 复合主键
+### 复合主键模型
 
 ```python
 class UserRole(Base):
     __tablename__ = 'user_roles'
-
+    
     # 复合主键
-    user_id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    role_id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    assigned_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    user_id: Mapped[int] = mapped_column(primary_key=True)
+    role_id: Mapped[int] = mapped_column(primary_key=True)
+    assigned_at: Mapped[datetime] = mapped_column(DateTime)
 ```
 
 ### 复合主键操作
 
 ```python
-# 创建复合主键记录
-user_role_data = UserRoleCreate(user_id=1, role_id=2, assigned_at=datetime.now())
+# 创建
+user_role_data = {"user_id": 1, "role_id": 2}
 user_role = await user_role_crud.create_model(session, user_role_data)
 
-# 查询复合主键记录
+# 查询（使用元组）
 user_role = await user_role_crud.select_model(session, pk=(1, 2))
 
-# 更新复合主键记录
-updated_count = await user_role_crud.update_model(
+# 更新
+await user_role_crud.update_model(
     session,
     pk=(1, 2),
     obj={"assigned_at": datetime.now()}
 )
 
-# 删除复合主键记录
-deleted_count = await user_role_crud.delete_model(session, pk=(1, 2))
+# 删除
+await user_role_crud.delete_model(session, pk=(1, 2))
 
-# 批量查询复合主键记录
+# 批量查询
 user_roles = await user_role_crud.select_models(session, user_id=1)
 ```
 
 ## 性能建议
 
-1. **索引优化**：为常用的过滤字段创建数据库索引
-2. **避免前缀通配符**：`name__like='张%'` 比 `name__like='%张%'` 更高效
-3. **使用 IN 查询**：对于多个值的查询，使用 `__in` 而不是多个 OR 条件
-4. **限制结果集**：使用 `limit` 参数限制返回的记录数
-5. **合理使用 OR**：过多的 OR 条件可能影响性能
-6. **复合主键索引**：为复合主键创建联合索引以提高查询性能
+### 索引优化
+
+```python
+# 为常用查询字段创建索引
+class User(Base):
+    __tablename__ = 'users'
+    
+    email: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    is_active: Mapped[bool] = mapped_column(default=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    
+    # 复合索引
+    __table_args__ = (
+        Index('idx_user_active_created', 'is_active', 'created_at'),
+    )
+```
+
+### 查询优化技巧
+
+```python
+# 使用 exists 检查存在性（更高效）
+exists = await user_crud.exists(session, email="test@example.com")
+
+# 使用 limit 限制结果集
+recent_users = await user_crud.select_models(
+    session,
+    created_at__ge=datetime.now() - timedelta(days=7),
+    limit=100
+)
+
+# 避免前缀通配符（低效）
+# 不推荐: name__like='%张%'
+# 推荐: name__like='张%'
+```
+
+## 注意事项
+
+1. **参数命名**: 主键参数使用 `pk`，避免与 Python 关键字 `id` 冲突
+2. **自动主键检测**: 支持各种主键类型，包括字符串主键和复合主键
+3. **性能考虑**: 为常用过滤字段创建数据库索引
+4. **OR 查询**: 过多 OR 条件可能影响性能，合理使用
+5. **通配符**: 避免以通配符开头的 LIKE 查询
+
+## 下一步
+
+- [关系查询](../relationships/overview.md) - 学习表关系处理
+- [事务控制](transaction.md) - 掌握事务管理
