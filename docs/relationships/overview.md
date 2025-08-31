@@ -56,20 +56,6 @@ user = await user_crud.select_model(
 )
 ```
 
-### 嵌套关系
-
-```python
-# 加载嵌套关系
-users = await user_crud.select_models(
-    session,
-    load_strategies={
-        'posts': 'selectinload',
-        'posts.category': 'joinedload',
-        'posts.comments': 'selectinload'
-    }
-)
-```
-
 ## join_conditions 参数
 
 ### 基础 JOIN
@@ -439,16 +425,16 @@ users = await user_crud.select_models(
 )
 ```
 
-### 过深的嵌套
+### 嵌套关系
 
 ```python
-# 避免：过深的嵌套关系
+# 当前不支持嵌套关系
 users = await user_crud.select_models(
     session,
     load_strategies={
         'posts': 'selectinload',
-        'posts.comments': 'selectinload',
-        'posts.comments.author': 'selectinload',  # 过深
+        'posts.comments': 'selectinload',  # error
+        'posts.comments.author': 'selectinload',  # error
     }
 )
 ```
