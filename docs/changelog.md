@@ -1,3 +1,20 @@
+<a id="1.11.0"></a>
+# [1.11.0](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/1.11.0) - 2025-08-31
+
+## What's Changed
+* Update changelog for v1.10.0 by [@wu-clan](https://github.com/wu-clan) in [#52](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/52)
+* Add bulk create and update methods by [@wu-clan](https://github.com/wu-clan) in [#53](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/53)
+* Add the join condition onclause support by [@wu-clan](https://github.com/wu-clan) in [#54](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/54)
+* Optimize document layout and content by [@wu-clan](https://github.com/wu-clan) in [#55](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/55)
+* Prepare for 1.11.0 release by [@wu-clan](https://github.com/wu-clan) in [#56](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/56)
+* Update pyproject to dynamic version number by [@wu-clan](https://github.com/wu-clan) in [#57](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/57)
+
+
+**Full Changelog**: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/v1.10.0...1.11.0
+
+[Changes][1.11.0]
+
+
 <a id="v1.10.0"></a>
 # [v1.10.0](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/v1.10.0) - 2025-06-16
 
@@ -175,6 +192,7 @@ CRUD methods have been refactored, check out the documentation for new usage!
 [Changes][0.0.4]
 
 
+[1.11.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/v1.10.0...1.11.0
 [v1.10.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.9.0...v1.10.0
 [1.9.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.8.0...1.9.0
 [1.8.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.7.0...1.8.0
