@@ -1,40 +1,38 @@
 site_name: SQLAlchemy CRUD Plus
-site_description: 强大的 SQLAlchemy CRUD 库，支持高级关系查询功能
-site_url: https://wu-clan.github.io/sqlalchemy-crud-plus
-site_author: Wu Clan
+site_description: 现代化的 SQLAlchemy 2.0 异步 CRUD 操作库，为 Python 开发者提供简洁、强大、类型安全的数据库操作体验
+site_url: https://fastapi-practices.github.io/sqlalchemy-crud-plus
+site_author: FastAPI Practices
 repo_name: sqlalchemy-crud-plus
-repo_url: https://github.com/wu-clan/sqlalchemy-crud-plus
+repo_url: https://github.com/fastapi-practices/sqlalchemy-crud-plus
 
 nav:
   - 首页: index.md
   - 安装: installing.md
-  - 快速开始: getting-started/quick-start.md
-  - 基础用法: usage/crud.md
-  - 关系查询: relationships/overview.md
-  - 高级功能:
+  - 基础用法:
+      - 快速开始: getting-started/quick-start.md
+      - CRUD 操作: usage/crud.md
+  - 高级用法:
       - 过滤条件: advanced/filter.md
+      - 关系查询: relationships/overview.md
       - 事务控制: advanced/transaction.md
-  - API 参考:
-      - CRUDPlus 类: api/crud-plus.md
-      - 类型定义: api/types.md
-      - 错误类型: api/errors.md
+  - API 参考: api/crud-plus.md
   - 更新日志: changelog.md
 
 theme:
   name: material
   language: zh
   palette:
-    - media: '(prefers-color-scheme)'
+    - media: "(prefers-color-scheme)"
       toggle:
         icon: material/brightness-auto
         name: Switch to light mode
-    - media: '(prefers-color-scheme: light)'
+    - media: "(prefers-color-scheme: light)"
       scheme: default
       primary: pink
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-    - media: '(prefers-color-scheme: dark)'
+    - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: teal
       toggle:
@@ -48,30 +46,9 @@ theme:
     - navigation.instant.progress
     - navigation.path
     - navigation.tracking
-    - navigation.tabs.sticky
     - navigation.top
-    - navigation.footer
     - search.suggest
     - toc.follow
-
-plugins:
-  - search:
-      lang: zh
-  - mkdocstrings:
-      handlers:
-        python:
-          options:
-            docstring_style: sphinx
-            filters: [ "!^_" ]
-            parameter_headings: true
-            show_root_heading: true
-            show_root_full_path: false
-            show_symbol_type_heading: true
-            show_symbol_type_toc: true
-            members_order: source
-            separate_signature: true
-            show_signature_annotations: true
-            signature_crossrefs: true
 
 markdown_extensions:
   - toc:
@@ -94,12 +71,37 @@ markdown_extensions:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: sphinx
+            filters: [ "!^_" ]
+            show_root_heading: true
+            members_order: source
+            separate_signature: true
+            show_signature_annotations: true
+
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/wu-clan/sqlalchemy-crud-plus
+      link: https://github.com/fastapi-practices/sqlalchemy-crud-plus
+      name: GitHub
     - icon: fontawesome/brands/discord
       link: https://wu-clan.github.io/homepage/
+      name: Discord
+    - icon: fontawesome/solid/book
+      link: https://fastapi-practices.github.io/sqlalchemy-crud-plus
+      name: 在线文档
+  version:
+    provider: mike
+    default: latest
 
 extra_css:
-  - 'extra/custom.css'
+  - "extra/custom.css"
+
+copyright: |
+  &copy; 2024 - 2025 FastAPI Practices - 为爱发电
+  
