@@ -1,3 +1,17 @@
+<a id="1.12.0"></a>
+# [1.12.0](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/1.12.0) - 2025-09-04
+
+## What's Changed
+* Update changelog for 1.11.0 by [@wu-clan](https://github.com/wu-clan) in [#58](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/58)
+* Add deleted time column for logical deletion by [@wu-clan](https://github.com/wu-clan) in [#60](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/60)
+* Prepare for 1.12.0 release by [@wu-clan](https://github.com/wu-clan) in [#61](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/61)
+
+
+**Full Changelog**: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.11.0...1.12.0
+
+[Changes][1.12.0]
+
+
 <a id="1.11.0"></a>
 # [1.11.0](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/1.11.0) - 2025-08-31
 
@@ -192,6 +206,7 @@ CRUD methods have been refactored, check out the documentation for new usage!
 [Changes][0.0.4]
 
 
+[1.12.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.11.0...1.12.0
 [1.11.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/v1.10.0...1.11.0
 [v1.10.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.9.0...v1.10.0
 [1.9.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.8.0...1.9.0
