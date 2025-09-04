@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from __future__ import annotations
-
+from datetime import datetime, timezone
 from typing import Any, Generic, Sequence
 
 from sqlalchemy import (
@@ -36,6 +35,7 @@ from sqlalchemy_crud_plus.utils import apply_join_conditions, apply_sorting, bui
 class CRUDPlus(Generic[Model]):
     def __init__(self, model: type[Model]):
         self.model = model
+        self.model_column_names = [column.key for column in model.__table__.columns]
         self.primary_key = self._get_primary_key()
 
     def _get_primary_key(self) -> Column | list[Column]:
@@ -602,7 +602,9 @@ class CRUDPlus(Generic[Model]):
         session: AsyncSession,
         allow_multiple: bool = False,
         logical_deletion: bool = False,
-        deleted_flag_column: str = 'del_flag',
+        deleted_flag_column: str = 'is_deleted',
+        deleted_at_column: str = 'deleted_at',
+        deleted_at_factory: datetime = datetime.now(timezone.utc),
         flush: bool = False,
         commit: bool = False,
         **kwargs,
@@ -614,13 +616,15 @@ class CRUDPlus(Generic[Model]):
         :param allow_multiple: If `True`, allows deleting multiple records that match the filters
         :param logical_deletion: If `True`, enable logical deletion instead of physical deletion
         :param deleted_flag_column: Column name for logical deletion flag
+        :param deleted_at_column: Column name for delete time，automatic judgment
+        :param deleted_at_factory: The delete time column datetime factory function
         :param flush: If `True`, flush all object changes to the database
         :param commit: If `True`, commits the transaction immediately
         :param kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
         if logical_deletion:
-            if not hasattr(self.model, deleted_flag_column):
+            if deleted_flag_column not in self.model_column_names:
                 raise ModelColumnError(f'Column {deleted_flag_column} is not found in {self.model}')
 
         filters = parse_filters(self.model, **kwargs)
@@ -633,8 +637,13 @@ class CRUDPlus(Generic[Model]):
             if total_count > 1:
                 raise MultipleResultsError(f'Only one record is expected to be deleted, found {total_count} records.')
 
+        data = {deleted_flag_column: True}
+
+        if deleted_at_column in self.model_column_names:
+            data[deleted_at_column] = deleted_at_factory
+
         stmt = (
-            update(self.model).where(*filters).values(**{deleted_flag_column: True})
+            update(self.model).where(*filters).values(**data)
             if logical_deletion
             else delete(self.model).where(*filters)
         )

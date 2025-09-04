@@ -3,58 +3,58 @@
 from pydantic import BaseModel, ConfigDict
 
 
-class RelUserCreate(BaseModel):
+class CreateRelUser(BaseModel):
     name: str
 
 
-class RelProfileCreate(BaseModel):
+class CreateRelProfile(BaseModel):
     bio: str
 
 
-class RelCategoryCreate(BaseModel):
+class CreateRelCategory(BaseModel):
     name: str
     parent_id: int | None = None
 
 
-class RelPostCreate(BaseModel):
+class CreateRelPost(BaseModel):
     title: str
     category_id: int | None = None
 
 
-class RelRoleCreate(BaseModel):
+class CreateRelRole(BaseModel):
     name: str
 
 
-class RelUserUpdate(BaseModel):
+class UpdateRelUser(BaseModel):
     name: str | None = None
 
 
-class RelProfileUpdate(BaseModel):
+class UpdateRelProfile(BaseModel):
     bio: str | None = None
 
 
-class RelCategoryUpdate(BaseModel):
+class UpdateRelCategory(BaseModel):
     name: str | None = None
     parent_id: int | None = None
 
 
-class RelPostUpdate(BaseModel):
+class UpdateRelPost(BaseModel):
     title: str | None = None
     category_id: int | None = None
 
 
-class RelRoleUpdate(BaseModel):
+class UpdateRelRole(BaseModel):
     name: str | None = None
 
 
-class RelUserResponse(BaseModel):
+class RelUserDetail(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     name: str
 
 
-class RelProfileResponse(BaseModel):
+class RelProfileDetail(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -62,7 +62,7 @@ class RelProfileResponse(BaseModel):
     bio: str
 
 
-class RelCategoryResponse(BaseModel):
+class RelCategoryDetail(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -70,7 +70,7 @@ class RelCategoryResponse(BaseModel):
     parent_id: int | None
 
 
-class RelPostResponse(BaseModel):
+class RelPostDetail(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -79,7 +79,7 @@ class RelPostResponse(BaseModel):
     category_id: int | None
 
 
-class RelRoleResponse(BaseModel):
+class RelRoleDetail(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int

@@ -144,7 +144,7 @@ class TestParseFilters:
             parse_filters(Ins, __or__='invalid')
 
     def test_complex_or_mixed(self):
-        filters = parse_filters(Ins, __or__={'del_flag': [True, False], 'name__like': 'test%'})
+        filters = parse_filters(Ins, __or__={'is_deleted': [True, False], 'name__like': 'test%'})
         assert len(filters) == 1
 
     def test_empty_filters(self):
@@ -375,7 +375,8 @@ class TestPrivateFunctions:
 
     def test_create_or_filters_with_none_filter(self):
         column = get_column(Ins, 'name')
-        filters = _create_or_filters(column, 'or', {'unsupported_op': 'test'})
+        with pytest.warns(SyntaxWarning):
+            filters = _create_or_filters(column, 'or', {'unsupported_op': 'test'})
         assert len(filters) == 0
 
     def test_create_arithmetic_filters_valid(self):
@@ -395,7 +396,8 @@ class TestPrivateFunctions:
 
     def test_create_arithmetic_filters_none_filter(self):
         column = get_column(Ins, 'id')
-        filters = _create_arithmetic_filters(column, 'add', {'value': 10, 'condition': {'unsupported_op': 5}})
+        with pytest.warns(SyntaxWarning):
+            filters = _create_arithmetic_filters(column, 'add', {'value': 10, 'condition': {'unsupported_op': 5}})
         assert len(filters) == 0
 
     def test_create_and_filters_between(self):
@@ -410,7 +412,8 @@ class TestPrivateFunctions:
 
     def test_create_and_filters_none_filter(self):
         column = get_column(Ins, 'id')
-        filters = _create_and_filters(column, 'unsupported_op', 5)
+        with pytest.warns(SyntaxWarning):
+            filters = _create_and_filters(column, 'unsupported_op', 5)
         assert len(filters) == 0
 
 
@@ -436,9 +439,11 @@ class TestComplexOrConditions:
         assert len(filters) == 0
 
     def test_arithmetic_filter_with_none_arithmetic_filter(self):
-        filters = parse_filters(Ins, id__unsupported_arithmetic={'value': 1, 'condition': {'gt': 5}})
+        with pytest.warns(SyntaxWarning):
+            filters = parse_filters(Ins, id__unsupported_arithmetic={'value': 1, 'condition': {'gt': 5}})
         assert len(filters) == 0
 
     def test_or_with_non_or_operator_branch(self):
-        filters = parse_filters(Ins, name__not_or={'like': 'test%'})
+        with pytest.warns(SyntaxWarning):
+            filters = parse_filters(Ins, name__not_or={'like': 'test%'})
         assert len(filters) >= 0

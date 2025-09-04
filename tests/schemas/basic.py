@@ -1,25 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from typing import Optional
-
 from pydantic import BaseModel
 
 
-class InsCreate(BaseModel):
+class CreateIns(BaseModel):
     name: str
-    del_flag: bool = False
+    is_deleted: bool = False
 
 
-class InsUpdate(BaseModel):
-    name: Optional[str] = None
-    del_flag: Optional[bool] = None
+class UpdateIns(BaseModel):
+    name: str | None = None
+    is_deleted: bool | None = None
 
 
-class InsPksCreate(BaseModel):
+class CreateInsPks(BaseModel):
     id: int
     name: str
     sex: str
 
 
-class InsPksUpdate(BaseModel):
-    name: Optional[str] = None
+class UpdateInsPks(BaseModel):
+    name: str | None = None
