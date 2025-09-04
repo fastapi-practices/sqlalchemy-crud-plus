@@ -199,6 +199,14 @@ deleted_count = await user_crud.delete_model_by_column(
     allow_multiple=True,
     created_at__lt=datetime.now() - timedelta(days=30)
 )
+
+# 逻辑删除（软删除）
+deleted_count = await user_crud.delete_model_by_column(
+    session,
+    logical_deletion=True,  # 启用逻辑删除
+    allow_multiple=False,
+    id=1
+)
 ```
 
 ## 事务控制

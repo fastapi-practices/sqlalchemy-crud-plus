@@ -30,7 +30,7 @@ async def test_select_model_with_whereclause(
     async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
     item = populated_db[0]
-    result = await crud_ins.select_model(async_db_session, item.id, ~crud_ins.model.del_flag)
+    result = await crud_ins.select_model(async_db_session, item.id, ~crud_ins.model.is_deleted)
 
     assert result is not None
     assert result.id == item.id
@@ -41,7 +41,7 @@ async def test_select_model_with_kwargs(
     async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
     item = populated_db[0]
-    result = await crud_ins.select_model(async_db_session, item.id, del_flag=False)
+    result = await crud_ins.select_model(async_db_session, item.id, is_deleted=False)
 
     assert result is not None
     assert result.id == item.id
@@ -70,7 +70,7 @@ async def test_select_model_by_column_with_whereclause(
     async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
     item = populated_db[0]
-    result = await crud_ins.select_model_by_column(async_db_session, ~crud_ins.model.del_flag, name=item.name)
+    result = await crud_ins.select_model_by_column(async_db_session, ~crud_ins.model.is_deleted, name=item.name)
 
     assert result is not None
     assert result.name == item.name
@@ -121,7 +121,7 @@ async def test_select_models_with_offset(
 async def test_select_models_with_whereclause(
     async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    results = await crud_ins.select_models(async_db_session, ~crud_ins.model.del_flag)
+    results = await crud_ins.select_models(async_db_session, ~crud_ins.model.is_deleted)
 
     assert len(results) >= 0
 
@@ -130,7 +130,7 @@ async def test_select_models_with_whereclause(
 async def test_select_models_with_kwargs(
     async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    results = await crud_ins.select_models(async_db_session, del_flag=False)
+    results = await crud_ins.select_models(async_db_session, is_deleted=False)
 
     assert len(results) >= 0
 
@@ -184,7 +184,7 @@ async def test_select_models_order_with_offset(
 async def test_select_models_order_with_whereclause(
     async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    results = await crud_ins.select_models_order(async_db_session, 'name', None, ~crud_ins.model.del_flag)
+    results = await crud_ins.select_models_order(async_db_session, 'name', None, ~crud_ins.model.is_deleted)
 
     assert len(results) >= 0
 
@@ -193,7 +193,7 @@ async def test_select_models_order_with_whereclause(
 async def test_select_models_order_with_kwargs(
     async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    results = await crud_ins.select_models_order(async_db_session, 'name', del_flag=False)
+    results = await crud_ins.select_models_order(async_db_session, 'name', is_deleted=False)
 
     assert len(results) >= 0
 
@@ -207,14 +207,14 @@ async def test_count_basic(async_db_session: AsyncSession, populated_db: list[In
 
 @pytest.mark.asyncio
 async def test_count_with_whereclause(async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]):
-    count = await crud_ins.count(async_db_session, ~crud_ins.model.del_flag)
+    count = await crud_ins.count(async_db_session, ~crud_ins.model.is_deleted)
 
     assert count >= 0
 
 
 @pytest.mark.asyncio
 async def test_count_with_kwargs(async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]):
-    count = await crud_ins.count(async_db_session, del_flag=False)
+    count = await crud_ins.count(async_db_session, is_deleted=False)
 
     assert count >= 0
 
@@ -237,13 +237,13 @@ async def test_exists_not_found(async_db_session: AsyncSession, crud_ins: CRUDPl
 async def test_exists_with_whereclause(
     async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    exists = await crud_ins.exists(async_db_session, ~crud_ins.model.del_flag)
+    exists = await crud_ins.exists(async_db_session, ~crud_ins.model.is_deleted)
 
     assert isinstance(exists, bool)
 
 
 @pytest.mark.asyncio
 async def test_exists_with_kwargs(async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]):
-    exists = await crud_ins.exists(async_db_session, del_flag=False)
+    exists = await crud_ins.exists(async_db_session, is_deleted=False)
 
     assert isinstance(exists, bool)

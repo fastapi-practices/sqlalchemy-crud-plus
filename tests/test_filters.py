@@ -76,34 +76,34 @@ async def test_filter_not_in(async_db_session: AsyncSession, populated_db: list[
 
 @pytest.mark.asyncio
 async def test_filter_is(async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]):
-    results = await crud_ins.select_models(async_db_session, del_flag__is=False)
+    results = await crud_ins.select_models(async_db_session, is_deleted__is=False)
 
-    assert all(r.del_flag is False for r in results)
+    assert all(r.is_deleted is False for r in results)
 
 
 @pytest.mark.asyncio
 async def test_filter_is_not(async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]):
-    results = await crud_ins.select_models(async_db_session, del_flag__is_not=None)
+    results = await crud_ins.select_models(async_db_session, is_deleted__is_not=None)
 
-    assert all(r.del_flag is not None for r in results)
+    assert all(r.is_deleted is not None for r in results)
 
 
 @pytest.mark.asyncio
 async def test_filter_is_distinct_from(
     async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    results = await crud_ins.select_models(async_db_session, del_flag__is_distinct_from=True)
+    results = await crud_ins.select_models(async_db_session, is_deleted__is_distinct_from=True)
 
-    assert all(r.del_flag is not True for r in results)
+    assert all(r.is_deleted is not True for r in results)
 
 
 @pytest.mark.asyncio
 async def test_filter_is_not_distinct_from(
     async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    results = await crud_ins.select_models(async_db_session, del_flag__is_not_distinct_from=False)
+    results = await crud_ins.select_models(async_db_session, is_deleted__is_not_distinct_from=False)
 
-    assert all(r.del_flag is False for r in results)
+    assert all(r.is_deleted is False for r in results)
 
 
 @pytest.mark.asyncio
@@ -259,7 +259,7 @@ async def test_filter_rmod(async_db_session: AsyncSession, populated_db: list[In
 async def test_filter_or_same_field_list_values(
     async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    results = await crud_ins.select_models(async_db_session, __or__={'del_flag': [True, False]})
+    results = await crud_ins.select_models(async_db_session, __or__={'is_deleted': [True, False]})
 
     assert len(results) >= 0
 
@@ -268,7 +268,7 @@ async def test_filter_or_same_field_list_values(
 async def test_filter_or_different_fields_single_values(
     async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    results = await crud_ins.select_models(async_db_session, __or__={'del_flag': True, 'id__gt': 5})
+    results = await crud_ins.select_models(async_db_session, __or__={'is_deleted': True, 'id__gt': 5})
 
     assert len(results) >= 0
 
@@ -286,7 +286,9 @@ async def test_filter_or_with_operators(
 async def test_filter_or_mixed_list_and_single(
     async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    results = await crud_ins.select_models(async_db_session, __or__={'del_flag': [True, False], 'name__like': 'item_%'})
+    results = await crud_ins.select_models(
+        async_db_session, __or__={'is_deleted': [True, False], 'name__like': 'item_%'}
+    )
 
     assert len(results) >= 0
 
@@ -295,7 +297,7 @@ async def test_filter_or_mixed_list_and_single(
 async def test_filter_multiple_conditions(
     async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    results = await crud_ins.select_models(async_db_session, name__like='item_%', id__ge=1, del_flag=False)
+    results = await crud_ins.select_models(async_db_session, name__like='item_%', id__ge=1, is_deleted=False)
 
     assert len(results) >= 0
 
@@ -327,7 +329,7 @@ async def test_filter_complex_or_conditions(
     async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
     results = await crud_ins.select_models(
-        async_db_session, __or__={'name__startswith': 'item', 'id__between': [1, 3], 'del_flag': True}
+        async_db_session, __or__={'name__startswith': 'item', 'id__between': [1, 3], 'is_deleted': True}
     )
     assert len(results) >= 0
 
@@ -338,7 +340,7 @@ async def test_filter_mixed_and_or_conditions(
 ):
     results = await crud_ins.select_models(
         async_db_session,
-        del_flag=False,  # AND condition
+        is_deleted=False,  # AND condition
         __or__={'name__like': 'item_%', 'id__gt': 5},  # OR condition
     )
     assert len(results) >= 0
@@ -350,7 +352,7 @@ async def test_filter_or_with_list_values_complex(
 ):
     results = await crud_ins.select_models(
         async_db_session,
-        __or__={'name': ['item_1', 'item_2', 'item_3'], 'id__in': [7, 8, 9], 'del_flag': [True, False]},
+        __or__={'name': ['item_1', 'item_2', 'item_3'], 'id__in': [7, 8, 9], 'is_deleted': [True, False]},
     )
     assert len(results) >= 0
 
@@ -369,8 +371,8 @@ async def test_filter_none_values(async_db_session: AsyncSession, crud_ins: CRUD
 
 @pytest.mark.asyncio
 async def test_filter_boolean_values(async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]):
-    true_results = await crud_ins.select_models(async_db_session, del_flag=True)
-    false_results = await crud_ins.select_models(async_db_session, del_flag=False)
+    true_results = await crud_ins.select_models(async_db_session, is_deleted=True)
+    false_results = await crud_ins.select_models(async_db_session, is_deleted=False)
 
     assert len(true_results) >= 0
     assert len(false_results) >= 0
@@ -404,11 +406,11 @@ async def test_filter_numeric_edge_cases(
 async def test_filter_is_distinct_from_comprehensive(
     async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    results = await crud_ins.select_models(async_db_session, del_flag__is_distinct_from=True)
-    assert all(r.del_flag is not True for r in results)
+    results = await crud_ins.select_models(async_db_session, is_deleted__is_distinct_from=True)
+    assert all(r.is_deleted is not True for r in results)
 
-    results = await crud_ins.select_models(async_db_session, del_flag__is_distinct_from=False)
-    assert all(r.del_flag is not False for r in results)
+    results = await crud_ins.select_models(async_db_session, is_deleted__is_distinct_from=False)
+    assert all(r.is_deleted is not False for r in results)
 
     results = await crud_ins.select_models(async_db_session, updated_time__is_distinct_from=None)
     assert all(r.updated_time is not None for r in results)
@@ -418,8 +420,8 @@ async def test_filter_is_distinct_from_comprehensive(
 async def test_filter_is_not_distinct_from_comprehensive(
     async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    results = await crud_ins.select_models(async_db_session, del_flag__is_not_distinct_from=False)
-    assert all(r.del_flag is False for r in results)
+    results = await crud_ins.select_models(async_db_session, is_deleted__is_not_distinct_from=False)
+    assert all(r.is_deleted is False for r in results)
 
 
 @pytest.mark.asyncio
@@ -473,7 +475,7 @@ async def test_filter_performance_complex_query(
         async_db_session,
         name__like='item_%',
         id__between=[1, 8],
-        del_flag__in=[True, False],
+        is_deleted__in=[True, False],
         __or__={'id__mod': 2, 'name__endswith': ['1', '3', '5']},
     )
     assert len(results) >= 0
@@ -486,11 +488,11 @@ async def test_filter_with_count_comprehensive(
     total_count = await crud_ins.count(async_db_session)
     assert total_count >= len(populated_db)
 
-    filtered_count = await crud_ins.count(async_db_session, del_flag=False)
+    filtered_count = await crud_ins.count(async_db_session, is_deleted=False)
     assert filtered_count >= 0
 
     complex_count = await crud_ins.count(
-        async_db_session, name__like='item_%', id__gt=2, __or__={'del_flag': True, 'id__lt': 5}
+        async_db_session, name__like='item_%', id__gt=2, __or__={'is_deleted': True, 'id__lt': 5}
     )
     assert complex_count >= 0
 

@@ -144,7 +144,7 @@ class TestParseFilters:
             parse_filters(Ins, __or__='invalid')
 
     def test_complex_or_mixed(self):
-        filters = parse_filters(Ins, __or__={'del_flag': [True, False], 'name__like': 'test%'})
+        filters = parse_filters(Ins, __or__={'is_deleted': [True, False], 'name__like': 'test%'})
         assert len(filters) == 1
 
     def test_empty_filters(self):

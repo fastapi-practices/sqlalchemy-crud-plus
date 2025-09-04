@@ -63,7 +63,7 @@ async def test_update_model_with_kwargs(
     update_data = InsUpdate(name='kwargs_update')
 
     async with async_db_session.begin():
-        result = await crud_ins.update_model(async_db_session, item.id, update_data, del_flag=True)
+        result = await crud_ins.update_model(async_db_session, item.id, update_data, is_deleted=True)
 
     assert result == 1
 
@@ -110,7 +110,7 @@ async def test_update_model_by_column_allow_multiple(
 
     async with async_db_session.begin():
         result = await crud_ins.update_model_by_column(
-            async_db_session, update_data, allow_multiple=True, del_flag=False
+            async_db_session, update_data, allow_multiple=True, is_deleted=False
         )
 
     assert result >= 0
@@ -171,24 +171,24 @@ async def test_update_model_by_column_multiple_results_error(
 
     with pytest.raises(Exception):
         async with async_db_session.begin():
-            await crud_ins.update_model_by_column(async_db_session, update_data, del_flag=False)
+            await crud_ins.update_model_by_column(async_db_session, update_data, is_deleted=False)
 
 
 @pytest.mark.asyncio
 async def test_bulk_update_models_pk_mode_true(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
     create_data = [
-        InsCreate(name='update_test_1', del_flag=False),
-        InsCreate(name='update_test_2', del_flag=False),
-        InsCreate(name='update_test_3', del_flag=False),
+        InsCreate(name='update_test_1', is_deleted=False),
+        InsCreate(name='update_test_2', is_deleted=False),
+        InsCreate(name='update_test_3', is_deleted=False),
     ]
 
     async with async_db_session.begin():
         created_items = await crud_ins.create_models(async_db_session, create_data)
 
     update_data = [
-        {'id': created_items[0].id, 'name': 'updated_test_1', 'del_flag': True},
-        {'id': created_items[1].id, 'name': 'updated_test_2', 'del_flag': True},
-        {'id': created_items[2].id, 'name': 'updated_test_3', 'del_flag': True},
+        {'id': created_items[0].id, 'name': 'updated_test_1', 'is_deleted': True},
+        {'id': created_items[1].id, 'name': 'updated_test_2', 'is_deleted': True},
+        {'id': created_items[2].id, 'name': 'updated_test_3', 'is_deleted': True},
     ]
 
     async with async_db_session.begin():
@@ -202,18 +202,18 @@ async def test_bulk_update_models_pk_mode_true(async_db_session: AsyncSession, c
         updated_item3 = await crud_ins.select_model(async_db_session, created_items[2].id)
 
     assert updated_item1.name == 'updated_test_1'
-    assert updated_item1.del_flag is True
+    assert updated_item1.is_deleted is True
     assert updated_item2.name == 'updated_test_2'
-    assert updated_item2.del_flag is True
+    assert updated_item2.is_deleted is True
     assert updated_item3.name == 'updated_test_3'
-    assert updated_item3.del_flag is True
+    assert updated_item3.is_deleted is True
 
 
 @pytest.mark.asyncio
 async def test_bulk_update_models_pk_mode_false(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
     create_data = [
-        InsCreate(name='filter_test_1', del_flag=False),
-        InsCreate(name='filter_test_2', del_flag=False),
+        InsCreate(name='filter_test_1', is_deleted=False),
+        InsCreate(name='filter_test_2', is_deleted=False),
     ]
 
     async with async_db_session.begin():
@@ -225,7 +225,7 @@ async def test_bulk_update_models_pk_mode_false(async_db_session: AsyncSession, 
     ]
 
     async with async_db_session.begin():
-        result = await crud_ins.bulk_update_models(async_db_session, update_data, pk_mode=False, del_flag=False)
+        result = await crud_ins.bulk_update_models(async_db_session, update_data, pk_mode=False, is_deleted=False)
 
     assert result == 2
 

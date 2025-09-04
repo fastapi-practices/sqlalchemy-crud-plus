@@ -48,7 +48,7 @@ async def async_db_session() -> AsyncGenerator[AsyncSession, None]:
 async def populated_db(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]) -> list[Ins]:
     """Provide a database populated with test data."""
     async with async_db_session.begin():
-        test_data = [Ins(name=f'item_{i}', del_flag=(i % 2 == 0)) for i in range(1, 11)]
+        test_data = [Ins(name=f'item_{i}', is_deleted=(i % 2 == 0)) for i in range(1, 11)]
         async_db_session.add_all(test_data)
         return test_data
 

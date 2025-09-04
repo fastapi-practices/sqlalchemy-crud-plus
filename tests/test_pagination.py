@@ -72,7 +72,7 @@ class TestPaginationWithFilters:
         self, async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
     ):
         results = await crud_ins.select_models(
-            async_db_session, name__startswith='item', id__between=[1, 8], del_flag=False, limit=4, offset=2
+            async_db_session, name__startswith='item', id__between=[1, 8], is_deleted=False, limit=4, offset=2
         )
         assert len(results) <= 4
 
@@ -94,7 +94,7 @@ class TestPaginationWithSorting:
         self, async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
     ):
         results = await crud_ins.select_models_order(
-            async_db_session, ['del_flag', 'name'], ['asc', 'desc'], limit=4, offset=1
+            async_db_session, ['is_deleted', 'name'], ['asc', 'desc'], limit=4, offset=1
         )
         assert len(results) <= 4
 
@@ -200,6 +200,6 @@ class TestPaginationWithRelationships:
         self, async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
     ):
         results = await crud_ins.select_models(
-            async_db_session, del_flag=False, created_time__is_not=None, limit=2, offset=1
+            async_db_session, is_deleted=False, created_time__is_not=None, limit=2, offset=1
         )
         assert len(results) <= 2

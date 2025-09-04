@@ -44,10 +44,10 @@ async def test_create_model_with_commit(async_db_session: AsyncSession, crud_ins
 async def test_create_model_with_kwargs(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
     async with async_db_session.begin():
         data = InsCreate(name='test_kwargs')
-        result = await crud_ins.create_model(async_db_session, data, del_flag=True)
+        result = await crud_ins.create_model(async_db_session, data, is_deleted=True)
 
     assert result.name == 'test_kwargs'
-    assert result.del_flag is True
+    assert result.is_deleted is True
 
 
 @pytest.mark.asyncio
@@ -92,19 +92,19 @@ async def test_create_models_empty_list(async_db_session: AsyncSession, crud_ins
 async def test_create_models_with_kwargs(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
     async with async_db_session.begin():
         data = [InsCreate(name=f'kwargs_item_{i}') for i in range(2)]
-        results = await crud_ins.create_models(async_db_session, data, del_flag=True)
+        results = await crud_ins.create_models(async_db_session, data, is_deleted=True)
 
     assert len(results) == 2
-    assert all(r.del_flag is True for r in results)
+    assert all(r.is_deleted is True for r in results)
 
 
 @pytest.mark.asyncio
 async def test_bulk_create_models_basic(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
     async with async_db_session.begin():
         data = [
-            {'name': 'bulk_item_1', 'del_flag': False, 'created_time': datetime.now()},
-            {'name': 'bulk_item_2', 'del_flag': True, 'created_time': datetime.now()},
-            {'name': 'bulk_item_3', 'del_flag': False, 'created_time': datetime.now()},
+            {'name': 'bulk_item_1', 'is_deleted': False, 'created_time': datetime.now()},
+            {'name': 'bulk_item_2', 'is_deleted': True, 'created_time': datetime.now()},
+            {'name': 'bulk_item_3', 'is_deleted': False, 'created_time': datetime.now()},
         ]
         results = await crud_ins.bulk_create_models(async_db_session, data)
 
@@ -112,9 +112,9 @@ async def test_bulk_create_models_basic(async_db_session: AsyncSession, crud_ins
     assert results[0].name == 'bulk_item_1'
     assert results[1].name == 'bulk_item_2'
     assert results[2].name == 'bulk_item_3'
-    assert results[0].del_flag is False
-    assert results[1].del_flag is True
-    assert results[2].del_flag is False
+    assert results[0].is_deleted is False
+    assert results[1].is_deleted is True
+    assert results[2].is_deleted is False
 
 
 @pytest.mark.asyncio
@@ -137,8 +137,8 @@ async def test_bulk_create_models_composite_keys(async_db_session: AsyncSession,
 @pytest.mark.asyncio
 async def test_bulk_create_models_with_flush(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
     data = [
-        {'name': 'bulk_flush_1', 'del_flag': False, 'created_time': datetime.now()},
-        {'name': 'bulk_flush_2', 'del_flag': False, 'created_time': datetime.now()},
+        {'name': 'bulk_flush_1', 'is_deleted': False, 'created_time': datetime.now()},
+        {'name': 'bulk_flush_2', 'is_deleted': False, 'created_time': datetime.now()},
     ]
 
     async with async_db_session.begin():
@@ -152,8 +152,8 @@ async def test_bulk_create_models_with_flush(async_db_session: AsyncSession, cru
 @pytest.mark.asyncio
 async def test_bulk_create_models_with_commit(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
     data = [
-        {'name': 'bulk_commit_1', 'del_flag': False, 'created_time': datetime.now()},
-        {'name': 'bulk_commit_2', 'del_flag': False, 'created_time': datetime.now()},
+        {'name': 'bulk_commit_1', 'is_deleted': False, 'created_time': datetime.now()},
+        {'name': 'bulk_commit_2', 'is_deleted': False, 'created_time': datetime.now()},
     ]
 
     results = await crud_ins.bulk_create_models(async_db_session, data, commit=True)
