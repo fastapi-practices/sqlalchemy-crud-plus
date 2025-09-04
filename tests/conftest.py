@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy_crud_plus import CRUDPlus
 from tests.models.basic import Base, Ins, InsPks
 from tests.models.relations import RelationBase, RelCategory, RelPost, RelProfile, RelRole, RelUser, user_role
-from tests.schemas.relations import RelPostCreate, RelProfileCreate, RelRoleCreate, RelUserCreate
+from tests.schemas.relations import CreateRelPost, CreateRelProfile, CreateRelRole, CreateRelUser
 
 _async_engine = create_async_engine('sqlite+aiosqlite:///:memory:', future=True, echo=False)
 _async_db_session = async_sessionmaker(_async_engine, autoflush=False, expire_on_commit=False)
@@ -45,7 +45,7 @@ async def async_db_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 @pytest_asyncio.fixture
-async def populated_db(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]) -> list[Ins]:
+async def sample_ins(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]) -> list[Ins]:
     """Provide a database populated with test data."""
     async with async_db_session.begin():
         test_data = [Ins(name=f'item_{i}', is_deleted=(i % 2 == 0)) for i in range(1, 11)]
@@ -54,7 +54,7 @@ async def populated_db(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]) 
 
 
 @pytest_asyncio.fixture
-async def populated_db_pks(async_db_session: AsyncSession) -> dict[str, list[InsPks]]:
+async def sample_ins_pks(async_db_session: AsyncSession) -> dict[str, list[InsPks]]:
     """Provide a database populated with composite key test data."""
     async with async_db_session.begin():
         men_data = [InsPks(id=i, name=f'man_{i}', sex='men') for i in range(1, 4)]
@@ -103,7 +103,7 @@ async def rel_sample_users(async_db_session: AsyncSession) -> list[RelUser]:
     async with async_db_session.begin():
         users = []
         for i in range(1, 4):
-            user_data = RelUserCreate(name=f'user_{i}')
+            user_data = CreateRelUser(name=f'user_{i}')
             user = RelUser(**user_data.model_dump())
             async_db_session.add(user)
             users.append(user)
@@ -116,7 +116,7 @@ async def rel_sample_profiles(async_db_session: AsyncSession, rel_sample_users: 
     async with async_db_session.begin():
         profiles = []
         for i, user in enumerate(rel_sample_users[:2]):
-            profile_data = RelProfileCreate(bio=f'Bio for {user.name}')
+            profile_data = CreateRelProfile(bio=f'Bio for {user.name}')
             profile = RelProfile(user_id=user.id, **profile_data.model_dump())
             async_db_session.add(profile)
             profiles.append(profile)
@@ -147,7 +147,7 @@ async def rel_sample_posts(
     async with async_db_session.begin():
         posts = []
         for i in range(6):
-            post_data = RelPostCreate(
+            post_data = CreateRelPost(
                 title=f'Post {i + 1}',
                 category_id=rel_sample_categories[i % len(rel_sample_categories)].id if i < 4 else None,
             )
@@ -163,7 +163,7 @@ async def rel_sample_roles(async_db_session: AsyncSession) -> list[RelRole]:
     async with async_db_session.begin():
         roles = []
         for role_name in ['admin', 'editor']:
-            role_data = RelRoleCreate(name=role_name)
+            role_data = CreateRelRole(name=role_name)
             role = RelRole(**role_data.model_dump())
             async_db_session.add(role)
             roles.append(role)

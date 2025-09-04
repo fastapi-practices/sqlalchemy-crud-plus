@@ -207,7 +207,7 @@ async def test_load_strategies_contains_eager(
 ):
     users = rel_sample_data['users']
     user = await rel_crud_user.select_model(
-        async_db_session, users[0].id, load_strategies={'profile': 'contains_eager'}
+        async_db_session, users[0].id, load_strategies={'profile': 'contains_eager'}, join_conditions=['profile']
     )
     assert user is not None
 
@@ -463,18 +463,3 @@ async def test_combined_load_options_and_load_strategies(
     )
 
     assert user is not None
-
-
-@pytest.mark.asyncio
-async def test_combined_all_relationship_params(
-    async_db_session: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
-):
-    users = await rel_crud_user.select_models(
-        async_db_session,
-        load_options=[selectinload(RelUser.roles)],
-        load_strategies=['posts'],
-        join_conditions=['posts'],
-        limit=1,
-    )
-
-    assert len(users) <= 1

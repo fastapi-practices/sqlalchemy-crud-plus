@@ -64,7 +64,7 @@ class Post(Base):
 
 ```python
 from pydantic import BaseModel
-from typing import Optional
+
 
 class UserCreate(BaseModel):
     name: str
@@ -72,9 +72,9 @@ class UserCreate(BaseModel):
     is_active: bool = True
 
 class UserUpdate(BaseModel):
-    name: Optional[str] = None
-    email: Optional[str] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    email: str | None = None
+    is_active: str | None = None
 
 class PostCreate(BaseModel):
     title: str

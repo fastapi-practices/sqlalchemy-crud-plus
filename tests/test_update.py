@@ -6,13 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy_crud_plus import CRUDPlus
 from tests.models.basic import Ins, InsPks
-from tests.schemas.basic import InsCreate, InsPksCreate, InsUpdate
+from tests.schemas.basic import CreateIns, CreateInsPks, UpdateIns
 
 
 @pytest.mark.asyncio
-async def test_update_model_by_id(async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]):
-    item = populated_db[0]
-    update_data = InsUpdate(name='updated_item')
+async def test_update_model_by_id(async_db_session: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
+    item = sample_ins[0]
+    update_data = UpdateIns(name='updated_item')
 
     async with async_db_session.begin():
         result = await crud_ins.update_model(async_db_session, item.id, update_data)
@@ -22,7 +22,7 @@ async def test_update_model_by_id(async_db_session: AsyncSession, populated_db: 
 
 @pytest.mark.asyncio
 async def test_update_model_by_id_not_found(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
-    update_data = InsUpdate(name='not_found')
+    update_data = UpdateIns(name='not_found')
 
     async with async_db_session.begin():
         result = await crud_ins.update_model(async_db_session, 99999, update_data)
@@ -31,11 +31,9 @@ async def test_update_model_by_id_not_found(async_db_session: AsyncSession, crud
 
 
 @pytest.mark.asyncio
-async def test_update_model_with_flush(
-    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
-):
-    item = populated_db[0]
-    update_data = InsUpdate(name='flush_update')
+async def test_update_model_with_flush(async_db_session: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
+    item = sample_ins[0]
+    update_data = UpdateIns(name='flush_update')
 
     async with async_db_session.begin():
         result = await crud_ins.update_model(async_db_session, item.id, update_data, flush=True)
@@ -44,11 +42,9 @@ async def test_update_model_with_flush(
 
 
 @pytest.mark.asyncio
-async def test_update_model_with_commit(
-    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
-):
-    item = populated_db[0]
-    update_data = InsUpdate(name='commit_update')
+async def test_update_model_with_commit(async_db_session: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
+    item = sample_ins[0]
+    update_data = UpdateIns(name='commit_update')
 
     result = await crud_ins.update_model(async_db_session, item.id, update_data, commit=True)
 
@@ -56,11 +52,9 @@ async def test_update_model_with_commit(
 
 
 @pytest.mark.asyncio
-async def test_update_model_with_kwargs(
-    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
-):
-    item = populated_db[0]
-    update_data = InsUpdate(name='kwargs_update')
+async def test_update_model_with_kwargs(async_db_session: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
+    item = sample_ins[0]
+    update_data = UpdateIns(name='kwargs_update')
 
     async with async_db_session.begin():
         result = await crud_ins.update_model(async_db_session, item.id, update_data, is_deleted=True)
@@ -69,8 +63,8 @@ async def test_update_model_with_kwargs(
 
 
 @pytest.mark.asyncio
-async def test_update_model_with_dict(async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]):
-    item = populated_db[0]
+async def test_update_model_with_dict(async_db_session: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
+    item = sample_ins[0]
     update_data = {'name': 'dict_update'}
 
     async with async_db_session.begin():
@@ -81,10 +75,10 @@ async def test_update_model_with_dict(async_db_session: AsyncSession, populated_
 
 @pytest.mark.asyncio
 async def test_update_model_by_column_basic(
-    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+    async_db_session: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    item = populated_db[0]
-    update_data = InsUpdate(name='updated_by_column')
+    item = sample_ins[0]
+    update_data = UpdateIns(name='updated_by_column')
 
     async with async_db_session.begin():
         result = await crud_ins.update_model_by_column(async_db_session, update_data, id=item.id)
@@ -94,7 +88,7 @@ async def test_update_model_by_column_basic(
 
 @pytest.mark.asyncio
 async def test_update_model_by_column_not_found(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
-    update_data = InsUpdate(name='not_found')
+    update_data = UpdateIns(name='not_found')
 
     async with async_db_session.begin():
         result = await crud_ins.update_model_by_column(async_db_session, update_data, name='nonexistent')
@@ -104,9 +98,9 @@ async def test_update_model_by_column_not_found(async_db_session: AsyncSession, 
 
 @pytest.mark.asyncio
 async def test_update_model_by_column_allow_multiple(
-    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+    async_db_session: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    update_data = InsUpdate(name='multiple_update')
+    update_data = UpdateIns(name='multiple_update')
 
     async with async_db_session.begin():
         result = await crud_ins.update_model_by_column(
@@ -118,10 +112,10 @@ async def test_update_model_by_column_allow_multiple(
 
 @pytest.mark.asyncio
 async def test_update_model_by_column_with_flush(
-    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+    async_db_session: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    item = populated_db[0]
-    update_data = InsUpdate(name='flush_column_update')
+    item = sample_ins[0]
+    update_data = UpdateIns(name='flush_column_update')
 
     async with async_db_session.begin():
         result = await crud_ins.update_model_by_column(async_db_session, update_data, flush=True, id=item.id)
@@ -131,10 +125,10 @@ async def test_update_model_by_column_with_flush(
 
 @pytest.mark.asyncio
 async def test_update_model_by_column_with_commit(
-    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+    async_db_session: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    item = populated_db[0]
-    update_data = InsUpdate(name='commit_column_update')
+    item = sample_ins[0]
+    update_data = UpdateIns(name='commit_column_update')
 
     result = await crud_ins.update_model_by_column(async_db_session, update_data, commit=True, id=item.id)
 
@@ -143,9 +137,9 @@ async def test_update_model_by_column_with_commit(
 
 @pytest.mark.asyncio
 async def test_update_model_by_column_with_dict(
-    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+    async_db_session: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    item = populated_db[0]
+    item = sample_ins[0]
     update_data = {'name': 'dict_column_update'}
 
     async with async_db_session.begin():
@@ -156,7 +150,7 @@ async def test_update_model_by_column_with_dict(
 
 @pytest.mark.asyncio
 async def test_update_model_by_column_no_filters_error(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
-    update_data = InsUpdate(name='no_filters')
+    update_data = UpdateIns(name='no_filters')
 
     with pytest.raises(ValueError):
         async with async_db_session.begin():
@@ -165,9 +159,9 @@ async def test_update_model_by_column_no_filters_error(async_db_session: AsyncSe
 
 @pytest.mark.asyncio
 async def test_update_model_by_column_multiple_results_error(
-    async_db_session: AsyncSession, populated_db: list[Ins], crud_ins: CRUDPlus[Ins]
+    async_db_session: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
-    update_data = InsUpdate(name='multiple_error')
+    update_data = UpdateIns(name='multiple_error')
 
     with pytest.raises(Exception):
         async with async_db_session.begin():
@@ -177,9 +171,9 @@ async def test_update_model_by_column_multiple_results_error(
 @pytest.mark.asyncio
 async def test_bulk_update_models_pk_mode_true(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
     create_data = [
-        InsCreate(name='update_test_1', is_deleted=False),
-        InsCreate(name='update_test_2', is_deleted=False),
-        InsCreate(name='update_test_3', is_deleted=False),
+        CreateIns(name='update_test_1', is_deleted=False),
+        CreateIns(name='update_test_2', is_deleted=False),
+        CreateIns(name='update_test_3', is_deleted=False),
     ]
 
     async with async_db_session.begin():
@@ -212,8 +206,8 @@ async def test_bulk_update_models_pk_mode_true(async_db_session: AsyncSession, c
 @pytest.mark.asyncio
 async def test_bulk_update_models_pk_mode_false(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
     create_data = [
-        InsCreate(name='filter_test_1', is_deleted=False),
-        InsCreate(name='filter_test_2', is_deleted=False),
+        CreateIns(name='filter_test_1', is_deleted=False),
+        CreateIns(name='filter_test_2', is_deleted=False),
     ]
 
     async with async_db_session.begin():
@@ -232,12 +226,12 @@ async def test_bulk_update_models_pk_mode_false(async_db_session: AsyncSession, 
 
 @pytest.mark.asyncio
 async def test_bulk_update_models_with_pydantic_schema(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
-    create_data = [InsCreate(name='schema_test')]
+    create_data = [CreateIns(name='schema_test')]
 
     async with async_db_session.begin():
         created_items = await crud_ins.create_models(async_db_session, create_data)
 
-    update_data = [InsUpdate(name='schema_updated')]
+    update_data = [UpdateIns(name='schema_updated')]
 
     async with async_db_session.begin():
         result = await crud_ins.bulk_update_models(async_db_session, update_data, pk_mode=False, id=created_items[0].id)
@@ -260,8 +254,8 @@ async def test_bulk_update_models_pk_mode_false_no_filters_error(
 @pytest.mark.asyncio
 async def test_bulk_update_models_composite_keys(async_db_session: AsyncSession, crud_ins_pks: CRUDPlus[InsPks]):
     create_data = [
-        InsPksCreate(id=2000, name='update_pks_1', sex='male'),
-        InsPksCreate(id=2001, name='update_pks_2', sex='female'),
+        CreateInsPks(id=2000, name='update_pks_1', sex='male'),
+        CreateInsPks(id=2001, name='update_pks_2', sex='female'),
     ]
 
     async with async_db_session.begin():
@@ -288,8 +282,8 @@ async def test_bulk_update_models_composite_keys(async_db_session: AsyncSession,
 @pytest.mark.asyncio
 async def test_bulk_update_models_pk_mode_false_with_flush(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
     create_data = [
-        InsCreate(name='bulk_update_flush_1'),
-        InsCreate(name='bulk_update_flush_2'),
+        CreateIns(name='bulk_update_flush_1'),
+        CreateIns(name='bulk_update_flush_2'),
     ]
 
     async with async_db_session.begin():
@@ -308,8 +302,8 @@ async def test_bulk_update_models_pk_mode_false_with_flush(async_db_session: Asy
 @pytest.mark.asyncio
 async def test_bulk_update_models_pk_mode_false_with_commit(async_db_session: AsyncSession, crud_ins: CRUDPlus[Ins]):
     create_data = [
-        InsCreate(name='bulk_update_commit_1'),
-        InsCreate(name='bulk_update_commit_2'),
+        CreateIns(name='bulk_update_commit_1'),
+        CreateIns(name='bulk_update_commit_2'),
     ]
 
     async with async_db_session.begin():
