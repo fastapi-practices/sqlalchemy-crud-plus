@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from datetime import datetime, timezone
-from typing import Any, Generic, Sequence
+from typing import Any, Generic, Sequence, cast
 
 from sqlalchemy import (
     Column,
     ColumnExpressionArgument,
+    CursorResult,
     Row,
     RowMapping,
     Select,
@@ -49,7 +50,7 @@ class CRUDPlus(Generic[Model]):
         else:
             return list(primary_key)
 
-    def _get_pk_filter(self, pk: Any | Sequence[Any]) -> list[ColumnExpressionArgument[bool]]:
+    def _get_pk_filter(self, pk: Any | list[Any]) -> list[ColumnExpressionArgument[bool]]:
         """
         Get the primary key filter(s).
 
@@ -478,7 +479,7 @@ class CRUDPlus(Generic[Model]):
         data = obj if isinstance(obj, dict) else obj.model_dump(exclude_unset=True)
         data.update(kwargs)
         stmt = update(self.model).where(*filters).values(**data)
-        result = await session.execute(stmt)
+        result = cast(CursorResult[Any], await session.execute(stmt))
 
         if flush:
             await session.flush()
@@ -519,7 +520,7 @@ class CRUDPlus(Generic[Model]):
 
         data = obj if isinstance(obj, dict) else obj.model_dump(exclude_unset=True)
         stmt = update(self.model).where(*filters).values(**data)
-        result = await session.execute(stmt)
+        result = cast(CursorResult[Any], await session.execute(stmt))
 
         if flush:
             await session.flush()
@@ -588,7 +589,7 @@ class CRUDPlus(Generic[Model]):
         filters = self._get_pk_filter(pk)
 
         stmt = delete(self.model).where(*filters)
-        result = await session.execute(stmt)
+        result = cast(CursorResult[Any], await session.execute(stmt))
 
         if flush:
             await session.flush()
@@ -648,7 +649,7 @@ class CRUDPlus(Generic[Model]):
             else delete(self.model).where(*filters)
         )
 
-        result = await session.execute(stmt)
+        result = cast(CursorResult[Any], await session.execute(stmt))
 
         if flush:
             await session.flush()

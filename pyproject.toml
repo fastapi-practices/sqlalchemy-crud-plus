@@ -1,6 +1,6 @@
 [project]
 name = "sqlalchemy-crud-plus"
-description = "Asynchronous CRUD operation based on SQLAlchemy2 model"
+description = "Advanced asynchronous CRUD SDK built on SQLAlchemy 2.0"
 authors = [
     { name = "Wu Clan", email = "jianhengwu0407@gmail.com" },
 ]
@@ -14,6 +14,8 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
     "sqlalchemy>=2.0.0",
