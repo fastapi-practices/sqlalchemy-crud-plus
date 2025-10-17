@@ -1,3 +1,17 @@
+<a id="1.12.1"></a>
+# [1.12.1](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/1.12.1) - 2025-10-11
+
+## What's Changed
+* Update changelog for 1.12.0 by [@wu-clan](https://github.com/wu-clan) in [#62](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/62)
+* Update DML execution result type cast by [@wu-clan](https://github.com/wu-clan) in [#67](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/67)
+* Prepare for 1.12.1 release by [@wu-clan](https://github.com/wu-clan) in [#68](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/68)
+
+
+**Full Changelog**: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.12.0...1.12.1
+
+[Changes][1.12.1]
+
+
 <a id="1.12.0"></a>
 # [1.12.0](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/1.12.0) - 2025-09-04
 
@@ -30,7 +44,7 @@
 
 
 <a id="v1.10.0"></a>
-# [v1.10.0](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/v1.10.0) - 2025-06-16
+# [1.10.0 (v1.10.0)](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/v1.10.0) - 2025-06-16
 
 ## What's Changed
 * Update changelog for 1.9.0 by [@wu-clan](https://github.com/wu-clan) in [#46](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/46)
@@ -206,6 +220,7 @@ CRUD methods have been refactored, check out the documentation for new usage!
 [Changes][0.0.4]
 
 
+[1.12.1]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.12.0...1.12.1
 [1.12.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.11.0...1.12.0
 [1.11.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/v1.10.0...1.11.0
 [v1.10.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.9.0...v1.10.0
