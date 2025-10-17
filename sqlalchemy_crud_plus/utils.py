@@ -356,7 +356,8 @@ def build_load_strategies(model: type[Model], load_strategies: LoadStrategies | 
             try:
                 attr = getattr(model, column)
                 strategy_func = strategies_map.get(strategy_name)
-                options.append(strategy_func(attr))
+                if strategy_func:
+                    options.append(strategy_func(attr))
             except AttributeError:
                 raise ModelColumnError(f'Invalid relationship column: {column}')
 
