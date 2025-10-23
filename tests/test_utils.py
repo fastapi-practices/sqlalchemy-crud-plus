@@ -25,7 +25,7 @@ from sqlalchemy_crud_plus.utils import (
     parse_filters,
 )
 from tests.models.basic import Ins
-from tests.models.relations import RelPost, RelProfile, RelUser
+from tests.models.relationship import RelPost, RelProfile, RelUser
 
 
 class TestGetSqlalchemyFilter:
