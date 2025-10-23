@@ -643,9 +643,9 @@ rows = await session.execute(stmt)
 ## 相关资源
 
 - [关系查询概览](overview.md) - 标准 ORM 方式（RelXxx 模型）
-- [测试对比](../../tests/test_non_fk_relationships.py) - 查看完整测试用例
-- [模型定义](../../tests/models/non_fk_relations.py) - NoRelXxx 模型源码
-- [命名规范指南](../../NAMING_CONVENTION.md) - 字段命名最佳实践
+- [无关系模型测试](https://github.com/fastapi-practices/sqlalchemy-crud-plus/blob/main/tests/test_no_relationship.py) - 查看完整测试用例
+- [无关系模型定义](https://github.com/fastapi-practices/sqlalchemy-crud-plus/blob/main/tests/models/no_relationship.py) - NoRelXxx 模型源码
+- [关系模型定义](https://github.com/fastapi-practices/sqlalchemy-crud-plus/blob/main/tests/models/relationship.py) - RelXxx 模型源码
 - [API 参考](../api/crud-plus.md) - CRUDPlus 完整 API
 
 **学习路径**：

@@ -13,7 +13,6 @@ from tests.models.no_relationship import NoRelCategory, NoRelPost, NoRelProfile,
 
 @pytest.mark.asyncio
 async def test_user_profile_join_raw_query(db: AsyncSession, no_rel_sample_data: dict):
-    """Test joining user and profile using raw SQLAlchemy query."""
     stmt = select(NoRelUser, NoRelProfile).join(
         NoRelProfile,
         NoRelUser.id == NoRelProfile.user_id,
@@ -32,7 +31,6 @@ async def test_user_profile_join_raw_query(db: AsyncSession, no_rel_sample_data:
 
 @pytest.mark.asyncio
 async def test_user_profile_join_with_filter(db: AsyncSession, no_rel_sample_data: dict):
-    """Test joining with filter - only users with profiles."""
     stmt = (
         select(NoRelUser, NoRelProfile)
         .join(
@@ -50,12 +48,8 @@ async def test_user_profile_join_with_filter(db: AsyncSession, no_rel_sample_dat
         assert profile.user_id == user.id
 
 
-# ==================== User and Posts (One-to-Many) ====================
-
-
 @pytest.mark.asyncio
 async def test_user_posts_join_raw_query(db: AsyncSession, no_rel_sample_data: dict):
-    """Test joining user and posts."""
     stmt = select(NoRelUser, NoRelPost).join(
         NoRelPost,
         NoRelUser.id == NoRelPost.author_id,
@@ -73,7 +67,6 @@ async def test_user_posts_join_raw_query(db: AsyncSession, no_rel_sample_data: d
 async def test_user_posts_join_using_join_config(
     db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
 ):
-    """Test using JoinConfig for filtering (JOIN is used for filter only)."""
     users = await no_rel_crud_user.select_models(
         db,
         join_conditions=[
@@ -89,12 +82,8 @@ async def test_user_posts_join_using_join_config(
     assert all(isinstance(user, NoRelUser) for user in users)
 
 
-# ==================== Category and Posts (One-to-Many) ====================
-
-
 @pytest.mark.asyncio
 async def test_category_posts_join_raw_query(db: AsyncSession, no_rel_sample_data: dict):
-    """Test joining category and posts."""
     stmt = select(NoRelCategory, NoRelPost).join(
         NoRelPost,
         NoRelCategory.id == NoRelPost.category_id,
@@ -112,7 +101,6 @@ async def test_category_posts_join_raw_query(db: AsyncSession, no_rel_sample_dat
 async def test_category_posts_join_using_join_config(
     db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_category: CRUDPlus[NoRelCategory]
 ):
-    """Test using JoinConfig to filter categories with posts."""
     categories = await no_rel_crud_category.select_models(
         db,
         join_conditions=[
@@ -128,12 +116,8 @@ async def test_category_posts_join_using_join_config(
     assert all(isinstance(category, NoRelCategory) for category in categories)
 
 
-# ==================== Multiple JOINs ====================
-
-
 @pytest.mark.asyncio
 async def test_post_with_author_and_category(db: AsyncSession, no_rel_sample_data: dict):
-    """Test multiple JOINs: post -> user -> category."""
     stmt = (
         select(NoRelPost, NoRelUser, NoRelCategory)
         .join(NoRelUser, NoRelPost.author_id == NoRelUser.id)
@@ -150,12 +134,8 @@ async def test_post_with_author_and_category(db: AsyncSession, no_rel_sample_dat
             assert post.category_id == category.id
 
 
-# ==================== Practical Business Scenarios ====================
-
-
 @pytest.mark.asyncio
 async def test_get_user_list_with_profiles_dict(db: AsyncSession, no_rel_sample_data: dict):
-    """Practical example: Get user list with profiles as dict (API response)."""
     stmt = select(NoRelUser, NoRelProfile).join(
         NoRelProfile,
         NoRelUser.id == NoRelProfile.user_id,
@@ -180,7 +160,6 @@ async def test_get_user_list_with_profiles_dict(db: AsyncSession, no_rel_sample_
 
 @pytest.mark.asyncio
 async def test_get_posts_with_full_details(db: AsyncSession, no_rel_sample_data: dict):
-    """Practical example: Get posts with author and category details."""
     stmt = (
         select(NoRelPost, NoRelUser, NoRelCategory)
         .join(NoRelUser, NoRelPost.author_id == NoRelUser.id)
@@ -203,14 +182,10 @@ async def test_get_posts_with_full_details(db: AsyncSession, no_rel_sample_data:
     assert all('author_name' in item for item in post_list)
 
 
-# ==================== CRUD Operations with JOINs ====================
-
-
 @pytest.mark.asyncio
 async def test_count_with_join_condition(
     db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
 ):
-    """Test count with JOIN condition."""
     count = await no_rel_crud_user.count(
         db,
         join_conditions=[
@@ -229,7 +204,6 @@ async def test_count_with_join_condition(
 async def test_exists_with_join_condition(
     db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_post: CRUDPlus[NoRelPost]
 ):
-    """Test exists with JOIN condition."""
     exists = await no_rel_crud_post.exists(
         db,
         join_conditions=[
@@ -248,7 +222,6 @@ async def test_exists_with_join_condition(
 async def test_select_models_with_join_filter(
     db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_post: CRUDPlus[NoRelPost]
 ):
-    """Test select_models with JOIN filter."""
     posts = await no_rel_crud_post.select_models(
         db,
         join_conditions=[

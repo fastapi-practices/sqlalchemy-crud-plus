@@ -360,8 +360,7 @@ async def get_active_users_with_posts(session: AsyncSession):
         session,
         join_conditions=['posts'],      # 只要有文章的用户
         load_strategies=['posts'],      # 预加载文章
-        is_active=True,
-        posts_count__gt=0
+        is_active=True
     )
 ```
 

@@ -39,7 +39,7 @@ def crud_ins_pks() -> CRUDPlus[InsPks]:
     return CRUDPlus(InsPks)
 
 
-@pytest_asyncio.fixture(scope='module')
+@pytest_asyncio.fixture
 async def db() -> AsyncGenerator[AsyncSession, None]:
     """Provide a database session for testing."""
     async with _async_db_session() as session:
@@ -219,7 +219,7 @@ def no_rel_crud_category() -> CRUDPlus[NoRelCategory]:
     return CRUDPlus(NoRelCategory)
 
 
-@pytest_asyncio.fixture(scope='module')
+@pytest_asyncio.fixture
 async def no_rel_sample_users(db: AsyncSession) -> list[NoRelUser]:
     """Create sample users without relationships."""
     users = []
@@ -233,7 +233,7 @@ async def no_rel_sample_users(db: AsyncSession) -> list[NoRelUser]:
     return users
 
 
-@pytest_asyncio.fixture(scope='module')
+@pytest_asyncio.fixture
 async def no_rel_sample_profiles(db: AsyncSession, no_rel_sample_users: list[NoRelUser]) -> list[NoRelProfile]:
     """Create sample profiles without relationships."""
     profiles = []
@@ -248,7 +248,7 @@ async def no_rel_sample_profiles(db: AsyncSession, no_rel_sample_users: list[NoR
     return profiles
 
 
-@pytest_asyncio.fixture(scope='module')
+@pytest_asyncio.fixture
 async def no_rel_sample_categories(db: AsyncSession) -> list[NoRelCategory]:
     """Create sample categories without relationships."""
     categories = [
@@ -262,7 +262,7 @@ async def no_rel_sample_categories(db: AsyncSession) -> list[NoRelCategory]:
     return categories
 
 
-@pytest_asyncio.fixture(scope='module')
+@pytest_asyncio.fixture
 async def no_rel_sample_posts(
     db: AsyncSession, no_rel_sample_users: list[NoRelUser], no_rel_sample_categories: list[NoRelCategory]
 ) -> list[NoRelPost]:
@@ -280,7 +280,7 @@ async def no_rel_sample_posts(
     return posts
 
 
-@pytest_asyncio.fixture(scope='module')
+@pytest_asyncio.fixture
 async def no_rel_sample_data(
     db: AsyncSession,
     no_rel_sample_users: list[NoRelUser],

@@ -74,7 +74,7 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     name: str | None = None
     email: str | None = None
-    is_active: str | None = None
+    is_active: bool | None = None
 
 class PostCreate(BaseModel):
     title: str

@@ -76,8 +76,7 @@ async def test_select_model_by_column_comprehensive(db: AsyncSession, crud_ins: 
 
     create_data = CreateIns(name='comprehensive_test_select')
 
-    async with db.begin():
-        created_item = await crud_ins.create_model(db, create_data)
+    created_item = await crud_ins.create_model(db, create_data, commit=True)
 
     result = await crud_ins.select_model_by_column(db, name='comprehensive_test_select')
 

@@ -24,8 +24,7 @@ async def test_delete_model_by_id(db: AsyncSession, sample_ins: list[Ins], crud_
 
 @pytest.mark.asyncio
 async def test_delete_model_by_id_not_found(db: AsyncSession, crud_ins: CRUDPlus[Ins]):
-    async with db.begin():
-        count = await crud_ins.delete_model(db, 99999)
+    count = await crud_ins.delete_model(db, 99999, commit=True)
 
     assert count == 0
 
@@ -221,14 +220,14 @@ async def test_logical_delete_with_commit(db: AsyncSession, sample_ins: list[Ins
 
 @pytest.mark.asyncio
 async def test_logical_delete_no_matching_records(db: AsyncSession, crud_ins: CRUDPlus[Ins]):
-    async with db.begin():
-        count = await crud_ins.delete_model_by_column(
-            db,
-            logical_deletion=True,
-            deleted_flag_column='is_deleted',
-            allow_multiple=True,
-            name='nonexistent_record',
-        )
+    count = await crud_ins.delete_model_by_column(
+        db,
+        logical_deletion=True,
+        deleted_flag_column='is_deleted',
+        allow_multiple=True,
+        commit=True,
+        name='nonexistent_record',
+    )
 
     assert count == 0
 

@@ -238,7 +238,7 @@ async def test_bulk_update_models_pk_mode_false_no_filters_error(db: AsyncSessio
 
 
 @pytest.mark.asyncio
-async def test_bulk_update_models_composite_keys(db: AsyncSession, crud_ins_pks: CRUDPlus[InsPks]):
+async def test_bulk_update_models_pkss(db: AsyncSession, crud_ins_pks: CRUDPlus[InsPks]):
     create_data = [
         CreateInsPks(id=2000, name='update_pks_1', sex='male'),
         CreateInsPks(id=2001, name='update_pks_2', sex='female'),

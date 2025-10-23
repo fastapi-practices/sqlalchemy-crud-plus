@@ -118,7 +118,7 @@ async def test_bulk_create_models_basic(db: AsyncSession, crud_ins: CRUDPlus[Ins
 
 
 @pytest.mark.asyncio
-async def test_bulk_create_models_composite_keys(db: AsyncSession, crud_ins_pks: CRUDPlus[InsPks]):
+async def test_bulk_create_models_pkss(db: AsyncSession, crud_ins_pks: CRUDPlus[InsPks]):
     data = [
         {'id': 1000, 'name': 'bulk_pks_1', 'sex': 'male', 'created_time': datetime.now()},
         {'id': 1001, 'name': 'bulk_pks_2', 'sex': 'female', 'created_time': datetime.now()},
