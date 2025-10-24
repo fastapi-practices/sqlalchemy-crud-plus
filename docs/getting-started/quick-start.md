@@ -22,8 +22,10 @@ DATABASE_URL = "sqlite+aiosqlite:///./app.db"
 engine = create_async_engine(DATABASE_URL)
 async_session = async_sessionmaker(bind=engine, class_=AsyncSession)
 
+
 class Base(DeclarativeBase):
     pass
+
 
 async def get_session():
     async with async_session() as session:
@@ -37,6 +39,7 @@ from datetime import datetime
 from sqlalchemy import String, DateTime, Boolean, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+
 class User(Base):
     __tablename__ = 'users'
 
@@ -47,6 +50,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     posts: Mapped[list["Post"]] = relationship(back_populates="author")
+
 
 class Post(Base):
     __tablename__ = 'posts'
@@ -71,10 +75,12 @@ class UserCreate(BaseModel):
     email: str
     is_active: bool = True
 
+
 class UserUpdate(BaseModel):
     name: str | None = None
     email: str | None = None
-    is_active: str | None = None
+    is_active: bool | None = None
+
 
 class PostCreate(BaseModel):
     title: str
@@ -96,9 +102,13 @@ post_crud = CRUDPlus(Post)
 ### 创建记录
 
 ```python
-# 创建用户
+# 创建用户（需要手动提交事务）
 user_data = UserCreate(name="张三", email="zhangsan@example.com")
 user = await user_crud.create_model(session, user_data)
+await session.commit()  # 提交事务
+
+# 或者使用 commit 参数自动提交
+user = await user_crud.create_model(session, user_data, commit=True)
 
 # 批量创建
 users_data = [
@@ -106,6 +116,12 @@ users_data = [
     UserCreate(name="王五", email="wangwu@example.com")
 ]
 users = await user_crud.create_models(session, users_data)
+await session.commit()
+
+# 使用事务上下文自动管理
+async with session.begin():
+    user = await user_crud.create_model(session, user_data)
+    # 退出 with 块时自动提交或回滚
 ```
 
 ### 查询记录
@@ -157,6 +173,15 @@ await user_crud.delete_model(session, pk=1)
 
 # 条件删除
 await user_crud.delete_model_by_column(session, is_active=False)
+
+# 逻辑删除（推荐）
+await user_crud.delete_model_by_column(
+    session,
+    logical_deletion=True,
+    deleted_flag_column='is_deleted',
+    allow_multiple=False,
+    pk=1
+)
 ```
 
 ### 统计查询
@@ -243,58 +268,63 @@ DATABASE_URL = "sqlite+aiosqlite:///./example.db"
 engine = create_async_engine(DATABASE_URL)
 async_session = async_sessionmaker(bind=engine, class_=AsyncSession)
 
+
 class Base(DeclarativeBase):
     pass
+
 
 # 模型定义
 class User(Base):
     __tablename__ = 'users'
-    
+
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(50))
     email: Mapped[str] = mapped_column(String(100), unique=True)
     is_active: Mapped[bool] = mapped_column(default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    
+
     posts: Mapped[list["Post"]] = relationship(back_populates="author")
+
 
 class Post(Base):
     __tablename__ = 'posts'
-    
+
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(200))
     content: Mapped[str] = mapped_column(String(1000))
     author_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    
+
     author: Mapped[User] = relationship(back_populates="posts")
 
-# Pydantic 模式
+
 class UserCreate(BaseModel):
     name: str
     email: str
+
 
 class PostCreate(BaseModel):
     title: str
     content: str
     author_id: int
 
+
 async def main():
     # 创建表
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     # 创建 CRUD 实例
     user_crud = CRUDPlus(User)
     post_crud = CRUDPlus(Post)
-    
+
     async with async_session() as session:
         # 创建用户
         user_data = UserCreate(name="张三", email="zhangsan@example.com")
         user = await user_crud.create_model(session, user_data)
         await session.commit()
         print(f"创建用户: {user.name}")
-        
+
         # 创建文章
         post_data = PostCreate(
             title="我的第一篇文章",
@@ -304,7 +334,7 @@ async def main():
         post = await post_crud.create_model(session, post_data)
         await session.commit()
         print(f"创建文章: {post.title}")
-        
+
         # 查询用户及其文章
         user_with_posts = await user_crud.select_model(
             session,
@@ -312,13 +342,31 @@ async def main():
             load_strategies=['posts']
         )
         print(f"用户 {user_with_posts.name} 有 {len(user_with_posts.posts)} 篇文章")
-        
+
         # 统计和检查
         total_users = await user_crud.count(session)
         print(f"总用户数: {total_users}")
-        
+
         email_exists = await user_crud.exists(session, email="zhangsan@example.com")
         print(f"邮箱存在: {email_exists}")
+
+        # 更新用户
+        update_data = UserUpdate(name="张三改名")
+        await user_crud.update_model(session, pk=user.id, obj=update_data)
+        await session.commit()
+        print("更新用户名")
+
+        # 逻辑删除文章
+        await post_crud.delete_model_by_column(
+            session,
+            logical_deletion=True,
+            deleted_flag_column='deleted_at',
+            allow_multiple=False,
+            id=post.id,
+            commit=True
+        )
+        print("逻辑删除文章")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

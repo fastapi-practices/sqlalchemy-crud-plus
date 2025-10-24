@@ -35,9 +35,9 @@ class RelProfile(RelationBase):
     __tablename__ = 'rel_profile'
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey('rel_user.id'), unique=True)
     bio: Mapped[str] = mapped_column(String(100))
 
+    user_id: Mapped[int] = mapped_column(ForeignKey('rel_user.id'), unique=True)
     user: Mapped[RelUser] = relationship(init=False, back_populates='profile')
 
 
@@ -46,8 +46,8 @@ class RelCategory(RelationBase):
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(30))
-    parent_id: Mapped[int | None] = mapped_column(ForeignKey('rel_category.id'))
 
+    parent_id: Mapped[int | None] = mapped_column(ForeignKey('rel_category.id'))
     parent: Mapped[RelCategory | None] = relationship(init=False, remote_side=[id], back_populates='children')
     children: Mapped[list[RelCategory]] = relationship(init=False, back_populates='parent')
     posts: Mapped[list[RelPost]] = relationship(init=False, back_populates='category')
@@ -58,10 +58,11 @@ class RelPost(RelationBase):
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String(50))
-    author_id: Mapped[int] = mapped_column(ForeignKey('rel_user.id'))
-    category_id: Mapped[int | None] = mapped_column(ForeignKey('rel_category.id'))
 
+    author_id: Mapped[int] = mapped_column(ForeignKey('rel_user.id'))
     author: Mapped[RelUser] = relationship(init=False, back_populates='posts')
+
+    category_id: Mapped[int | None] = mapped_column(ForeignKey('rel_category.id'))
     category: Mapped[RelCategory | None] = relationship(init=False, back_populates='posts')
 
 
