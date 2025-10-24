@@ -14,7 +14,6 @@ nav:
   - 高级用法:
       - 过滤条件: advanced/filter.md
       - 关系查询: relationships/overview.md
-      - 逻辑关系查询: relationships/logical.md
       - 事务控制: advanced/transaction.md
   - API 参考: api/crud-plus.md
   - 更新日志: changelog.md
@@ -79,7 +78,7 @@ plugins:
         python:
           options:
             docstring_style: sphinx
-            filters: [ "!^_" ]
+            filters: ["!^_"]
             show_root_heading: true
             members_order: source
             separate_signature: true
@@ -91,18 +90,11 @@ extra:
       link: https://github.com/fastapi-practices/sqlalchemy-crud-plus
       name: GitHub
     - icon: fontawesome/brands/discord
-      link: https://wu-clan.github.io/homepage/
+      link: https://discord.com/invite/yNN3wTbVAC
       name: Discord
-    - icon: fontawesome/solid/book
-      link: https://fastapi-practices.github.io/sqlalchemy-crud-plus
-      name: 在线文档
-  version:
-    provider: mike
-    default: latest
 
 extra_css:
   - "extra/custom.css"
 
 copyright: |
   &copy; 2024 - 2025 FastAPI Practices - 为爱发电
-  

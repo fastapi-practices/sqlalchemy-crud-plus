@@ -16,6 +16,8 @@ async def test_select_model_by_id(db: AsyncSession, sample_ins: list[Ins], crud_
     assert result is not None
     assert result.id == item.id
     assert result.name == item.name
+    assert result.is_deleted == item.is_deleted
+    assert result.created_time is not None
 
 
 @pytest.mark.asyncio
@@ -32,6 +34,7 @@ async def test_select_model_with_whereclause(db: AsyncSession, sample_ins: list[
 
     assert result is not None
     assert result.id == item.id
+    assert result.is_deleted is False
 
 
 @pytest.mark.asyncio
@@ -41,6 +44,7 @@ async def test_select_model_with_kwargs(db: AsyncSession, sample_ins: list[Ins],
 
     assert result is not None
     assert result.id == item.id
+    assert result.is_deleted is False
 
 
 @pytest.mark.asyncio
@@ -68,6 +72,7 @@ async def test_select_model_by_column_with_whereclause(
 
     assert result is not None
     assert result.name == item.name
+    assert result.is_deleted is False
 
 
 @pytest.mark.asyncio
@@ -83,6 +88,7 @@ async def test_select_model_by_column_comprehensive(db: AsyncSession, crud_ins: 
     assert result is not None
     assert result.name == 'comprehensive_test_select'
     assert result.id == created_item.id
+    assert result.created_time is not None
 
 
 @pytest.mark.asyncio
@@ -90,6 +96,8 @@ async def test_select_models_basic(db: AsyncSession, sample_ins: list[Ins], crud
     results = await crud_ins.select_models(db)
 
     assert len(results) >= len(sample_ins)
+    assert all(isinstance(r, Ins) for r in results)
+    assert all(r.created_time is not None for r in results)
 
 
 @pytest.mark.asyncio
@@ -97,6 +105,7 @@ async def test_select_models_with_limit(db: AsyncSession, sample_ins: list[Ins],
     results = await crud_ins.select_models(db, limit=3)
 
     assert len(results) <= 3
+    assert all(isinstance(r, Ins) for r in results)
 
 
 @pytest.mark.asyncio
@@ -104,6 +113,8 @@ async def test_select_models_with_offset(db: AsyncSession, sample_ins: list[Ins]
     results = await crud_ins.select_models(db, offset=2, limit=3)
 
     assert len(results) <= 3
+    assert all(isinstance(r, Ins) for r in results)
+    assert all(hasattr(r, 'id') and hasattr(r, 'name') for r in results)
 
 
 @pytest.mark.asyncio
@@ -111,6 +122,7 @@ async def test_select_models_with_whereclause(db: AsyncSession, sample_ins: list
     results = await crud_ins.select_models(db, ~crud_ins.model.is_deleted)
 
     assert len(results) >= 0
+    assert all(r.is_deleted is False for r in results)
 
 
 @pytest.mark.asyncio
@@ -118,6 +130,7 @@ async def test_select_models_with_kwargs(db: AsyncSession, sample_ins: list[Ins]
     results = await crud_ins.select_models(db, is_deleted=False)
 
     assert len(results) >= 0
+    assert all(r.is_deleted is False for r in results)
 
 
 @pytest.mark.asyncio
@@ -125,6 +138,9 @@ async def test_select_models_order_basic(db: AsyncSession, sample_ins: list[Ins]
     results = await crud_ins.select_models_order(db, 'name')
 
     assert len(results) >= 0
+    if len(results) > 1:
+        names = [r.name for r in results]
+        assert names == sorted(names)
 
 
 @pytest.mark.asyncio
@@ -132,6 +148,9 @@ async def test_select_models_order_with_sort_orders(db: AsyncSession, sample_ins
     results = await crud_ins.select_models_order(db, 'name', 'desc')
 
     assert len(results) >= 0
+    if len(results) > 1:
+        names = [r.name for r in results]
+        assert names == sorted(names, reverse=True)
 
 
 @pytest.mark.asyncio
@@ -139,6 +158,7 @@ async def test_select_models_order_multiple_columns(db: AsyncSession, sample_ins
     results = await crud_ins.select_models_order(db, ['name', 'id'], ['asc', 'desc'])
 
     assert len(results) >= 0
+    assert all(isinstance(r, Ins) for r in results)
 
 
 @pytest.mark.asyncio
@@ -146,6 +166,9 @@ async def test_select_models_order_with_limit(db: AsyncSession, sample_ins: list
     results = await crud_ins.select_models_order(db, 'name', limit=3)
 
     assert len(results) <= 3
+    if len(results) > 1:
+        names = [r.name for r in results]
+        assert names == sorted(names)
 
 
 @pytest.mark.asyncio
@@ -153,6 +176,7 @@ async def test_select_models_order_with_offset(db: AsyncSession, sample_ins: lis
     results = await crud_ins.select_models_order(db, 'name', offset=2, limit=3)
 
     assert len(results) <= 3
+    assert all(isinstance(r, Ins) for r in results)
 
 
 @pytest.mark.asyncio
@@ -160,6 +184,7 @@ async def test_select_models_order_with_whereclause(db: AsyncSession, sample_ins
     results = await crud_ins.select_models_order(db, 'name', None, ~crud_ins.model.is_deleted)
 
     assert len(results) >= 0
+    assert all(r.is_deleted is False for r in results)
 
 
 @pytest.mark.asyncio
@@ -167,6 +192,10 @@ async def test_select_models_order_with_kwargs(db: AsyncSession, sample_ins: lis
     results = await crud_ins.select_models_order(db, 'name', is_deleted=False)
 
     assert len(results) >= 0
+    assert all(r.is_deleted is False for r in results)
+    if len(results) > 1:
+        names = [r.name for r in results]
+        assert names == sorted(names)
 
 
 @pytest.mark.asyncio
@@ -174,6 +203,8 @@ async def test_count_basic(db: AsyncSession, sample_ins: list[Ins], crud_ins: CR
     count = await crud_ins.count(db)
 
     assert count >= len(sample_ins)
+    assert isinstance(count, int)
+    assert count > 0
 
 
 @pytest.mark.asyncio
@@ -181,6 +212,9 @@ async def test_count_with_whereclause(db: AsyncSession, sample_ins: list[Ins], c
     count = await crud_ins.count(db, ~crud_ins.model.is_deleted)
 
     assert count >= 0
+    assert isinstance(count, int)
+    actual_records = await crud_ins.select_models(db, ~crud_ins.model.is_deleted)
+    assert count == len(actual_records)
 
 
 @pytest.mark.asyncio
@@ -188,6 +222,9 @@ async def test_count_with_kwargs(db: AsyncSession, sample_ins: list[Ins], crud_i
     count = await crud_ins.count(db, is_deleted=False)
 
     assert count >= 0
+    assert isinstance(count, int)
+    actual_records = await crud_ins.select_models(db, is_deleted=False)
+    assert count == len(actual_records)
 
 
 @pytest.mark.asyncio
@@ -195,6 +232,7 @@ async def test_exists_basic(db: AsyncSession, sample_ins: list[Ins], crud_ins: C
     exists = await crud_ins.exists(db, name=sample_ins[0].name)
 
     assert exists is True
+    assert isinstance(exists, bool)
 
 
 @pytest.mark.asyncio
@@ -202,6 +240,7 @@ async def test_exists_not_found(db: AsyncSession, crud_ins: CRUDPlus[Ins]):
     exists = await crud_ins.exists(db, name='nonexistent')
 
     assert exists is False
+    assert isinstance(exists, bool)
 
 
 @pytest.mark.asyncio
