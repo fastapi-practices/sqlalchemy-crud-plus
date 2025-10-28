@@ -364,7 +364,22 @@ def build_load_strategies(model: type[Model], load_strategies: LoadStrategies | 
     return options
 
 
-def apply_join_conditions(model: type[Model], stmt: Select, join_conditions: JoinConditions | None) -> Select:
+def has_join_fill_result(join_conditions: JoinConditions) -> bool:
+    """
+    Check if any JoinConfig in join_conditions has fill_result=True.
+
+    :param join_conditions: JOIN conditions configuration
+    :return:
+    """
+    if isinstance(join_conditions, list):
+        for v in join_conditions:
+            if isinstance(v, JoinConfig) and v.fill_result:
+                return True
+
+    return False
+
+
+def apply_join_conditions(model: type[Model], stmt: Select, join_conditions: JoinConditions) -> Select:
     """
     Apply JOIN conditions to the query statement.
 
@@ -373,9 +388,6 @@ def apply_join_conditions(model: type[Model], stmt: Select, join_conditions: Joi
     :param join_conditions: JOIN conditions configuration
     :return:
     """
-    if join_conditions is None:
-        return stmt
-
     if isinstance(join_conditions, list):
         for v in join_conditions:
             if isinstance(v, str):
@@ -391,6 +403,12 @@ def apply_join_conditions(model: type[Model], stmt: Select, join_conditions: Joi
                     stmt = stmt.join(v.model, v.join_on, isouter=True)
                 elif v.join_type == 'full':
                     stmt = stmt.join(v.model, v.join_on, full=True)
+
+                if v.fill_result:
+                    if not any(
+                        col for col in stmt.selected_columns if hasattr(col, 'class_') and col.class_ == v.model
+                    ):
+                        stmt = stmt.add_columns(v.model)
 
     elif isinstance(join_conditions, dict):
         for column, join_type in join_conditions.items():

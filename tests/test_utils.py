@@ -295,7 +295,13 @@ class TestJoinConfig:
         stmt = apply_join_conditions(
             RelUser,
             select(RelUser),
-            [JoinConfig(model=RelPost, join_on=RelUser.id == RelPost.author_id, join_type='inner')],
+            [
+                JoinConfig(
+                    model=RelPost,
+                    join_on=RelUser.id == RelPost.author_id,
+                    join_type='inner',
+                )
+            ],
         )
         assert 'JOIN' in str(stmt)
         assert stmt is not None
@@ -304,7 +310,13 @@ class TestJoinConfig:
         stmt = apply_join_conditions(
             RelUser,
             select(RelUser),
-            [JoinConfig(model=RelPost, join_on=RelUser.id == RelPost.author_id, join_type='left')],
+            [
+                JoinConfig(
+                    model=RelPost,
+                    join_on=RelUser.id == RelPost.author_id,
+                    join_type='left',
+                )
+            ],
         )
         assert 'JOIN' in str(stmt)
         assert stmt is not None
@@ -313,14 +325,20 @@ class TestJoinConfig:
         stmt = apply_join_conditions(
             RelUser,
             select(RelUser),
-            [JoinConfig(model=RelPost, join_on=RelUser.id == RelPost.author_id, join_type='full')],
+            [
+                JoinConfig(
+                    model=RelPost,
+                    join_on=RelUser.id == RelPost.author_id,
+                    join_type='full',
+                )
+            ],
         )
         assert 'JOIN' in str(stmt)
         assert stmt is not None
 
     def test_join_config_default_join_type(self):
         join_config = JoinConfig(model=RelPost, join_on=RelUser.id == RelPost.author_id)
-        assert join_config.join_type == 'inner'
+        assert join_config.join_type == 'left'
         stmt = apply_join_conditions(RelUser, select(RelUser), [join_config])
         assert 'JOIN' in str(stmt)
 
@@ -329,7 +347,13 @@ class TestJoinConfig:
         stmt = apply_join_conditions(
             RelUser,
             select(RelUser),
-            [JoinConfig(model=aliased_post, join_on=RelUser.id == aliased_post.author_id, join_type='left')],
+            [
+                JoinConfig(
+                    model=aliased_post,
+                    join_on=RelUser.id == aliased_post.author_id,
+                    join_type='left',
+                )
+            ],
         )
         assert 'JOIN' in str(stmt)
 
@@ -338,8 +362,16 @@ class TestJoinConfig:
             RelUser,
             select(RelUser),
             [
-                JoinConfig(model=RelPost, join_on=RelUser.id == RelPost.author_id, join_type='inner'),
-                JoinConfig(model=RelProfile, join_on=RelUser.id == RelProfile.user_id, join_type='left'),
+                JoinConfig(
+                    model=RelPost,
+                    join_on=RelUser.id == RelPost.author_id,
+                    join_type='inner',
+                ),
+                JoinConfig(
+                    model=RelProfile,
+                    join_on=RelUser.id == RelProfile.user_id,
+                    join_type='left',
+                ),
             ],
         )
         assert 'JOIN' in str(stmt)
@@ -350,19 +382,31 @@ class TestJoinConfig:
             select(RelUser),
             [
                 'posts',
-                JoinConfig(model=RelPost, join_on=RelUser.id == RelPost.author_id, join_type='inner'),
+                JoinConfig(
+                    model=RelPost,
+                    join_on=RelUser.id == RelPost.author_id,
+                    join_type='inner',
+                ),
             ],
         )
         assert 'JOIN' in str(stmt)
 
     def test_join_config_creation(self):
-        join_config = JoinConfig(model=RelPost, join_on=RelUser.id == RelPost.author_id, join_type='inner')
+        join_config = JoinConfig(
+            model=RelPost,
+            join_on=RelUser.id == RelPost.author_id,
+            join_type='inner',
+        )
         assert join_config.model == RelPost
         assert join_config.join_type == 'inner'
         assert join_config.join_on is not None
 
     def test_join_config_pydantic_validation(self):
-        join_config = JoinConfig(model=RelPost, join_on=RelUser.id == RelPost.author_id, join_type='left')
+        join_config = JoinConfig(
+            model=RelPost,
+            join_on=RelUser.id == RelPost.author_id,
+            join_type='left',
+        )
         assert isinstance(join_config.model, type)
         assert join_config.join_type in ['inner', 'left', 'full']
 

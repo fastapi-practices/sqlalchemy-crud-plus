@@ -37,7 +37,7 @@ async with async_session() as session:
         raise e
 ```
 
-## flush 和 commit 参数
+## flush 和 commit
 
 ### flush 参数
 

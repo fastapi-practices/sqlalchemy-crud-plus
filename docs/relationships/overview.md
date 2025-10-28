@@ -10,7 +10,7 @@ SQLAlchemy CRUD Plus 提供强大的关系查询功能，支持 ORM 关系预加
 
 ## 两种关联方式
 
-### 方式一：ORM 关系（有 relationship）
+### ORM 关系（有 relationship）
 
 使用 SQLAlchemy 的 `relationship` 定义关系，适合标准的外键关联。
 
@@ -53,7 +53,7 @@ users = await user_crud.select_models(
 )
 ```
 
-### 方式二：纯逻辑关联（无 relationship）
+### 纯逻辑关联（无 relationship）
 
 不定义 `relationship`，在查询时通过 `JoinConfig` 动态关联。适合无外键约束的场景。
 
@@ -90,11 +90,11 @@ users = await user_crud.select_models(
 )
 ```
 
-## join_conditions 参数详解
+## join_conditions
 
-`join_conditions` 用于关联查询多表数据，支持三种格式。
+`join_conditions` 用于关联查询多表数据，支持三种格式
 
-### 格式一：列表格式（有 relationship）
+### 列表格式（有 relationship）
 
 ```python
 # 使用关系名称
@@ -104,7 +104,7 @@ users = await user_crud.select_models(
 )
 ```
 
-### 格式二：字典格式（有 relationship）
+### 字典格式（有 relationship）
 
 ```python
 # 指定 JOIN 类型
@@ -117,7 +117,7 @@ users = await user_crud.select_models(
 )
 ```
 
-### 格式三：JoinConfig（无 relationship 或复杂条件）
+### JoinConfig（无 relationship 或复杂条件）
 
 这是最灵活的方式，支持自定义 JOIN 条件。
 
@@ -139,100 +139,94 @@ result = await user_crud.select_models(
 )
 ```
 
-#### join_on 参数说明
+#### join_on 参数
 
 **join_on** 定义表之间的关联条件，支持：
 
-**1. 简单等值条件**
+1. 简单等值条件
+   ```python
+   JoinConfig(
+       model=Post,
+       join_on=User.id == Post.author_id,
+       join_type='left'
+   )
+   ```
 
-```python
-JoinConfig(
-    model=Post,
-    join_on=User.id == Post.author_id,
-    join_type='left'
-)
-```
+2. 复合条件
+   ```python
+   from sqlalchemy import and_, or_
+   
+   JoinConfig(
+       model=Post,
+       join_on=and_(
+           User.id == Post.author_id,
+           Post.is_published == True,
+           Post.created_at >= datetime(2024, 1, 1)
+       ),
+       join_type='inner'
+   )
+   ```
 
-**2. 复合条件**
+3. 多种条件组合
+   ```python
+   JoinConfig(
+       model=Post,
+       join_on=and_(
+           User.id == Post.author_id,
+           or_(
+               Post.status == 'published',
+               Post.status == 'featured'
+           ),
+           Post.view_count > 100
+       ),
+       join_type='left'
+   )
+   ```
 
-```python
-from sqlalchemy import and_, or_
+4. 使用函数
+   ```python
+   from sqlalchemy import func
+   
+   JoinConfig(
+       model=Post,
+       join_on=and_(
+           User.id == Post.author_id,
+           func.date(Post.created_at) == func.current_date()
+       ),
+       join_type='inner'
+   )
+   ```
 
-JoinConfig(
-    model=Post,
-    join_on=and_(
-        User.id == Post.author_id,
-        Post.is_published == True,
-        Post.created_at >= datetime(2024, 1, 1)
-    ),
-    join_type='inner'
-)
-```
+5. 非主键关联
+   ```python
+   # 通过 email 关联
+   JoinConfig(
+       model=Profile,
+       join_on=User.email == Profile.user_email,
+       join_type='left'
+   )
+   
+   # 通过业务编号关联
+   JoinConfig(
+       model=Order,
+       join_on=Customer.customer_code == Order.customer_code,
+       join_type='inner'
+   )
+   ```
 
-**3. 多种条件组合**
-
-```python
-JoinConfig(
-    model=Post,
-    join_on=and_(
-        User.id == Post.author_id,
-        or_(
-            Post.status == 'published',
-            Post.status == 'featured'
-        ),
-        Post.view_count > 100
-    ),
-    join_type='left'
-)
-```
-
-**4. 使用函数**
-
-```python
-from sqlalchemy import func
-
-JoinConfig(
-    model=Post,
-    join_on=and_(
-        User.id == Post.author_id,
-        func.date(Post.created_at) == func.current_date()
-    ),
-    join_type='inner'
-)
-```
-
-**5. 非主键关联**
-
-```python
-# 通过 email 关联
-JoinConfig(
-    model=Profile,
-    join_on=User.email == Profile.user_email,
-    join_type='left'
-)
-
-# 通过业务编号关联
-JoinConfig(
-    model=Order,
-    join_on=Customer.customer_code == Order.customer_code,
-    join_type='inner'
-)
-```
-
-**6. 范围条件**
-
-```python
-# 查询符合折扣区间的订单
-JoinConfig(
-    model=Discount,
-    join_on=and_(
-        Order.total_amount >= Discount.min_amount,
-        Order.total_amount <= Discount.max_amount,
-        Discount.is_active == True
-    ),
-    join_type='left'
-)
-```
+6. 范围条件
+   ```python
+   # 查询符合折扣区间的订单
+   JoinConfig(
+       model=Discount,
+       join_on=and_(
+           Order.total_amount >= Discount.min_amount,
+           Order.total_amount <= Discount.max_amount,
+           Discount.is_active == True
+       ),
+       join_type='left'
+   )
+   ```
 
 #### 多表关联
 
@@ -255,6 +249,81 @@ posts = await post_crud.select_models(
 )
 ```
 
+#### fill_result 参数
+
+当设置 `fill_result=True` 时，查询结果会包含关联表的数据。
+
+```python
+# 基础用法
+results = await user_crud.select_models(
+    session,
+    join_conditions=[
+        JoinConfig(
+            model=Post,
+            join_on=User.id == Post.author_id,
+            join_type='left',
+            fill_result=True  # 包含关联表数据
+        )
+    ]
+)
+
+# 当 fill_result=True 时，results 是 Row 对象（行为类似元组）
+for result in results:
+    user, post = result  # (User, Post)
+    print(f"{user.name}: {post.title if post else 'No post'}")
+```
+
+**多表关联**：
+
+```python
+# 关联多个表，都包含在结果中
+results = await post_crud.select_models(
+    session,
+    join_conditions=[
+        JoinConfig(
+            model=User,
+            join_on=Post.author_id == User.id,
+            join_type='inner',
+            fill_result=True
+        ),
+        JoinConfig(
+            model=Category,
+            join_on=Post.category_id == Category.id,
+            join_type='left',
+            fill_result=True
+        )
+    ]
+)
+
+# 结果是三元组 (Post, User, Category) - Row 对象
+for post, user, category in results:
+    print(f"{post.title} by {user.name} in {category.name if category else 'Uncategorized'}")
+```
+
+**fill_result 默认行为**：
+
+```python
+# fill_result=False (默认) - 只返回主表数据
+users = await user_crud.select_models(
+    session,
+    join_conditions=[
+        JoinConfig(
+            model=Post,
+            join_on=User.id == Post.author_id,
+            join_type='left',
+            fill_result=False  # 默认值
+        )
+    ]
+)
+# users 只包含 User 实例
+```
+
+**选择正确的使用方式**：
+
+- **只需要主表数据**：使用 `fill_result=False` (默认)
+- **需要关联表数据**：使用 `fill_result=True`
+- **复杂查询/自定义字段**：使用原生 `select()`
+
 #### 获取关联表数据
 
 **重要**：使用 `join_conditions` 的目的是获取多个表的数据，而不只是主表数据。
@@ -270,18 +339,20 @@ result = await session.execute(stmt)
 for user, post in result.all():
     print(f"{user.name}: {post.title}")
 
-# 方式2：使用 JoinConfig 过滤 + 原生查询获取数据
-users = await user_crud.select_models(
+# 方式2：使用 JoinConfig + fill_result
+results = await user_crud.select_models(
     session,
     join_conditions=[
         JoinConfig(
             model=Post,
             join_on=User.id == Post.author_id,
-            join_type='inner'
+            join_type='left',
+            fill_result=True  # 包含关联表数据
         )
     ]
 )
-# users 只包含主表数据，需要再次查询获取关联数据
+for user, post in results:
+    print(f"{user.name}: {post.title if post else 'No post'}")
 
 # 方式3：构建字典结果（推荐用于 API 返回）
 stmt = select(User.name, User.email, Post.title, Post.created_at).join(
@@ -363,12 +434,13 @@ async def get_post_list_api(session: AsyncSession, page: int = 1):
 |---------|-----------------|----------------|
 | `inner` | INNER JOIN      | 只返回两表都匹配的记录    |
 | `left`  | LEFT JOIN       | 返回左表所有记录，右表可为空 |
-| `right` | RIGHT JOIN      | 返回右表所有记录，左表可为空 |
 | `outer` | FULL OUTER JOIN | 返回两表所有记录       |
 
-## load_strategies 参数
+## load_strategies
 
-**仅用于有 relationship 的模型**，预加载关系数据以避免 N+1 查询。
+!!! note
+
+    仅用于有 relationship 的模型，预加载关系数据以避免 N+1 查询
 
 ### 列表格式（使用默认策略）
 
@@ -387,20 +459,12 @@ user = await user_crud.select_model(
     session,
     pk=1,
     load_strategies={
-        'posts': 'selectinload',  # 一对多
-        'profile': 'joinedload',  # 一对一
-        'roles': 'subqueryload'  # 多对多
+        'posts': 'selectinload',
+        'profile': 'joinedload',
+        'roles': 'subqueryload'
     }
 )
 ```
-
-### 策略选择
-
-| 策略           | 适用关系 | 特点                  |
-|--------------|------|---------------------|
-| selectinload | 一对多  | SELECT IN 查询，避免笛卡尔积 |
-| joinedload   | 一对一  | LEFT JOIN，单次查询      |
-| subqueryload | 多对多  | 子查询，适合复杂关系          |
 
 ### 避免 N+1 查询
 
@@ -549,19 +613,6 @@ users = await user_crud.select_models(
 )
 ```
 
-### 监控查询
-
-```python
-# 开启 SQL 日志
-engine = create_async_engine(DATABASE_URL, echo=True)
-
-# 查看生成的 SQL
-users = await user_crud.select_models(
-    session,
-    load_strategies=['posts']
-)
-```
-
 ## 最佳实践
 
 1. **根据场景选择方式**
@@ -587,7 +638,7 @@ users = await user_crud.select_models(
     - 验证 JOIN 条件的正确性
     - 处理关联数据为空的情况
 
-## load_options 参数
+## load_options
 
 使用原生 SQLAlchemy 选项进行精确控制：
 
@@ -603,52 +654,6 @@ user = await user_crud.select_model(
     ]
 )
 ```
-
-## 常见问题
-
-### 如何获取关联表的数据？
-
-```python
-# 方法1：原生 select（推荐）
-stmt = select(User, Post).join(Post, User.id == Post.author_id)
-result = await session.execute(stmt)
-for user, post in result.all():
-    print(user, post)
-
-# 方法2：使用 relationship + load_strategies
-user = await user_crud.select_model(
-    session,
-    pk=1,
-    load_strategies=['posts']
-)
-for post in user.posts:
-    print(post)
-```
-
-### JoinConfig 返回什么数据？
-
-`JoinConfig` 用于过滤和关联，但 `select_models` 只返回主表数据。要获取关联表数据，需使用原生 `select()`。
-
-```python
-# 这只返回 User 数据
-users = await user_crud.select_models(
-    session,
-    join_conditions=[JoinConfig(model=Post, join_on=...)]
-)
-
-# 要获取 User 和 Post，使用原生查询
-stmt = select(User, Post).join(...)
-result = await session.execute(stmt)
-```
-
-### 何时使用哪种方式？
-
-| 场景                 | 推荐方式                         |
-|--------------------|------------------------------|
-| 有外键 + relationship | `load_strategies`            |
-| 无外键或复杂条件           | `JoinConfig` + 原生 `select()` |
-| 需要多表数据             | 原生 `select(Model1, Model2)`  |
-| API 返回             | 原生 `select()` + 构建字典         |
 
 ## 相关资源
 
