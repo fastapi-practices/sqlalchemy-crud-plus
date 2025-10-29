@@ -1,6 +1,6 @@
 # SQLAlchemy CRUD Plus
 
-SQLAlchemy CRUD Plus 是基于 SQLAlchemy 2.0 的异步 CRUD 操作库，提供简洁的 API 和强大的查询功能。
+基于 SQLAlchemy 2.0 构建的高级异步 CRUD SDK
 
 ## 特性
 

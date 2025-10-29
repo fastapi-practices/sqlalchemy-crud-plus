@@ -28,9 +28,13 @@ repository = "https://github.com/fastapi-practices/sqlalchemy-crud-plus"
 
 [dependency-groups]
 dev = [
-    "pytest>=8.4.0",
     "aiosqlite>=0.21.0",
+    "click==8.2.1",
+    "mkdocs-material>=9.6.22",
+    "mkdocstrings[python]>=0.30.0",
+    "pytest>=8.4.0",
     "pytest-asyncio>=1.2.0",
+    "ruff>=0.14.0",
     "ty>=0.0.1a23",
 ]
 lint = [

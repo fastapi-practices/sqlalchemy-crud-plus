@@ -56,9 +56,10 @@ JoinType = Literal[
 class JoinConfig(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    model: type[Model] | AliasedClass
-    join_on: Any
-    join_type: JoinType = Field(default='inner')
+    model: type[Model] | AliasedClass = Field(description='The target model or aliased class to join with')
+    join_on: Any = Field(description='The join condition expression (e.g., model.id == other_model.id)')
+    join_type: JoinType = Field(default='left', description='The type of join to perform')
+    fill_result: bool = Field(default=False, description='Whether to populate this model to the query result')
 
 
 JoinConditions = list[str | JoinConfig] | dict[str, JoinType]

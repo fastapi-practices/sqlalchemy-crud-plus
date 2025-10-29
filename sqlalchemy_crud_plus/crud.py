@@ -8,7 +8,6 @@ from sqlalchemy import (
     ColumnExpressionArgument,
     CursorResult,
     Row,
-    RowMapping,
     Select,
     delete,
     func,
@@ -30,7 +29,13 @@ from sqlalchemy_crud_plus.types import (
     SortOrders,
     UpdateSchema,
 )
-from sqlalchemy_crud_plus.utils import apply_join_conditions, apply_sorting, build_load_strategies, parse_filters
+from sqlalchemy_crud_plus.utils import (
+    apply_join_conditions,
+    apply_sorting,
+    build_load_strategies,
+    has_join_fill_result,
+    parse_filters,
+)
 
 
 class CRUDPlus(Generic[Model]):
@@ -139,7 +144,7 @@ class CRUDPlus(Generic[Model]):
         flush: bool = False,
         commit: bool = False,
         **kwargs,
-    ) -> Sequence[Row[Any] | RowMapping | Any]:
+    ) -> Sequence[Model]:
         """
         Create new instances of a model.
 
@@ -268,6 +273,12 @@ class CRUDPlus(Generic[Model]):
                 stmt = stmt.options(*rel_options)
 
         query = await session.execute(stmt)
+
+        if join_conditions:
+            if has_join_fill_result(join_conditions):
+                result = query.first()
+                return result[0] if result else None
+
         return query.scalars().first()
 
     async def select_model_by_column(
@@ -299,6 +310,12 @@ class CRUDPlus(Generic[Model]):
         )
 
         query = await session.execute(stmt)
+
+        if join_conditions:
+            if has_join_fill_result(join_conditions):
+                result = query.first()
+                return result[0] if result else None
+
         return query.scalars().first()
 
     async def select(
@@ -378,7 +395,7 @@ class CRUDPlus(Generic[Model]):
         limit: int | None = None,
         offset: int | None = None,
         **kwargs: Any,
-    ) -> Sequence[Model]:
+    ) -> Sequence[Row[tuple[Model, ...] | Any] | Model]:
         """
         Query all rows that match the specified filters with optional relationship loading and joins.
 
@@ -406,6 +423,11 @@ class CRUDPlus(Generic[Model]):
             stmt = stmt.offset(offset)
 
         query = await session.execute(stmt)
+
+        if join_conditions:
+            if has_join_fill_result(join_conditions):
+                return query.all()
+
         return query.scalars().all()
 
     async def select_models_order(
@@ -420,7 +442,7 @@ class CRUDPlus(Generic[Model]):
         limit: int | None = None,
         offset: int | None = None,
         **kwargs: Any,
-    ) -> Sequence[Model]:
+    ) -> Sequence[Row[tuple[Model, ...] | Any] | Model]:
         """
         Query all rows that match the specified filters and sort by columns
         with optional relationship loading and joins.
@@ -453,6 +475,11 @@ class CRUDPlus(Generic[Model]):
             stmt = stmt.offset(offset)
 
         query = await session.execute(stmt)
+
+        if join_conditions:
+            if has_join_fill_result(join_conditions):
+                return query.all()
+
         return query.scalars().all()
 
     async def update_model(

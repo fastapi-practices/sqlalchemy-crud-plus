@@ -1,5 +1,5 @@
 site_name: SQLAlchemy CRUD Plus
-site_description: 现代化的 SQLAlchemy 2.0 异步 CRUD 操作库，为 Python 开发者提供简洁、强大、类型安全的数据库操作体验
+site_description: 基于 SQLAlchemy 2.0 构建的高级异步 CRUD SDK
 site_url: https://fastapi-practices.github.io/sqlalchemy-crud-plus
 site_author: FastAPI Practices
 repo_name: sqlalchemy-crud-plus
@@ -58,18 +58,17 @@ markdown_extensions:
   - attr_list
   - def_list
   - md_in_html
-  - pymdownx.snippets
-  - pymdownx.superfences
-  - pymdownx.inlinehilite
-  - pymdownx.highlight:
-      anchor_linenums: true
-      line_spans: __span
-      pygments_lang_class: true
-  - pymdownx.tabbed:
-      alternate_style: true
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
 
 plugins:
   - search
@@ -92,6 +91,9 @@ extra:
     - icon: fontawesome/brands/discord
       link: https://discord.com/invite/yNN3wTbVAC
       name: Discord
+
+extra_javascript:
+- https://unpkg.com/mermaid@10.9.0/dist/mermaid.min.js
 
 extra_css:
   - "extra/custom.css"

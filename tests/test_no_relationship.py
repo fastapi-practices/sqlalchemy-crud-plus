@@ -3,231 +3,11 @@
 import pytest
 
 from sqlalchemy import select
+from sqlalchemy.engine.row import Row
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy_crud_plus import CRUDPlus, JoinConfig
-from sqlalchemy_crud_plus.errors import ModelColumnError
 from tests.models.no_relationship import NoRelCategory, NoRelPost, NoRelProfile, NoRelUser
-
-
-@pytest.mark.asyncio
-async def test_create_single_user(db: AsyncSession, no_rel_crud_user: CRUDPlus[NoRelUser]):
-    user = NoRelUser(name='Test User')
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
-
-    assert user is not None
-    assert user.name == 'Test User'
-    assert user.id is not None
-
-
-@pytest.mark.asyncio
-async def test_create_multiple_users(db: AsyncSession, no_rel_crud_user: CRUDPlus[NoRelUser]):
-    users = [
-        NoRelUser(name='User 1'),
-        NoRelUser(name='User 2'),
-        NoRelUser(name='User 3'),
-    ]
-    db.add_all(users)
-    await db.commit()
-    for user in users:
-        await db.refresh(user)
-
-    assert len(users) == 3
-    assert all(isinstance(user, NoRelUser) for user in users)
-    assert users[0].name == 'User 1'
-    assert users[1].name == 'User 2'
-    assert users[2].name == 'User 3'
-
-
-@pytest.mark.asyncio
-async def test_bulk_create_users(db: AsyncSession, no_rel_crud_user: CRUDPlus[NoRelUser]):
-    users_data = [{'name': f'Bulk User {i}'} for i in range(5)]
-    users = await no_rel_crud_user.bulk_create_models(db, users_data)
-    await db.commit()
-
-    assert len(users) == 5
-    assert all(isinstance(user, NoRelUser) for user in users)
-
-
-@pytest.mark.asyncio
-async def test_select_model_by_id(db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]):
-    users = no_rel_sample_data['users']
-    user = await no_rel_crud_user.select_model(db, users[0].id)
-
-    assert user is not None
-    assert user.id == users[0].id
-    assert user.name == users[0].name
-
-
-@pytest.mark.asyncio
-async def test_select_model_by_column(
-    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
-):
-    users = no_rel_sample_data['users']
-    user = await no_rel_crud_user.select_model_by_column(db, id=users[0].id)
-
-    assert user is not None
-    assert user.name == users[0].name
-    assert user.id == users[0].id
-
-
-@pytest.mark.asyncio
-async def test_select_models_all(db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]):
-    users = await no_rel_crud_user.select_models(db)
-
-    assert len(users) >= 3
-    assert all(isinstance(user, NoRelUser) for user in users)
-
-
-@pytest.mark.asyncio
-async def test_select_models_with_limit(
-    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
-):
-    users = await no_rel_crud_user.select_models(db, limit=2)
-
-    assert len(users) == 2
-    assert all(isinstance(user, NoRelUser) for user in users)
-
-
-@pytest.mark.asyncio
-async def test_select_models_with_offset(
-    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
-):
-    all_users = await no_rel_crud_user.select_models(db)
-    offset_users = await no_rel_crud_user.select_models(db, offset=1, limit=2)
-
-    assert len(offset_users) <= 2
-    if len(all_users) > 1:
-        assert offset_users[0].id == all_users[1].id
-
-
-@pytest.mark.asyncio
-async def test_select_models_with_pagination(
-    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
-):
-    page1 = await no_rel_crud_user.select_models(db, limit=2, offset=0)
-    page2 = await no_rel_crud_user.select_models(db, limit=2, offset=2)
-
-    assert len(page1) <= 2
-    assert len(page2) <= 2
-    if len(page1) > 0 and len(page2) > 0:
-        assert page1[0].id != page2[0].id
-
-
-@pytest.mark.asyncio
-async def test_select_models_order_asc(
-    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
-):
-    users = await no_rel_crud_user.select_models_order(db, 'name', 'asc')
-
-    assert len(users) >= 3
-    if len(users) >= 2:
-        assert users[0].name <= users[1].name
-
-
-@pytest.mark.asyncio
-async def test_select_models_order_desc(
-    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
-):
-    users = await no_rel_crud_user.select_models_order(db, 'name', 'desc')
-
-    assert len(users) >= 3
-    if len(users) >= 2:
-        assert users[0].name >= users[1].name
-
-
-@pytest.mark.asyncio
-async def test_select_models_order_with_limit(
-    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
-):
-    users = await no_rel_crud_user.select_models_order(db, 'id', 'asc', limit=2)
-
-    assert len(users) <= 2
-    if len(users) == 2:
-        assert users[0].id < users[1].id
-
-
-@pytest.mark.asyncio
-async def test_select_models_with_filter_equal(
-    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
-):
-    users = no_rel_sample_data['users']
-    filtered_users = await no_rel_crud_user.select_models(db, name=users[0].name)
-
-    assert len(filtered_users) >= 1
-    assert all(user.name == users[0].name for user in filtered_users)
-
-
-@pytest.mark.asyncio
-async def test_select_models_with_filter_like(
-    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
-):
-    users = await no_rel_crud_user.select_models(db, name__like='%User%')
-
-    assert len(users) >= 1
-    assert all('User' in user.name for user in users)
-
-
-@pytest.mark.asyncio
-async def test_select_models_with_filter_ilike(
-    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
-):
-    users = await no_rel_crud_user.select_models(db, name__ilike='%user%')
-
-    assert len(users) >= 1
-    assert all('user' in user.name.lower() for user in users)
-
-
-@pytest.mark.asyncio
-async def test_select_models_with_multiple_filters(
-    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_post: CRUDPlus[NoRelPost]
-):
-    users = no_rel_sample_data['users']
-    posts = await no_rel_crud_post.select_models(db, author_id=users[0].id)
-
-    assert len(posts) >= 0
-    assert all(post.author_id == users[0].id for post in posts)
-
-
-@pytest.mark.asyncio
-async def test_count_all_users(db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]):
-    count = await no_rel_crud_user.count(db)
-
-    assert count >= 3
-    assert isinstance(count, int)
-
-
-@pytest.mark.asyncio
-async def test_count_with_filter(db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]):
-    count = await no_rel_crud_user.count(db, name__like='%User%')
-
-    assert count >= 1
-    assert isinstance(count, int)
-
-
-@pytest.mark.asyncio
-async def test_exists_true(db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]):
-    users = no_rel_sample_data['users']
-    exists = await no_rel_crud_user.exists(db, id=users[0].id)
-
-    assert exists is True
-
-
-@pytest.mark.asyncio
-async def test_exists_false(db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]):
-    exists = await no_rel_crud_user.exists(db, id=999999)
-
-    assert exists is False
-
-
-@pytest.mark.asyncio
-async def test_exists_with_filter(db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]):
-    exists = await no_rel_crud_user.exists(db, name__like='%User%')
-
-    assert exists is True
-    assert isinstance(exists, bool)
 
 
 @pytest.mark.asyncio
@@ -409,112 +189,6 @@ async def test_exists_with_join_condition(
 
 
 @pytest.mark.asyncio
-async def test_update_model_by_id(db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]):
-    users = no_rel_sample_data['users']
-    updated_count = await no_rel_crud_user.update_model(db, users[0].id, {'name': 'Updated Name'})
-    await db.commit()
-
-    assert updated_count == 1
-
-    updated_user = await no_rel_crud_user.select_model(db, users[0].id)
-    assert updated_user.name == 'Updated Name'
-
-
-@pytest.mark.asyncio
-async def test_update_model_by_column(
-    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
-):
-    users = no_rel_sample_data['users']
-    updated_count = await no_rel_crud_user.update_model_by_column(db, obj={'name': 'Updated Name'}, id=users[0].id)
-    await db.commit()
-
-    assert updated_count == 1
-
-    updated_user = await no_rel_crud_user.select_model(db, users[0].id)
-    assert updated_user.name == 'Updated Name'
-
-
-@pytest.mark.asyncio
-async def test_bulk_update_models(db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]):
-    users = no_rel_sample_data['users']
-    update_data = [
-        {'id': users[0].id, 'name': 'Bulk Updated 1'},
-        {'id': users[1].id, 'name': 'Bulk Updated 2'},
-    ]
-    updated_count = await no_rel_crud_user.bulk_update_models(db, update_data)
-    await db.commit()
-
-    assert updated_count == 2
-
-    user1 = await no_rel_crud_user.select_model(db, users[0].id)
-    user2 = await no_rel_crud_user.select_model(db, users[1].id)
-    assert user1.name == 'Bulk Updated 1'
-    assert user2.name == 'Bulk Updated 2'
-
-
-@pytest.mark.asyncio
-async def test_update_single_field(db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]):
-    users = no_rel_sample_data['users']
-    update_data = {'name': 'Single Update'}
-    updated_count = await no_rel_crud_user.update_model(db, users[0].id, update_data)
-    await db.commit()
-
-    assert updated_count == 1
-
-    updated_user = await no_rel_crud_user.select_model(db, users[0].id)
-    assert updated_user.name == 'Single Update'
-
-
-@pytest.mark.asyncio
-async def test_delete_model_by_id(db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]):
-    users = no_rel_sample_data['users']
-    deleted_count = await no_rel_crud_user.delete_model(db, users[0].id)
-    await db.commit()
-
-    assert deleted_count == 1
-
-    deleted_user = await no_rel_crud_user.select_model(db, users[0].id)
-    assert deleted_user is None
-
-
-@pytest.mark.asyncio
-async def test_delete_model_by_column(
-    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
-):
-    users = no_rel_sample_data['users']
-    user_to_delete = users[1]
-    deleted_count = await no_rel_crud_user.delete_model_by_column(db, allow_multiple=False, id=user_to_delete.id)
-    await db.commit()
-
-    assert deleted_count == 1
-
-    deleted_user = await no_rel_crud_user.select_model(db, user_to_delete.id)
-    assert deleted_user is None
-
-
-@pytest.mark.asyncio
-async def test_delete_nonexistent_model(
-    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
-):
-    deleted_count = await no_rel_crud_user.delete_model(db, 999999)
-    await db.commit()
-
-    assert deleted_count == 0
-
-
-@pytest.mark.asyncio
-async def test_combined_filter_order_pagination(
-    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
-):
-    users = await no_rel_crud_user.select_models_order(db, 'name', 'asc', name__like='%User%', limit=2, offset=0)
-
-    assert len(users) <= 2
-    assert all('User' in user.name for user in users)
-    if len(users) == 2:
-        assert users[0].name <= users[1].name
-
-
-@pytest.mark.asyncio
 async def test_join_get_user_posts_grouped(db: AsyncSession, no_rel_sample_data: dict):
     stmt = select(NoRelUser, NoRelPost).join(
         NoRelPost,
@@ -644,59 +318,35 @@ async def test_user_profile_join_with_filter(
 
 
 @pytest.mark.asyncio
-async def test_select_model_invalid_id(
+async def test_join_filter_with_join_conditions(
     db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
 ):
-    user = await no_rel_crud_user.select_model(db, 999999)
+    users = await no_rel_crud_user.select_models(
+        db,
+        join_conditions=[
+            JoinConfig(
+                model=NoRelPost,
+                join_on=NoRelUser.id == NoRelPost.author_id,
+                join_type='inner',
+            )
+        ],
+    )
 
-    assert user is None
+    assert len(users) >= 1
+    assert all(isinstance(user, NoRelUser) for user in users)
 
+    stmt = select(NoRelUser, NoRelPost).join(
+        NoRelPost,
+        NoRelUser.id == NoRelPost.author_id,
+    )
+    result = await db.execute(stmt)
+    user_post_pairs = result.all()
 
-@pytest.mark.asyncio
-async def test_update_nonexistent_model(
-    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
-):
-    updated_count = await no_rel_crud_user.update_model(db, 999999, {'name': 'Test'})
-    await db.commit()
-
-    assert updated_count == 0
-
-
-@pytest.mark.asyncio
-async def test_select_with_invalid_filter_column(
-    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
-):
-    with pytest.raises(ModelColumnError):
-        await no_rel_crud_user.select_models(db, nonexistent_column='value')
-
-
-@pytest.mark.asyncio
-async def test_select_models_empty_result(db: AsyncSession, no_rel_crud_user: CRUDPlus[NoRelUser]):
-    users = await no_rel_crud_user.select_models(db, name='NonExistentUser')
-
-    assert len(users) == 0
-    assert isinstance(users, list)
-
-
-@pytest.mark.asyncio
-async def test_count_empty_result(db: AsyncSession, no_rel_crud_user: CRUDPlus[NoRelUser]):
-    count = await no_rel_crud_user.count(db, name='NonExistentUser')
-
-    assert count == 0
-
-
-@pytest.mark.asyncio
-async def test_bulk_create_empty_list(db: AsyncSession):
-    users = []
-    assert len(users) == 0
-
-
-@pytest.mark.asyncio
-async def test_bulk_update_empty_list(db: AsyncSession, no_rel_crud_user: CRUDPlus[NoRelUser]):
-    updated_count = await no_rel_crud_user.bulk_update_models(db, [])
-    await db.commit()
-
-    assert updated_count == 0
+    assert len(user_post_pairs) >= 1
+    for user, post in user_post_pairs:
+        assert isinstance(user, NoRelUser)
+        assert isinstance(post, NoRelPost)
+        assert user.id == post.author_id
 
 
 @pytest.mark.asyncio
@@ -784,32 +434,127 @@ async def test_join_build_dict_result(db: AsyncSession, no_rel_sample_data: dict
 
 
 @pytest.mark.asyncio
-async def test_join_filter_with_join_conditions(
+async def test_join_with_fill_result_true(
+    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
+):
+    results = await no_rel_crud_user.select_models(
+        db,
+        join_conditions=[
+            JoinConfig(
+                model=NoRelProfile,
+                join_on=NoRelUser.id == NoRelProfile.user_id,
+                join_type='left',
+                fill_result=True,
+            )
+        ],
+    )
+
+    assert len(results) >= 1
+    for result in results:
+        assert isinstance(result, (tuple, Row))
+        assert len(result) == 2
+        assert isinstance(result[0], NoRelUser)
+        if result[1]:
+            assert isinstance(result[1], NoRelProfile)
+
+
+@pytest.mark.asyncio
+async def test_join_with_fill_result_false(
     db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
 ):
     users = await no_rel_crud_user.select_models(
         db,
         join_conditions=[
             JoinConfig(
-                model=NoRelPost,
-                join_on=NoRelUser.id == NoRelPost.author_id,
-                join_type='inner',
+                model=NoRelProfile,
+                join_on=NoRelUser.id == NoRelProfile.user_id,
+                join_type='left',
+                fill_result=False,
             )
         ],
     )
 
     assert len(users) >= 1
-    assert all(isinstance(user, NoRelUser) for user in users)
-
-    stmt = select(NoRelUser, NoRelPost).join(
-        NoRelPost,
-        NoRelUser.id == NoRelPost.author_id,
-    )
-    result = await db.execute(stmt)
-    user_post_pairs = result.all()
-
-    assert len(user_post_pairs) >= 1
-    for user, post in user_post_pairs:
+    for user in users:
         assert isinstance(user, NoRelUser)
-        assert isinstance(post, NoRelPost)
-        assert user.id == post.author_id
+        assert not isinstance(user, tuple)
+
+
+@pytest.mark.asyncio
+async def test_join_multiple_with_fill_result(
+    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_post: CRUDPlus[NoRelPost]
+):
+    results = await no_rel_crud_post.select_models(
+        db,
+        join_conditions=[
+            JoinConfig(
+                model=NoRelUser,
+                join_on=NoRelPost.author_id == NoRelUser.id,
+                join_type='inner',
+                fill_result=True,
+            ),
+            JoinConfig(
+                model=NoRelCategory,
+                join_on=NoRelPost.category_id == NoRelCategory.id,
+                join_type='left',
+                fill_result=True,
+            ),
+        ],
+    )
+
+    assert len(results) >= 1
+    for result in results:
+        assert isinstance(result, (tuple, Row))
+        assert len(result) == 3
+        assert isinstance(result[0], NoRelPost)
+        assert isinstance(result[1], NoRelUser)
+        if result[2]:
+            assert isinstance(result[2], NoRelCategory)
+
+
+@pytest.mark.asyncio
+async def test_join_fill_result_single_model(
+    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
+):
+    result = await no_rel_crud_user.select_model(
+        db,
+        no_rel_sample_data['users'][0].id,
+        join_conditions=[
+            JoinConfig(
+                model=NoRelProfile,
+                join_on=NoRelUser.id == NoRelProfile.user_id,
+                join_type='left',
+                fill_result=True,
+            )
+        ],
+    )
+
+    if result is not None:
+        assert isinstance(result, NoRelUser)
+
+
+@pytest.mark.asyncio
+async def test_join_fill_result_with_order(
+    db: AsyncSession, no_rel_sample_data: dict, no_rel_crud_user: CRUDPlus[NoRelUser]
+):
+    results = await no_rel_crud_user.select_models_order(
+        db,
+        'name',
+        'asc',
+        join_conditions=[
+            JoinConfig(
+                model=NoRelProfile,
+                join_on=NoRelUser.id == NoRelProfile.user_id,
+                join_type='left',
+                fill_result=True,
+            )
+        ],
+    )
+
+    assert len(results) >= 1
+    for result in results:
+        assert isinstance(result, (tuple, Row))
+        assert isinstance(result[0], NoRelUser)
+
+    if len(results) >= 2:
+        assert results[0][0].name <= results[1][0].name

@@ -7,3 +7,4 @@ venv/
 dist/
 .pytest_cache/
 .ruff_cache/
+.claude/
