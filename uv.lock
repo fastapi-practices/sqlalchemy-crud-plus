@@ -997,13 +997,15 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "aiosqlite" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "ty" },
+]
+docs = [
     { name = "click" },
     { name = "mkdocs-material" },
     { name = "mkdocstrings", extra = ["python"] },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
     { name = "ruff" },
-    { name = "ty" },
 ]
 lint = [
     { name = "pre-commit" },
@@ -1018,13 +1020,15 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "aiosqlite", specifier = ">=0.21.0" },
+    { name = "pytest", specifier = ">=8.4.0" },
+    { name = "pytest-asyncio", specifier = ">=1.2.0" },
+    { name = "ty", specifier = ">=0.0.1a23" },
+]
+docs = [
     { name = "click", specifier = "==8.2.1" },
     { name = "mkdocs-material", specifier = ">=9.6.22" },
     { name = "mkdocstrings", extras = ["python"], specifier = ">=0.30.0" },
-    { name = "pytest", specifier = ">=8.4.0" },
-    { name = "pytest-asyncio", specifier = ">=1.2.0" },
     { name = "ruff", specifier = ">=0.14.0" },
-    { name = "ty", specifier = ">=0.0.1a23" },
 ]
 lint = [{ name = "pre-commit", specifier = ">=4.3.0" }]
 
