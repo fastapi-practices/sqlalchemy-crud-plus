@@ -37,7 +37,7 @@ jobs:
 
       - run: sudo apt-get install pngquant
       - run: uv sync --group docs
-      - run: mkdocs gh-deploy --force
+      - run: uv run mkdocs gh-deploy --force
 
 env:
   GH_TOKEN: ${{ secrets.GH_TOKEN }}
