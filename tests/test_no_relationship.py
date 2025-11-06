@@ -530,7 +530,10 @@ async def test_join_fill_result_single_model(
     )
 
     if result is not None:
-        assert isinstance(result, NoRelUser)
+        assert isinstance(result, (tuple, Row))
+        assert isinstance(result[0], NoRelUser)
+        if result[1]:
+            assert isinstance(result[1], NoRelProfile)
 
 
 @pytest.mark.asyncio

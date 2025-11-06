@@ -240,7 +240,7 @@ class CRUDPlus(Generic[Model]):
         load_strategies: LoadStrategies | None = None,
         join_conditions: JoinConditions | None = None,
         **kwargs: Any,
-    ) -> Model | None:
+    ) -> Sequence[Row[tuple[Model, ...]] | None] | Model | None:
         """
         Query by primary key(s) with optional relationship loading and joins.
 
@@ -276,8 +276,7 @@ class CRUDPlus(Generic[Model]):
 
         if join_conditions:
             if has_join_fill_result(join_conditions):
-                result = query.first()
-                return result[0] if result else None
+                return query.first()
 
         return query.scalars().first()
 
@@ -289,7 +288,7 @@ class CRUDPlus(Generic[Model]):
         load_strategies: LoadStrategies | None = None,
         join_conditions: JoinConditions | None = None,
         **kwargs: Any,
-    ) -> Model | None:
+    ) -> Sequence[Row[tuple[Model, ...]] | None] | Model | None:
         """
         Query by column with optional relationship loading and joins.
 
@@ -313,8 +312,7 @@ class CRUDPlus(Generic[Model]):
 
         if join_conditions:
             if has_join_fill_result(join_conditions):
-                result = query.first()
-                return result[0] if result else None
+                return query.first()
 
         return query.scalars().first()
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import Alias, Table
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm.util import AliasedClass
 from sqlalchemy.sql.base import ExecutableOption
@@ -56,7 +57,9 @@ JoinType = Literal[
 class JoinConfig(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    model: type[Model] | AliasedClass = Field(description='The target model or aliased class to join with')
+    model: type[Model] | AliasedClass | Alias | Table = Field(
+        description='The target model, aliased class, alias, or table to join with'
+    )
     join_on: Any = Field(description='The join condition expression (e.g., model.id == other_model.id)')
     join_type: JoinType = Field(default='left', description='The type of join to perform')
     fill_result: bool = Field(default=False, description='Whether to populate this model to the query result')
