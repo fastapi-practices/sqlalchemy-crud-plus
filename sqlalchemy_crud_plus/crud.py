@@ -196,7 +196,7 @@ class CRUDPlus(Generic[Model]):
             stmt = stmt.where(*filters)
 
         if join_conditions:
-            stmt = apply_join_conditions(self.model, stmt, join_conditions)
+            stmt = apply_join_conditions(self.model, stmt.select_from(self.model), join_conditions)
 
         query = await session.execute(stmt)
         total_count = query.scalar()
@@ -226,7 +226,7 @@ class CRUDPlus(Generic[Model]):
         stmt = select(self.model).where(*filters).limit(1)
 
         if join_conditions:
-            stmt = apply_join_conditions(self.model, stmt, join_conditions)
+            stmt = apply_join_conditions(self.model, stmt.select_from(self.model), join_conditions)
 
         query = await session.execute(stmt)
         return query.scalars().first() is not None
@@ -265,7 +265,7 @@ class CRUDPlus(Generic[Model]):
             stmt = stmt.options(*load_options)
 
         if join_conditions:
-            stmt = apply_join_conditions(self.model, stmt, join_conditions)
+            stmt = apply_join_conditions(self.model, stmt.select_from(self.model), join_conditions)
 
         if load_strategies:
             rel_options = build_load_strategies(self.model, load_strategies)
@@ -339,7 +339,7 @@ class CRUDPlus(Generic[Model]):
         stmt = select(self.model).where(*filters)
 
         if join_conditions:
-            stmt = apply_join_conditions(self.model, stmt, join_conditions)
+            stmt = apply_join_conditions(self.model, stmt.select_from(self.model), join_conditions)
 
         if load_options:
             stmt = stmt.options(*load_options)
