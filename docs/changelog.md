@@ -1,3 +1,19 @@
+<a id="1.13.1"></a>
+# [1.13.1](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/1.13.1) - 2025-11-07
+
+## What's Changed
+* Fix the return of the query with join by [@wu-clan](https://github.com/wu-clan) in [#75](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/75)
+* Add the select from to join condition by [@wu-clan](https://github.com/wu-clan) in [#76](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/76)
+* Prepare for 1.13.1 release by [@wu-clan](https://github.com/wu-clan) in [#78](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/78)
+* Update the relationship docs structure by [@wu-clan](https://github.com/wu-clan) in [#79](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/79)
+* Update changelog for 1.13.0 by [@wu-clan](https://github.com/wu-clan) in [#77](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/77)
+
+
+**Full Changelog**: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.13.0...1.13.1
+
+[Changes][1.13.1]
+
+
 <a id="1.13.0"></a>
 # [1.13.0](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/1.13.0) - 2025-11-06
 
@@ -237,6 +253,7 @@ CRUD methods have been refactored, check out the documentation for new usage!
 [Changes][0.0.4]
 
 
+[1.13.1]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.13.0...1.13.1
 [1.13.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.12.1...1.13.0
 [1.12.1]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.12.0...1.12.1
 [1.12.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.11.0...1.12.0
