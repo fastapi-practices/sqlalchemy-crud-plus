@@ -286,5 +286,5 @@ recent_users = await user_crud.select_models(
 
 ## 下一步
 
-- [关系查询](../relationships/overview.md) - 学习表关系处理
+- [关系查询](relationship.md) - 学习表关系处理
 - [事务控制](transaction.md) - 掌握事务管理

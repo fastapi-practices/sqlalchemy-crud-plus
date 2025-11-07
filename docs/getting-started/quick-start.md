@@ -376,5 +376,5 @@ if __name__ == "__main__":
 
 - [基础用法](../usage/crud.md) - 详细的 CRUD 操作
 - [过滤条件](../advanced/filter.md) - 过滤操作符详解
-- [关系查询](../relationships/overview.md) - 关系查询详解
+- [关系查询](../advanced/relationship.md) - 关系查询详解
 - [事务控制](../advanced/transaction.md) - 事务管理

@@ -336,6 +336,6 @@ async def bulk_process_with_savepoints(session: AsyncSession, items: list):
 
 ## 下一步
 
-- [关系查询](../relationships/overview.md) - 学习关系查询和 JOIN
+- [关系查询](relationship.md) - 学习关系查询和 JOIN
 - [过滤条件](filter.md) - 高级过滤技术  
 - [API 参考](../api/crud-plus.md) - 完整 API 文档

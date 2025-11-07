@@ -13,7 +13,7 @@ nav:
       - CRUD 操作: usage/crud.md
   - 高级用法:
       - 过滤条件: advanced/filter.md
-      - 关系查询: relationships/overview.md
+      - 关系查询: advanced/relationship.md
       - 事务控制: advanced/transaction.md
   - API 参考: api/crud-plus.md
   - 更新日志: changelog.md
