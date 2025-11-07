@@ -61,6 +61,6 @@ users = await user_crud.select_models(
 - [快速开始](getting-started/quick-start.md) - 基础用法示例
 - [基础 CRUD](usage/crud.md) - 增删改查操作详解
 - [过滤条件](advanced/filter.md) - 查询过滤操作符
-- [关系查询](relationships/overview.md) - 预加载和 JOIN 查询
+- [关系查询](advanced/relationship.md) - 预加载和 JOIN 查询
 - [事务控制](advanced/transaction.md) - 事务管理
 - [API 参考](api/crud-plus.md) - 完整 API 文档

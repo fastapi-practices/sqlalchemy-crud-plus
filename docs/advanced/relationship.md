@@ -8,9 +8,7 @@ SQLAlchemy CRUD Plus 提供强大的关系查询功能，支持 ORM 关系预加
 - **join_conditions** - JOIN 条件控制（支持有无 relationship）
 - **load_options** - 原生 SQLAlchemy 选项
 
-## 两种关联方式
-
-### ORM 关系（有 relationship）
+## ORM 关系（有 relationship）
 
 使用 SQLAlchemy 的 `relationship` 定义关系，适合标准的外键关联。
 
@@ -53,7 +51,7 @@ users = await user_crud.select_models(
 )
 ```
 
-### 纯逻辑关联（无 relationship）
+## 纯逻辑关联（无 relationship）
 
 不定义 `relationship`，在查询时通过 `JoinConfig` 动态关联。适合无外键约束的场景。
 
@@ -324,110 +322,6 @@ users = await user_crud.select_models(
 - **需要关联表数据**：使用 `fill_result=True`
 - **复杂查询/自定义字段**：使用原生 `select()`
 
-#### 获取关联表数据
-
-**重要**：使用 `join_conditions` 的目的是获取多个表的数据，而不只是主表数据。
-
-```python
-from sqlalchemy import select
-
-# 方式1：使用原生 select 获取多表数据
-stmt = select(User, Post).join(
-    Post, User.id == Post.author_id
-)
-result = await session.execute(stmt)
-for user, post in result.all():
-    print(f"{user.name}: {post.title}")
-
-# 方式2：使用 JoinConfig + fill_result
-results = await user_crud.select_models(
-    session,
-    join_conditions=[
-        JoinConfig(
-            model=Post,
-            join_on=User.id == Post.author_id,
-            join_type='left',
-            fill_result=True  # 包含关联表数据
-        )
-    ]
-)
-for user, post in results:
-    print(f"{user.name}: {post.title if post else 'No post'}")
-
-# 方式3：构建字典结果（推荐用于 API 返回）
-stmt = select(User.name, User.email, Post.title, Post.created_at).join(
-    Post, User.id == Post.author_id
-)
-result = await session.execute(stmt)
-data = [
-    {
-        'user_name': row.name,
-        'user_email': row.email,
-        'post_title': row.title,
-        'post_created': row.created_at
-    }
-    for row in result.all()
-]
-```
-
-#### 实际应用示例
-
-```python
-# 查询用户和文章数据
-async def get_users_with_posts(session: AsyncSession):
-    stmt = select(User, Post).join(
-        Post,
-        User.id == Post.author_id,
-        isouter=True
-    ).where(User.is_active == True)
-
-    result = await session.execute(stmt)
-    rows = result.all()
-
-    # 组织数据
-    user_posts = {}
-    for user, post in rows:
-        if user.id not in user_posts:
-            user_posts[user.id] = {
-                'user': user,
-                'posts': []
-            }
-        if post:
-            user_posts[user.id]['posts'].append(post)
-
-    return list(user_posts.values())
-
-
-# 查询多表数据用于 API
-async def get_post_list_api(session: AsyncSession, page: int = 1):
-    stmt = (
-        select(
-            Post.id,
-            Post.title,
-            Post.created_at,
-            User.name.label('author_name'),
-            Category.name.label('category_name')
-        )
-        .join(User, Post.author_id == User.id)
-        .join(Category, Post.category_id == Category.id, isouter=True)
-        .where(Post.is_published == True)
-        .limit(20)
-        .offset((page - 1) * 20)
-    )
-
-    result = await session.execute(stmt)
-    return [
-        {
-            'id': row.id,
-            'title': row.title,
-            'created_at': row.created_at,
-            'author': row.author_name,
-            'category': row.category_name
-        }
-        for row in result.all()
-    ]
-```
-
 ### JOIN 类型说明
 
 | 类型      | 说明              | 使用场景           |
@@ -657,6 +551,6 @@ user = await user_crud.select_model(
 
 ## 相关资源
 
-- [过滤条件](../advanced/filter.md) - 高级过滤技术
-- [事务控制](../advanced/transaction.md) - 事务管理
+- [过滤条件](filter.md) - 高级过滤技术
+- [事务控制](transaction.md) - 事务管理
 - [API 参考](../api/crud-plus.md) - 完整 API 文档

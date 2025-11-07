@@ -339,5 +339,5 @@ async def batch_update_same_data(session: AsyncSession, update_data: dict, **fil
 ## 下一步
 
 - [过滤条件](../advanced/filter.md) - 学习过滤操作符
-- [关系查询](../relationships/overview.md) - 处理表关系
+- [关系查询](../advanced/relationship.md) - 处理表关系
 - [事务控制](../advanced/transaction.md) - 深入事务管理
