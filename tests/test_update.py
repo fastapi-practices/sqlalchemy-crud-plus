@@ -35,8 +35,7 @@ async def test_update_model_with_flush(db: AsyncSession, sample_ins: list[Ins], 
     item = sample_ins[0]
     update_data = UpdateIns(name='flush_update')
 
-    async with db.begin():
-        result = await crud_ins.update_model(db, item.id, update_data, flush=True)
+    result = await crud_ins.update_model(db, item.id, update_data, flush=True)
 
     assert result == 1
 
@@ -114,8 +113,7 @@ async def test_update_model_by_column_with_flush(db: AsyncSession, sample_ins: l
     item = sample_ins[0]
     update_data = UpdateIns(name='flush_column_update')
 
-    async with db.begin():
-        result = await crud_ins.update_model_by_column(db, update_data, flush=True, id=item.id)
+    result = await crud_ins.update_model_by_column(db, update_data, flush=True, id=item.id)
 
     assert result == 1
 
@@ -283,10 +281,9 @@ async def test_bulk_update_models_pk_mode_false_with_flush(db: AsyncSession, cru
 
     update_data = [{'name': 'updated_flush_1'}, {'name': 'updated_flush_2'}]
 
-    async with db.begin():
-        result = await crud_ins.bulk_update_models(
-            db, update_data, pk_mode=False, flush=True, name__like='bulk_update_flush_%'
-        )
+    result = await crud_ins.bulk_update_models(
+        db, update_data, pk_mode=False, flush=True, name__like='bulk_update_flush_%'
+    )
 
     assert result == 2
 

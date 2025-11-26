@@ -2,10 +2,13 @@
 # -*- coding: utf-8 -*-
 import pytest
 
+from sqlalchemy.engine.row import Row
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy_crud_plus import CRUDPlus
+from sqlalchemy_crud_plus.types import JoinConfig
 from tests.models.basic import Ins
+from tests.models.no_relationship import NoRelProfile, NoRelUser
 
 
 @pytest.mark.asyncio
@@ -255,3 +258,81 @@ async def test_exists_with_kwargs(db: AsyncSession, sample_ins: list[Ins], crud_
     exists = await crud_ins.exists(db, is_deleted=False)
 
     assert isinstance(exists, bool)
+
+
+@pytest.mark.asyncio
+async def test_select_model_with_fill_result(db: AsyncSession, no_rel_sample_data: dict):
+    crud_user = CRUDPlus(NoRelUser)
+    user = no_rel_sample_data['users'][0]
+
+    result = await crud_user.select_model(
+        db,
+        user.id,
+        join_conditions=[
+            JoinConfig(
+                model=NoRelProfile,
+                join_on=NoRelUser.id == NoRelProfile.user_id,
+                join_type='left',
+                fill_result=True,
+            )
+        ],
+    )
+
+    assert result is not None
+    assert isinstance(result, (tuple, Row))
+    assert len(result) == 2
+    assert isinstance(result[0], NoRelUser)
+    if result[1]:
+        assert isinstance(result[1], NoRelProfile)
+
+
+@pytest.mark.asyncio
+async def test_select_model_by_column_with_fill_result(db: AsyncSession, no_rel_sample_data: dict):
+    crud_user = CRUDPlus(NoRelUser)
+    user = no_rel_sample_data['users'][0]
+
+    result = await crud_user.select_model_by_column(
+        db,
+        name=user.name,
+        join_conditions=[
+            JoinConfig(
+                model=NoRelProfile,
+                join_on=NoRelUser.id == NoRelProfile.user_id,
+                join_type='left',
+                fill_result=True,
+            )
+        ],
+    )
+
+    assert result is not None
+    assert isinstance(result, (tuple, Row))
+    assert len(result) == 2
+    assert isinstance(result[0], NoRelUser)
+    if result[1]:
+        assert isinstance(result[1], NoRelProfile)
+
+
+@pytest.mark.asyncio
+async def test_select_models_order_with_fill_result(db: AsyncSession, no_rel_sample_data: dict):
+    crud_user = CRUDPlus(NoRelUser)
+
+    results = await crud_user.select_models_order(
+        db,
+        'name',
+        join_conditions=[
+            JoinConfig(
+                model=NoRelProfile,
+                join_on=NoRelUser.id == NoRelProfile.user_id,
+                join_type='left',
+                fill_result=True,
+            )
+        ],
+    )
+
+    assert len(results) >= 1
+    for result in results:
+        assert isinstance(result, (tuple, Row))
+        assert len(result) == 2
+        assert isinstance(result[0], NoRelUser)
+        if result[1]:
+            assert isinstance(result[1], NoRelProfile)

@@ -206,6 +206,13 @@ async def test_filter_mul(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRU
 
 
 @pytest.mark.asyncio
+async def test_filter_mul_with_condition(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
+    results = await crud_ins.select_models(db, id__mul={'value': 2, 'condition': {'gt': 0}})
+
+    assert len(results) >= 0
+
+
+@pytest.mark.asyncio
 async def test_filter_rmul(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
     results = await crud_ins.select_models(db, id__rmul=3)
 

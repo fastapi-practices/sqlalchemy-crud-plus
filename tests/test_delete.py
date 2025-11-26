@@ -33,8 +33,7 @@ async def test_delete_model_by_id_not_found(db: AsyncSession, crud_ins: CRUDPlus
 async def test_delete_model_with_flush(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
     item = sample_ins[1]
 
-    async with db.begin():
-        count = await crud_ins.delete_model(db, item.id, flush=True)
+    count = await crud_ins.delete_model(db, item.id, flush=True)
 
     assert count == 1
 
@@ -211,15 +210,14 @@ async def test_logical_delete_with_filters(db: AsyncSession, sample_ins: list[In
 async def test_logical_delete_with_flush(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
     item = sample_ins[2]
 
-    async with db.begin():
-        count = await crud_ins.delete_model_by_column(
-            db,
-            logical_deletion=True,
-            deleted_flag_column='is_deleted',
-            allow_multiple=False,
-            flush=True,
-            id=item.id,
-        )
+    count = await crud_ins.delete_model_by_column(
+        db,
+        logical_deletion=True,
+        deleted_flag_column='is_deleted',
+        allow_multiple=False,
+        flush=True,
+        id=item.id,
+    )
 
     assert count == 1
 

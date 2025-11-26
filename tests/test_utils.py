@@ -102,13 +102,37 @@ class TestGetColumn:
         assert column.name == 'name'
 
     def test_invalid_column(self):
-        with pytest.raises(ModelColumnError):
+        with pytest.raises(ModelColumnError) as exc_info:
             get_column(Ins, 'nonexistent_column')
+        assert str(exc_info.value)
 
     def test_aliased_model(self):
         aliased_ins = aliased(Ins)
         column = get_column(aliased_ins, 'name')
         assert column is not None
+
+    def test_invalid_column_property(self):
+        from sqlalchemy import ForeignKey
+        from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+        class Base(DeclarativeBase):
+            pass
+
+        class TestModel(Base):
+            __tablename__ = 'test_model'
+            id: Mapped[int] = mapped_column(primary_key=True)
+            name: Mapped[str] = mapped_column()
+
+        class RelatedModel(Base):
+            __tablename__ = 'related_model'
+            id: Mapped[int] = mapped_column(primary_key=True)
+            test_id: Mapped[int] = mapped_column(ForeignKey('test_model.id'))
+
+        TestModel.related = relationship(RelatedModel)
+
+        with pytest.raises(ModelColumnError) as exc_info:
+            get_column(TestModel, 'related')
+        assert str(exc_info.value)
 
 
 class TestParseFilters:
