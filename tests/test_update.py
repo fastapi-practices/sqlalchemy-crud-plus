@@ -35,8 +35,7 @@ async def test_update_model_with_flush(db: AsyncSession, sample_ins: list[Ins], 
     item = sample_ins[0]
     update_data = UpdateIns(name='flush_update')
 
-    async with db.begin():
-        result = await crud_ins.update_model(db, item.id, update_data, flush=True)
+    result = await crud_ins.update_model(db, item.id, update_data, flush=True)
 
     assert result == 1
 
@@ -98,10 +97,15 @@ async def test_update_model_by_column_not_found(db: AsyncSession, crud_ins: CRUD
 async def test_update_model_by_column_allow_multiple(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
     update_data = UpdateIns(name='multiple_update')
 
-    async with db.begin():
-        result = await crud_ins.update_model_by_column(db, update_data, allow_multiple=True, is_deleted=False)
+    before_count = await crud_ins.count(db, is_deleted=False)
+    assert before_count > 0
 
-    assert result >= 0
+    result = await crud_ins.update_model_by_column(db, update_data, allow_multiple=True, commit=True, is_deleted=False)
+
+    assert result == before_count
+
+    updated_records = await crud_ins.select_models(db, name='multiple_update')
+    assert len(updated_records) == before_count
 
 
 @pytest.mark.asyncio
@@ -109,8 +113,7 @@ async def test_update_model_by_column_with_flush(db: AsyncSession, sample_ins: l
     item = sample_ins[0]
     update_data = UpdateIns(name='flush_column_update')
 
-    async with db.begin():
-        result = await crud_ins.update_model_by_column(db, update_data, flush=True, id=item.id)
+    result = await crud_ins.update_model_by_column(db, update_data, flush=True, id=item.id)
 
     assert result == 1
 
@@ -149,9 +152,11 @@ async def test_update_model_by_column_no_filters_error(db: AsyncSession, crud_in
 async def test_update_model_by_column_multiple_results_error(
     db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]
 ):
+    from sqlalchemy_crud_plus.errors import MultipleResultsError
+
     update_data = UpdateIns(name='multiple_error')
 
-    with pytest.raises(Exception):
+    with pytest.raises(MultipleResultsError):
         async with db.begin():
             await crud_ins.update_model_by_column(db, update_data, is_deleted=False)
 
@@ -229,7 +234,6 @@ async def test_bulk_update_models_with_pydantic_schema(db: AsyncSession, crud_in
 
 @pytest.mark.asyncio
 async def test_bulk_update_models_pk_mode_false_no_filters_error(db: AsyncSession, crud_ins: CRUDPlus[Ins]):
-    """测试 bulk_update_models pk_mode=False 时没有过滤条件的错误"""
     update_data = [{'name': 'no_filters'}]
 
     with pytest.raises(ValueError, match='At least one filter condition must be provided'):
@@ -277,10 +281,9 @@ async def test_bulk_update_models_pk_mode_false_with_flush(db: AsyncSession, cru
 
     update_data = [{'name': 'updated_flush_1'}, {'name': 'updated_flush_2'}]
 
-    async with db.begin():
-        result = await crud_ins.bulk_update_models(
-            db, update_data, pk_mode=False, flush=True, name__like='bulk_update_flush_%'
-        )
+    result = await crud_ins.bulk_update_models(
+        db, update_data, pk_mode=False, flush=True, name__like='bulk_update_flush_%'
+    )
 
     assert result == 2
 
