@@ -113,21 +113,23 @@ async def test_filter_like(db: AsyncSession, sample_ins: list[Ins], crud_ins: CR
 async def test_filter_not_like(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
     results = await crud_ins.select_models(db, name__not_like='nonexistent_%')
 
-    assert len(results) >= 0
+    assert len(results) > 0
+    assert all('nonexistent_' not in r.name for r in results)
 
 
 @pytest.mark.asyncio
 async def test_filter_ilike(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
     results = await crud_ins.select_models(db, name__ilike='ITEM_%')
 
-    assert len(results) >= 0
+    assert len(results) > 0
+    assert all(r.name.lower().startswith('item_') for r in results)
 
 
 @pytest.mark.asyncio
 async def test_filter_not_ilike(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
     results = await crud_ins.select_models(db, name__not_ilike='ITEM_%')
 
-    assert len(results) >= 0
+    assert all(not r.name.lower().startswith('item_') for r in results)
 
 
 @pytest.mark.asyncio
@@ -155,23 +157,23 @@ async def test_filter_contains(db: AsyncSession, sample_ins: list[Ins], crud_ins
 async def test_filter_match(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
     try:
         results = await crud_ins.select_models(db, name__match='item')
-        assert len(results) >= 0
-    except Exception:
-        assert True
+        assert isinstance(results, list)
+    except Exception as e:
+        assert 'match' in str(e).lower() or 'not supported' in str(e).lower()
 
 
 @pytest.mark.asyncio
 async def test_filter_concat(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
     results = await crud_ins.select_models(db, name__concat='_test')
 
-    assert len(results) >= 0
+    assert isinstance(results, list)
 
 
 @pytest.mark.asyncio
 async def test_filter_add(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
     results = await crud_ins.select_models(db, id__add=1)
 
-    assert len(results) >= 0
+    assert isinstance(results, list)
 
 
 @pytest.mark.asyncio
@@ -255,7 +257,9 @@ async def test_filter_rmod(db: AsyncSession, sample_ins: list[Ins], crud_ins: CR
 async def test_filter_or_same_field_list_values(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
     results = await crud_ins.select_models(db, __or__={'is_deleted': [True, False]})
 
-    assert len(results) >= 0
+    total_count = await crud_ins.count(db)
+    assert len(results) == total_count
+    assert all(r.is_deleted in [True, False] for r in results)
 
 
 @pytest.mark.asyncio
@@ -264,14 +268,16 @@ async def test_filter_or_different_fields_single_values(
 ):
     results = await crud_ins.select_models(db, __or__={'is_deleted': True, 'id__gt': 5})
 
-    assert len(results) >= 0
+    assert len(results) > 0
+    assert all(r.is_deleted is True or r.id > 5 for r in results)
 
 
 @pytest.mark.asyncio
 async def test_filter_or_with_operators(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
     results = await crud_ins.select_models(db, __or__={'name__like': 'item_%', 'id__lt': 3})
 
-    assert len(results) >= 0
+    assert len(results) > 0
+    assert all('item_' in r.name or r.id < 3 for r in results)
 
 
 @pytest.mark.asyncio
