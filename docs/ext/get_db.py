@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
