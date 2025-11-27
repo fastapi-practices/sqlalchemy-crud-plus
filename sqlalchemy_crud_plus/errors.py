@@ -1,7 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-
 class SQLAlchemyCRUDPlusException(Exception):
     def __init__(self, msg: str) -> None:
         self.msg = msg
