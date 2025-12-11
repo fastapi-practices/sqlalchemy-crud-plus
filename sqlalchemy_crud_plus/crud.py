@@ -70,7 +70,7 @@ class CRUDPlus(Generic[Model]):
     async def create_model(
         self,
         session: AsyncSession,
-        obj: CreateSchema,
+        obj: CreateSchema | dict[str, Any],
         flush: bool = False,
         commit: bool = False,
         **kwargs,
@@ -85,7 +85,7 @@ class CRUDPlus(Generic[Model]):
         :param kwargs: Additional model data not included in the pydantic schema
         :return:
         """
-        obj_data = obj.model_dump()
+        obj_data = obj if isinstance(obj, dict) else obj.model_dump()
         if kwargs:
             obj_data.update(kwargs)
 
@@ -102,7 +102,7 @@ class CRUDPlus(Generic[Model]):
     async def create_models(
         self,
         session: AsyncSession,
-        objs: list[CreateSchema],
+        objs: list[CreateSchema | dict[str, Any]],
         flush: bool = False,
         commit: bool = False,
         **kwargs,
@@ -119,7 +119,7 @@ class CRUDPlus(Generic[Model]):
         """
         ins_list = []
         for obj in objs:
-            obj_data = obj.model_dump()
+            obj_data = obj if isinstance(obj, dict) else obj.model_dump()
             if kwargs:
                 obj_data.update(kwargs)
             ins = self.model(**obj_data)
