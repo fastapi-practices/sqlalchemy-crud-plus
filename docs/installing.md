@@ -8,21 +8,24 @@
 
 ## 安装
 
-```bash
-pip install sqlalchemy-crud-plus
-```
+=== "pip"
 
-### 版本兼容性
+    ```bash
+    pip install sqlalchemy-crud-plus
+    ```
 
-确保 SQLAlchemy 版本为 2.0+：
+=== "uv"
 
-```bash
-pip install --upgrade sqlalchemy>=2.0.0
-```
+    [uv](https://github.com/astral-sh/uv) 是一个极快的 Python 包管理器，推荐使用。
 
-## 下一步
+    安装包：
 
-安装完成后，查看：
+    ```bash
+    uv pip install sqlalchemy-crud-plus
+    ```
 
-- [快速开始](getting-started/quick-start.md) - 5分钟上手指南
-- [基础用法](usage/crud.md) - CRUD 操作详解
+    或者添加到项目依赖：
+
+    ```bash
+    uv add sqlalchemy-crud-plus
+    ```
