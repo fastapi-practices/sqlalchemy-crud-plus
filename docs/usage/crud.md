@@ -11,8 +11,8 @@ SQLAlchemy CRUD Plus 提供完整的 CRUD（创建、读取、更新、删除）
 user_data = UserCreate(name="张三", email="zhangsan@example.com")
 user = await user_crud.create_model(session, user_data)
 
-# 使用字典
-user = await user_crud.create_model(session, {"name": "李四", "email": "lisi@example.com"})
+# 使用 kwargs 传递额外数据
+user = await user_crud.create_model(session, user_data, is_verified=True)
 
 # 立即提交
 user = await user_crud.create_model(session, user_data, commit=True)
@@ -335,9 +335,3 @@ async def batch_update_same_data(session: AsyncSession, update_data: dict, **fil
 4. **复合主键**: 使用元组格式，如 `pk=(1, 2)`
 5. **错误处理**: 查询不存在的记录返回 `None`，删除不存在的记录返回 `0`
 6. **批量操作**: 大量数据操作时优先使用 `bulk_*` 方法
-
-## 下一步
-
-- [过滤条件](../advanced/filter.md) - 学习过滤操作符
-- [关系查询](../advanced/relationship.md) - 处理表关系
-- [事务控制](../advanced/transaction.md) - 深入事务管理

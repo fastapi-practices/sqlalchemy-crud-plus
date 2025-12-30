@@ -4,9 +4,9 @@ SQLAlchemy CRUD Plus 提供强大的关系查询功能，支持 ORM 关系预加
 
 ## 核心参数
 
-- **load_strategies** - 关系数据预加载策略（需要 ORM relationship）
-- **join_conditions** - JOIN 条件控制（支持有无 relationship）
-- **load_options** - 原生 SQLAlchemy 选项
+- `load_strategies` - 关系数据预加载策略（需要 ORM relationship）
+- `join_conditions` - JOIN 条件控制（支持有无 relationship）
+- `load_options` - 原生 SQLAlchemy 选项
 
 ## ORM 关系（有 relationship）
 
@@ -32,7 +32,7 @@ class Post(Base):
     author: Mapped['User'] = relationship(back_populates='posts')
 ```
 
-**查询示例**：
+查询示例：
 
 ```python
 # 预加载关系数据
@@ -70,7 +70,7 @@ class Post(Base):
     author_email: Mapped[str] = mapped_column(String(100), index=True)
 ```
 
-**查询示例**：
+查询示例：
 
 ```python
 from sqlalchemy_crud_plus import JoinConfig
@@ -139,7 +139,7 @@ result = await user_crud.select_models(
 
 #### join_on 参数
 
-**join_on** 定义表之间的关联条件，支持：
+`join_on` 定义表之间的关联条件，支持：
 
 1. 简单等值条件
    ```python
@@ -271,7 +271,7 @@ for result in results:
     print(f"{user.name}: {post.title if post else 'No post'}")
 ```
 
-**多表关联**：
+多表关联：
 
 ```python
 # 关联多个表，都包含在结果中
@@ -298,7 +298,7 @@ for post, user, category in results:
     print(f"{post.title} by {user.name} in {category.name if category else 'Uncategorized'}")
 ```
 
-**fill_result 默认行为**：
+fill_result 默认行为：
 
 ```python
 # fill_result=False (默认) - 只返回主表数据
@@ -316,11 +316,11 @@ users = await user_crud.select_models(
 # users 只包含 User 实例
 ```
 
-**选择正确的使用方式**：
+选择正确的使用方式：
 
-- **只需要主表数据**：使用 `fill_result=False` (默认)
-- **需要关联表数据**：使用 `fill_result=True`
-- **复杂查询/自定义字段**：使用原生 `select()`
+- 只需要主表数据：使用 `fill_result=False` (默认)
+- 需要关联表数据：使用 `fill_result=True`
+- 复杂查询/自定义字段：使用原生 `select()`
 
 ### JOIN 类型说明
 
@@ -328,7 +328,7 @@ users = await user_crud.select_models(
 |---------|-----------------|----------------|
 | `inner` | INNER JOIN      | 只返回两表都匹配的记录    |
 | `left`  | LEFT JOIN       | 返回左表所有记录，右表可为空 |
-| `outer` | FULL OUTER JOIN | 返回两表所有记录       |
+| `full`  | FULL OUTER JOIN | 返回两表所有记录       |
 
 ## load_strategies
 
@@ -509,25 +509,25 @@ users = await user_crud.select_models(
 
 ## 最佳实践
 
-1. **根据场景选择方式**
+1. 根据场景选择方式
     - 有外键 + 标准关系 → 使用 `load_strategies`
     - 无外键或复杂条件 → 使用 `JoinConfig`
 
-2. **关联查询获取多表数据**
+2. 关联查询获取多表数据
     - 使用原生 `select(Model1, Model2).join()` 获取多表数据
     - 构建字典结果用于 API 返回
     - `JoinConfig` 主要用于过滤，不直接返回关联表数据
 
-3. **性能优化**
+3. 性能优化
     - 为关联字段添加索引
     - 预加载避免 N+1 查询
     - 合理选择 JOIN 类型
 
-4. **字段命名**
+4. 字段命名
     - 主键关联：`user_id`（整数）
     - 业务字段关联：`user_email`、`customer_code`（语义化）
 
-5. **错误处理**
+5. 错误处理
     - 检查关联字段是否有索引
     - 验证 JOIN 条件的正确性
     - 处理关联数据为空的情况

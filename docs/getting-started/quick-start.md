@@ -2,12 +2,6 @@
 
 本指南帮助您在 5 分钟内快速上手 SQLAlchemy CRUD Plus。
 
-## 安装
-
-```bash
-pip install sqlalchemy-crud-plus
-```
-
 ## 基础配置
 
 ### 数据库配置
@@ -89,6 +83,10 @@ class PostCreate(BaseModel):
 ```
 
 ## 基本使用
+
+!!! note "关于代码示例"
+以下示例代码片段假设您已经配置好数据库连接和模型定义（参见上方"基础配置"部分），并且在异步函数中使用 `session`
+对象。完整的可运行示例请参见本页底部的"完整示例"部分。
 
 ### 创建 CRUD 实例
 
@@ -180,7 +178,7 @@ await user_crud.delete_model_by_column(
     logical_deletion=True,
     deleted_flag_column='is_deleted',
     allow_multiple=False,
-    pk=1
+    id=1
 )
 ```
 
@@ -303,6 +301,11 @@ class UserCreate(BaseModel):
     email: str
 
 
+class UserUpdate(BaseModel):
+    name: str | None = None
+    email: str | None = None
+
+
 class PostCreate(BaseModel):
     title: str
     content: str
@@ -356,25 +359,11 @@ async def main():
         await session.commit()
         print("更新用户名")
 
-        # 逻辑删除文章
-        await post_crud.delete_model_by_column(
-            session,
-            logical_deletion=True,
-            deleted_flag_column='deleted_at',
-            allow_multiple=False,
-            id=post.id,
-            commit=True
-        )
-        print("逻辑删除文章")
+        # 删除文章
+        await post_crud.delete_model(session, pk=post.id, commit=True)
+        print("删除文章")
 
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
-
-## 下一步
-
-- [基础用法](../usage/crud.md) - 详细的 CRUD 操作
-- [过滤条件](../advanced/filter.md) - 过滤操作符详解
-- [关系查询](../advanced/relationship.md) - 关系查询详解
-- [事务控制](../advanced/transaction.md) - 事务管理

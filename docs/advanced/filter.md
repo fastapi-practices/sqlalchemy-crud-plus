@@ -219,7 +219,7 @@ class UserRole(Base):
 
 ```python
 # 创建
-user_role_data = {"user_id": 1, "role_id": 2}
+user_role_data = UserRoleCreate(user_id=1, role_id=2)
 user_role = await user_role_crud.create_model(session, user_role_data)
 
 # 查询（使用元组）
@@ -283,8 +283,3 @@ recent_users = await user_crud.select_models(
 3. **性能考虑**: 为常用过滤字段创建数据库索引
 4. **OR 查询**: 过多 OR 条件可能影响性能，合理使用
 5. **通配符**: 避免以通配符开头的 LIKE 查询
-
-## 下一步
-
-- [关系查询](relationship.md) - 学习表关系处理
-- [事务控制](transaction.md) - 掌握事务管理

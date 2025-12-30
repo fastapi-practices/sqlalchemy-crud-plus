@@ -4,8 +4,18 @@
 
 ## Download
 
+### pip
+
 ```shell
 pip install sqlalchemy-crud-plus
+```
+
+### uv
+
+```shell
+uv pip install sqlalchemy-crud-plus
+# 或
+uv add sqlalchemy-crud-plus
 ```
 
 ## 文档
@@ -18,4 +28,4 @@ pip install sqlalchemy-crud-plus
 
 ## 赞助
 
-如果此项目能够帮助到你，你可以赞助作者一些咖啡豆表示鼓励：[:coffee: Sponsor :coffee:](https://wu-clan.github.io/sponsor/)
+如果这个项目对你有帮助，欢迎[请作者喝杯咖啡](https://wu-clan.github.io/sponsor/) ☕
