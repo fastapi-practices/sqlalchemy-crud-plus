@@ -204,9 +204,9 @@ async with async_session.begin() as session:
 
 ```python
 async def register_user(
-        session: AsyncSession,
-        user_data: UserCreate,
-        profile_data: ProfileCreate = None
+     session: AsyncSession,
+     user_data: UserCreate,
+     profile_data: ProfileCreate = None
 ):
     """用户注册，包含用户和资料创建"""
     async with session.begin():
@@ -230,9 +230,9 @@ async def register_user(
 
 ```python
 async def process_order(
-        session: AsyncSession,
-        order_data: OrderCreate,
-        order_items: list[OrderItemCreate]
+     session: AsyncSession,
+     order_data: OrderCreate,
+     order_items: list[OrderItemCreate]
 ):
     """处理订单和订单项"""
     async with session.begin():
