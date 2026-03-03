@@ -16,16 +16,6 @@
 
 === "uv"
 
-    [uv](https://github.com/astral-sh/uv) 是一个极快的 Python 包管理器，推荐使用。
-
-    安装包：
-
-    ```bash
-    uv pip install sqlalchemy-crud-plus
-    ```
-
-    或者添加到项目依赖：
-
     ```bash
     uv add sqlalchemy-crud-plus
     ```
