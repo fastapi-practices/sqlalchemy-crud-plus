@@ -24,12 +24,6 @@
 === "uv"
 
     ```bash
-    uv pip install sqlalchemy-crud-plus
-    ```
-
-    或者添加到项目依赖：
-
-    ```bash
     uv add sqlalchemy-crud-plus
     ```
 
