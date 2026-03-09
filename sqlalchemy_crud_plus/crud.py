@@ -70,7 +70,7 @@ class CRUDPlus(Generic[Model]):
     async def create_model(
         self,
         session: AsyncSession,
-        obj: CreateSchema,
+        obj: CreateSchema | dict[str, Any],
         flush: bool = False,
         commit: bool = False,
         **kwargs,
@@ -79,13 +79,13 @@ class CRUDPlus(Generic[Model]):
         Create a new instance of a model.
 
         :param session: The SQLAlchemy async session
-        :param obj: The Pydantic schema containing data to be saved
+        :param obj: A Pydantic schema or dictionary containing the data to be saved
         :param flush: If `True`, flush all object changes to the database
         :param commit: If `True`, commits the transaction immediately
-        :param kwargs: Additional model data not included in the pydantic schema
+        :param kwargs: Additional model data not included in the pydantic schema or dict
         :return:
         """
-        obj_data = obj.model_dump()
+        obj_data = obj if isinstance(obj, dict) else obj.model_dump()
         if kwargs:
             obj_data.update(kwargs)
 
@@ -102,7 +102,7 @@ class CRUDPlus(Generic[Model]):
     async def create_models(
         self,
         session: AsyncSession,
-        objs: list[CreateSchema],
+        objs: list[CreateSchema | dict[str, Any]],
         flush: bool = False,
         commit: bool = False,
         **kwargs,
@@ -111,15 +111,15 @@ class CRUDPlus(Generic[Model]):
         Create new instances of a model.
 
         :param session: The SQLAlchemy async session
-        :param objs: The Pydantic schema list containing data to be saved
+        :param objs: A list of Pydantic schemas or dictionaries containing the data to be saved
         :param flush: If `True`, flush all object changes to the database
         :param commit: If `True`, commits the transaction immediately
-        :param kwargs: Additional model data not included in the pydantic schema
+        :param kwargs: Additional model data not included in the pydantic schema or dict
         :return:
         """
         ins_list = []
         for obj in objs:
-            obj_data = obj.model_dump()
+            obj_data = obj if isinstance(obj, dict) else obj.model_dump()
             if kwargs:
                 obj_data.update(kwargs)
             ins = self.model(**obj_data)

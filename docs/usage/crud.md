@@ -25,7 +25,7 @@ print(f"用户ID: {user.id}")  # 可以立即获取主键
 ### 批量创建
 
 ```python
-# 批量创建
+# 使用 Pydantic 模型批量创建
 users_data = [
     UserCreate(name="用户1", email="user1@example.com"),
     UserCreate(name="用户2", email="user2@example.com"),
@@ -33,12 +33,26 @@ users_data = [
 ]
 users = await user_crud.create_models(session, users_data)
 
-# 使用字典批量创建（高性能方式）
+# 使用字典批量创建
 users_dict = [
     {"name": "用户4", "email": "user4@example.com"},
     {"name": "用户5", "email": "user5@example.com"}
 ]
-users = await user_crud.bulk_create_models(session, users_dict)
+users = await user_crud.create_models(session, users_dict)
+
+# 混合使用 Pydantic 模型和字典
+users_mixed = [
+    UserCreate(name="用户6", email="user6@example.com"),
+    {"name": "用户7", "email": "user7@example.com"},
+]
+users = await user_crud.create_models(session, users_mixed)
+
+# 使用字典批量创建（高性能方式）
+users_bulk = [
+    {"name": "用户8", "email": "user8@example.com"},
+    {"name": "用户9", "email": "user9@example.com"}
+]
+users = await user_crud.bulk_create_models(session, users_bulk)
 ```
 
 ## 查询操作
