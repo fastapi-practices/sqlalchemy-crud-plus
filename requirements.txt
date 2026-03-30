@@ -39,7 +39,7 @@ pydantic==2.12.2
     # via sqlalchemy-crud-plus
 pydantic-core==2.41.4
     # via pydantic
-pygments==2.19.2
+pygments==2.20.0
     # via pytest
 pytest==8.4.2
     # via
