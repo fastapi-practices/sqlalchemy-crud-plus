@@ -159,3 +159,24 @@ async def test_bulk_create_models_with_commit(db: AsyncSession, crud_ins: CRUDPl
     assert len(results) == 2
     assert results[0].name == 'bulk_commit_1'
     assert results[1].name == 'bulk_commit_2'
+
+
+@pytest.mark.asyncio
+async def test_bulk_create_models_fallback_without_executemany_returning(
+    db: AsyncSession, crud_ins: CRUDPlus[Ins], monkeypatch: pytest.MonkeyPatch
+):
+    data = [
+        {'name': 'bulk_fallback_1', 'created_time': datetime.now()},
+        {'name': 'bulk_fallback_2', 'created_time': datetime.now()},
+    ]
+    dialect = db.get_bind().dialect
+    monkeypatch.setattr(dialect, 'insert_executemany_returning', False)
+
+    async with db.begin():
+        results = await crud_ins.bulk_create_models(db, data, is_deleted=True)
+
+    assert results is None
+
+    created = await crud_ins.select_models(db, name__in=['bulk_fallback_1', 'bulk_fallback_2'])
+    assert len(created) == 2
+    assert all(result.is_deleted is True for result in created)
