@@ -142,7 +142,7 @@ class CRUDPlus(Generic[Model]):
         flush: bool = False,
         commit: bool = False,
         **kwargs,
-    ) -> Sequence[Model]:
+    ) -> Sequence[Model] | None:
         """
         Create new instances of a model.
 
@@ -154,7 +154,13 @@ class CRUDPlus(Generic[Model]):
         :param kwargs: Additional model data not included in the dict
         :return:
         """
-        stmt = insert(self.model).values(**kwargs).execution_options(render_nulls=render_nulls).returning(self.model)
+        stmt = insert(self.model).values(**kwargs).execution_options(render_nulls=render_nulls)
+        dialect = session.get_bind().dialect
+        use_returning = getattr(dialect, 'insert_returning', False) and getattr(
+            dialect, 'insert_executemany_returning', False
+        )
+        if use_returning:
+            stmt = stmt.returning(self.model)
         result = await session.execute(stmt, objs)
 
         if flush:
@@ -162,7 +168,10 @@ class CRUDPlus(Generic[Model]):
         if commit:
             await session.commit()
 
-        return result.scalars().all()
+        if use_returning:
+            return result.scalars().all()
+
+        return None
 
     async def count(
         self,
