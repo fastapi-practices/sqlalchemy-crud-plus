@@ -670,7 +670,7 @@ class CRUDPlus(Generic[Model]):
             if total_count > 1:
                 raise MultipleResultsError(f'Only one record is expected to be deleted, found {total_count} records.')
 
-        data = {deleted_flag_column: True}
+        data: dict[str, Any] = {deleted_flag_column: True}
 
         if deleted_at_column in self.model_column_names:
             data[deleted_at_column] = deleted_at_factory

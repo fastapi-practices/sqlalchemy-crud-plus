@@ -26,21 +26,16 @@ RelationshipLoadingStrategyType = Literal[
     # Load
     'defer',
     'load_only',
-    'selectin_polymorphic',
     'undefer',
     'undefer_group',
-    'with_expression',
 ]
 
 # https://docs.sqlalchemy.org/en/20/orm/queryguide/columns.html#column-loading-api
 ColumnLoadingStrategyType = Literal[
     'defer',
-    'deferred',
     'load_only',
-    'query_expression',
     'undefer',
     'undefer_group',
-    'with_expression',
 ]
 
 LoadStrategies = list[str] | dict[str, RelationshipLoadingStrategyType] | dict[str, ColumnLoadingStrategyType]
@@ -55,7 +50,7 @@ JoinType = Literal[
 class JoinConfig(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    model: type[Model] | AliasedClass | Alias | Table = Field(
+    model: type[DeclarativeBase] | AliasedClass | Alias | Table = Field(
         description='The target model, aliased class, alias, or table to join with'
     )
     join_on: Any = Field(description='The join condition expression (e.g., model.id == other_model.id)')

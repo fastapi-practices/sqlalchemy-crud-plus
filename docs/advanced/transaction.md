@@ -194,6 +194,7 @@ async with async_session.begin() as session:
     await user_crud.update_model_by_column(
         session,
         obj={"is_active": True},
+        allow_multiple=True,
         created_at__ge=datetime.now() - timedelta(days=1)
     )
 ```

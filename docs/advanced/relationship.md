@@ -516,7 +516,7 @@ users = await user_crud.select_models(
 2. 关联查询获取多表数据
     - 使用原生 `select(Model1, Model2).join()` 获取多表数据
     - 构建字典结果用于 API 返回
-    - `JoinConfig` 主要用于过滤，不直接返回关联表数据
+    - `JoinConfig` 默认主要用于过滤；如需返回关联表数据，设置 `fill_result=True`
 
 3. 性能优化
     - 为关联字段添加索引

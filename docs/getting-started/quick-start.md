@@ -170,7 +170,7 @@ await user_crud.update_model_by_column(
 await user_crud.delete_model(session, pk=1)
 
 # 条件删除
-await user_crud.delete_model_by_column(session, is_active=False)
+await user_crud.delete_model_by_column(session, allow_multiple=True, is_active=False)
 
 # 逻辑删除（推荐）
 await user_crud.delete_model_by_column(
@@ -241,6 +241,8 @@ users_dict = [
     {"name": "用户3", "email": "user3@example.com"}
 ]
 users = await user_crud.bulk_create_models(session, users_dict)
+if users is None:
+    print("当前数据库已写入数据，但不返回 ORM 实例")
 
 # 批量更新不同数据
 users_update = [
