@@ -88,9 +88,6 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/fastapi-practices/sqlalchemy-crud-plus
       name: GitHub
-    - icon: fontawesome/brands/discord
-      link: https://discord.com/invite/yNN3wTbVAC
-      name: Discord
 
 extra_javascript:
 - https://unpkg.com/mermaid@10.9.0/dist/mermaid.min.js

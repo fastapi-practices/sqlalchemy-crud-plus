@@ -39,6 +39,10 @@ users_dict = [
     {"name": "用户5", "email": "user5@example.com"}
 ]
 users = await user_crud.bulk_create_models(session, users_dict)
+
+# 仅当数据库方言支持 executemany RETURNING 时，users 才会是模型列表
+if users is None:
+    print("记录已插入，但当前方言不返回 ORM 实例")
 ```
 
 ## 查询操作
@@ -323,13 +327,14 @@ async def batch_update_same_data(session: AsyncSession, update_data: dict, **fil
     return await user_crud.update_model_by_column(
         session,
         obj=update_data,
+        allow_multiple=True,
         **filters
     )
 ```
 
 ## 注意事项
 
-1. **主键参数**: 由于 `id` 是 Python 关键字，主键参数使用 `pk`
+1. **主键参数**: 主键参数使用 `pk`，避免与常见字段名 `id` 混淆
 2. **事务管理**: 推荐使用 `async with session.begin()` 自动管理事务
 3. **flush vs commit**: `flush` 用于获取主键，`commit` 用于立即提交
 4. **复合主键**: 使用元组格式，如 `pk=(1, 2)`

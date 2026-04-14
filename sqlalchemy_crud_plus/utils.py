@@ -22,7 +22,6 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.orm.util import AliasedClass
 from sqlalchemy.sql.base import ExecutableOption
-from sqlalchemy.sql.operators import ColumnOperators
 from sqlalchemy.sql.schema import Column
 
 from sqlalchemy_crud_plus.errors import (
@@ -134,7 +133,7 @@ def get_column(model: type[Model] | AliasedClass, field_name: str) -> Column:
     return column
 
 
-def _create_or_filters(column: Column, op: str, value: dict[str, Any]) -> list[ColumnOperators | None]:
+def _create_or_filters(column: Column, op: str, value: dict[str, Any]) -> list[ColumnElement[bool]]:
     """
     Create OR filter expressions.
 
@@ -152,7 +151,7 @@ def _create_or_filters(column: Column, op: str, value: dict[str, Any]) -> list[C
     return or_filters
 
 
-def _create_arithmetic_filters(column: Column, op: str, value: dict[str, Any]) -> list[ColumnOperators | None]:
+def _create_arithmetic_filters(column: Column, op: str, value: dict[str, Any]) -> list[ColumnElement[bool]]:
     """
     Create arithmetic filter expressions.
 
@@ -178,7 +177,7 @@ def _create_arithmetic_filters(column: Column, op: str, value: dict[str, Any]) -
     return arithmetic_filters
 
 
-def _create_and_filters(column: Column, op: str, value: Any) -> list[ColumnElement[Any] | None]:
+def _create_and_filters(column: Column, op: str, value: Any) -> list[ColumnElement[bool]]:
     """
     Create AND filter expressions.
 
