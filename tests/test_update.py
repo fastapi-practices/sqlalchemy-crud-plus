@@ -204,15 +204,36 @@ async def test_bulk_update_models_pk_mode_false(db: AsyncSession, crud_ins: CRUD
     async with db.begin():
         await crud_ins.create_models(db, create_data)
 
+    update_data = [{'name': 'bulk_updated'}]
+
+    async with db.begin():
+        result = await crud_ins.bulk_update_models(db, update_data, pk_mode=False, name__like='filter_test_%')
+
+    assert result == 2
+    updated_items = await crud_ins.select_models(db, name='bulk_updated')
+    assert len(updated_items) == 2
+
+
+@pytest.mark.asyncio
+async def test_bulk_update_models_pk_mode_false_multiple_payloads_error(db: AsyncSession, crud_ins: CRUDPlus[Ins]):
     update_data = [
         {'name': 'bulk_updated_1'},
         {'name': 'bulk_updated_2'},
     ]
 
-    async with db.begin():
-        result = await crud_ins.bulk_update_models(db, update_data, pk_mode=False, is_deleted=False)
+    with pytest.raises(ValueError, match='pk_mode=False supports exactly one update payload'):
+        async with db.begin():
+            await crud_ins.bulk_update_models(db, update_data, pk_mode=False, is_deleted=False)
 
-    assert result == 2
+
+@pytest.mark.asyncio
+async def test_bulk_update_models_pk_mode_false_not_found(db: AsyncSession, crud_ins: CRUDPlus[Ins]):
+    update_data = [{'name': 'bulk_updated'}]
+
+    async with db.begin():
+        result = await crud_ins.bulk_update_models(db, update_data, pk_mode=False, name='nonexistent')
+
+    assert result == 0
 
 
 @pytest.mark.asyncio
@@ -277,7 +298,7 @@ async def test_bulk_update_models_pk_mode_false_with_flush(db: AsyncSession, cru
     async with db.begin():
         await crud_ins.create_models(db, create_data)
 
-    update_data = [{'name': 'updated_flush_1'}, {'name': 'updated_flush_2'}]
+    update_data = [{'name': 'updated_flush'}]
 
     result = await crud_ins.bulk_update_models(
         db, update_data, pk_mode=False, flush=True, name__like='bulk_update_flush_%'
@@ -296,7 +317,7 @@ async def test_bulk_update_models_pk_mode_false_with_commit(db: AsyncSession, cr
     async with db.begin():
         await crud_ins.create_models(db, create_data)
 
-    update_data = [{'name': 'updated_commit_1'}, {'name': 'updated_commit_2'}]
+    update_data = [{'name': 'updated_commit'}]
 
     result = await crud_ins.bulk_update_models(
         db, update_data, pk_mode=False, commit=True, name__like='bulk_update_commit_%'

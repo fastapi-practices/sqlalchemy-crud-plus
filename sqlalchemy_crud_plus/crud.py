@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from datetime import datetime, timezone
-from typing import Any, Generic, Sequence, cast
+from typing import Any, Generic, Sequence, cast, overload
 
 from sqlalchemy import (
     Column,
@@ -53,7 +54,7 @@ class CRUDPlus(Generic[Model]):
         else:
             return list(primary_key)
 
-    def _get_pk_filter(self, pk: Any | list[Any]) -> list[ColumnExpressionArgument[bool]]:
+    def _get_pk_filter(self, pk: Any | Sequence[Any]) -> list[ColumnExpressionArgument[bool]]:
         """
         Get the primary key filter(s).
 
@@ -102,7 +103,7 @@ class CRUDPlus(Generic[Model]):
     async def create_models(
         self,
         session: AsyncSession,
-        objs: list[CreateSchema],
+        objs: Sequence[CreateSchema],
         flush: bool = False,
         commit: bool = False,
         **kwargs,
@@ -137,7 +138,7 @@ class CRUDPlus(Generic[Model]):
     async def bulk_create_models(
         self,
         session: AsyncSession,
-        objs: list[dict[str, Any]],
+        objs: Sequence[dict[str, Any]],
         render_nulls: bool = False,
         flush: bool = False,
         commit: bool = False,
@@ -238,6 +239,30 @@ class CRUDPlus(Generic[Model]):
         query = await session.execute(stmt)
         return query.scalars().first() is not None
 
+    @overload
+    async def select_model(
+        self,
+        session: AsyncSession,
+        pk: Any | Sequence[Any],
+        *whereclause: ColumnExpressionArgument[bool],
+        load_options: LoadOptions | None = None,
+        load_strategies: LoadStrategies | None = None,
+        join_conditions: None = None,
+        **kwargs: Any,
+    ) -> Model | None: ...
+
+    @overload
+    async def select_model(
+        self,
+        session: AsyncSession,
+        pk: Any | Sequence[Any],
+        *whereclause: ColumnExpressionArgument[bool],
+        load_options: LoadOptions | None = None,
+        load_strategies: LoadStrategies | None = None,
+        join_conditions: JoinConditions = ...,
+        **kwargs: Any,
+    ) -> Row[Any] | Model | None: ...
+
     async def select_model(
         self,
         session: AsyncSession,
@@ -247,7 +272,7 @@ class CRUDPlus(Generic[Model]):
         load_strategies: LoadStrategies | None = None,
         join_conditions: JoinConditions | None = None,
         **kwargs: Any,
-    ) -> Sequence[Row[tuple[Model, ...]] | None] | Model | None:
+    ) -> Row[Any] | Model | None:
         """
         Query by primary key(s) with optional relationship loading and joins.
 
@@ -287,6 +312,28 @@ class CRUDPlus(Generic[Model]):
 
         return query.scalars().first()
 
+    @overload
+    async def select_model_by_column(
+        self,
+        session: AsyncSession,
+        *whereclause: ColumnExpressionArgument[bool],
+        load_options: LoadOptions | None = None,
+        load_strategies: LoadStrategies | None = None,
+        join_conditions: None = None,
+        **kwargs: Any,
+    ) -> Model | None: ...
+
+    @overload
+    async def select_model_by_column(
+        self,
+        session: AsyncSession,
+        *whereclause: ColumnExpressionArgument[bool],
+        load_options: LoadOptions | None = None,
+        load_strategies: LoadStrategies | None = None,
+        join_conditions: JoinConditions = ...,
+        **kwargs: Any,
+    ) -> Row[Any] | Model | None: ...
+
     async def select_model_by_column(
         self,
         session: AsyncSession,
@@ -295,7 +342,7 @@ class CRUDPlus(Generic[Model]):
         load_strategies: LoadStrategies | None = None,
         join_conditions: JoinConditions | None = None,
         **kwargs: Any,
-    ) -> Sequence[Row[tuple[Model, ...]] | None] | Model | None:
+    ) -> Row[Any] | Model | None:
         """
         Query by column with optional relationship loading and joins.
 
@@ -390,6 +437,32 @@ class CRUDPlus(Generic[Model]):
         sorted_stmt = apply_sorting(self.model, stmt, sort_columns, sort_orders)
         return sorted_stmt
 
+    @overload
+    async def select_models(
+        self,
+        session: AsyncSession,
+        *whereclause: ColumnExpressionArgument[bool],
+        load_options: LoadOptions | None = None,
+        load_strategies: LoadStrategies | None = None,
+        join_conditions: None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        **kwargs: Any,
+    ) -> Sequence[Model]: ...
+
+    @overload
+    async def select_models(
+        self,
+        session: AsyncSession,
+        *whereclause: ColumnExpressionArgument[bool],
+        load_options: LoadOptions | None = None,
+        load_strategies: LoadStrategies | None = None,
+        join_conditions: JoinConditions = ...,
+        limit: int | None = None,
+        offset: int | None = None,
+        **kwargs: Any,
+    ) -> Sequence[Row[Any] | Model]: ...
+
     async def select_models(
         self,
         session: AsyncSession,
@@ -400,7 +473,7 @@ class CRUDPlus(Generic[Model]):
         limit: int | None = None,
         offset: int | None = None,
         **kwargs: Any,
-    ) -> Sequence[Row[tuple[Model, ...] | Any] | Model]:
+    ) -> Sequence[Row[Any] | Model]:
         """
         Query all rows that match the specified filters with optional relationship loading and joins.
 
@@ -435,6 +508,36 @@ class CRUDPlus(Generic[Model]):
 
         return query.scalars().all()
 
+    @overload
+    async def select_models_order(
+        self,
+        session: AsyncSession,
+        sort_columns: SortColumns,
+        sort_orders: SortOrders = None,
+        *whereclause: ColumnExpressionArgument[bool],
+        load_options: LoadOptions | None = None,
+        load_strategies: LoadStrategies | None = None,
+        join_conditions: None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        **kwargs: Any,
+    ) -> Sequence[Model]: ...
+
+    @overload
+    async def select_models_order(
+        self,
+        session: AsyncSession,
+        sort_columns: SortColumns,
+        sort_orders: SortOrders = None,
+        *whereclause: ColumnExpressionArgument[bool],
+        load_options: LoadOptions | None = None,
+        load_strategies: LoadStrategies | None = None,
+        join_conditions: JoinConditions = ...,
+        limit: int | None = None,
+        offset: int | None = None,
+        **kwargs: Any,
+    ) -> Sequence[Row[Any] | Model]: ...
+
     async def select_models_order(
         self,
         session: AsyncSession,
@@ -447,7 +550,7 @@ class CRUDPlus(Generic[Model]):
         limit: int | None = None,
         offset: int | None = None,
         **kwargs: Any,
-    ) -> Sequence[Row[tuple[Model, ...] | Any] | Model]:
+    ) -> Sequence[Row[Any] | Model]:
         """
         Query all rows that match the specified filters and sort by columns
         with optional relationship loading and joins.
@@ -564,7 +667,7 @@ class CRUDPlus(Generic[Model]):
     async def bulk_update_models(
         self,
         session: AsyncSession,
-        objs: list[UpdateSchema | dict[str, Any]],
+        objs: Sequence[UpdateSchema | dict[str, Any]],
         pk_mode: bool = True,
         flush: bool = False,
         commit: bool = False,
@@ -581,26 +684,38 @@ class CRUDPlus(Generic[Model]):
         :param kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
+        datas = [obj if isinstance(obj, dict) else obj.model_dump(exclude_unset=True) for obj in objs]
+
         if not pk_mode:
             filters = parse_filters(self.model, **kwargs)
 
             if not filters:
                 raise ValueError('At least one filter condition must be provided for update operation')
 
-            datas = [obj if isinstance(obj, dict) else obj.model_dump(exclude_unset=True) for obj in objs]
+            if not datas:
+                return 0
+            if len(datas) > 1:
+                raise ValueError(
+                    'pk_mode=False supports exactly one update payload; use pk_mode=True for per-row updates'
+                )
+
             stmt = update(self.model).where(*filters)
             conn = await session.connection()
-            await conn.execute(stmt, datas)
+            result = await conn.execute(stmt, datas)
+            affected_count = result.rowcount
         else:
-            datas = [obj if isinstance(obj, dict) else obj.model_dump(exclude_unset=True) for obj in objs]
+            if not datas:
+                return 0
+
             await session.execute(update(self.model), datas)
+            affected_count = len(datas)
 
         if flush:
             await session.flush()
         if commit:
             await session.commit()
 
-        return len(datas)
+        return affected_count
 
     async def delete_model(
         self,
@@ -637,7 +752,7 @@ class CRUDPlus(Generic[Model]):
         logical_deletion: bool = False,
         deleted_flag_column: str = 'is_deleted',
         deleted_at_column: str = 'deleted_at',
-        deleted_at_factory: datetime = datetime.now(timezone.utc),
+        deleted_at_factory: datetime | Callable[[], datetime] | None = None,
         flush: bool = False,
         commit: bool = False,
         **kwargs,
@@ -650,7 +765,7 @@ class CRUDPlus(Generic[Model]):
         :param logical_deletion: If `True`, enable logical deletion instead of physical deletion
         :param deleted_flag_column: Column name for logical deletion flag
         :param deleted_at_column: Column name for delete time，automatic judgment
-        :param deleted_at_factory: The delete time column datetime factory function
+        :param deleted_at_factory: The delete time value or factory function
         :param flush: If `True`, flush all object changes to the database
         :param commit: If `True`, commits the transaction immediately
         :param kwargs: Filter expressions using field__operator=value syntax
@@ -673,7 +788,12 @@ class CRUDPlus(Generic[Model]):
         data: dict[str, Any] = {deleted_flag_column: True}
 
         if deleted_at_column in self.model_column_names:
-            data[deleted_at_column] = deleted_at_factory
+            if deleted_at_factory is None:
+                data[deleted_at_column] = datetime.now(timezone.utc)
+            elif isinstance(deleted_at_factory, datetime):
+                data[deleted_at_column] = deleted_at_factory
+            else:
+                data[deleted_at_column] = deleted_at_factory()
 
         stmt = (
             update(self.model).where(*filters).values(**data)

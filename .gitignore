@@ -5,6 +5,7 @@ __pycache__/
 venv/
 .idea/
 dist/
+site/
 .pytest_cache/
 .ruff_cache/
 .claude/

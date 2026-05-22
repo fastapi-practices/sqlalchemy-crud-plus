@@ -1,5 +1,6 @@
 import pytest
 
+from sqlalchemy import inspect
 from sqlalchemy.engine.row import Row
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -46,6 +47,23 @@ async def test_select_model_with_kwargs(db: AsyncSession, sample_ins: list[Ins],
     assert result is not None
     assert result.id == item.id
     assert result.is_deleted is False
+
+
+@pytest.mark.asyncio
+async def test_select_model_with_multiple_load_only_fields(
+    db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]
+):
+    item = sample_ins[0]
+    item_id = item.id
+    item_name = item.name
+    db.expire_all()
+
+    result = await crud_ins.select_model(db, item_id, load_strategies={'id': 'load_only', 'name': 'load_only'})
+
+    assert result is not None
+    assert result.id == item_id
+    assert result.name == item_name
+    assert {'is_deleted', 'created_time', 'updated_time'}.issubset(inspect(result).unloaded)
 
 
 @pytest.mark.asyncio

@@ -1,342 +1,250 @@
-# 基础用法
+# CRUD 操作
 
-SQLAlchemy CRUD Plus 提供完整的 CRUD（创建、读取、更新、删除）操作。
+本页按“创建、查询、更新、删除”的顺序说明常用 API。示例默认已有 `user_crud = CRUDPlus(User)` 和可用的 `AsyncSession`。
 
-## 创建操作
+## 方法速查
 
-### 创建单条记录
+| 场景 | 方法 | 返回值 |
+| --- | --- | --- |
+| 创建单条 | `create_model` | ORM 实例 |
+| 创建多条 | `create_models` | ORM 实例列表 |
+| 高性能批量插入 | `bulk_create_models` | 实例列表或 `None` |
+| 主键查询 | `select_model` | ORM 实例或 `None` |
+| 条件查询单条 | `select_model_by_column` | ORM 实例或 `None` |
+| 条件查询多条 | `select_models` | ORM 实例列表 |
+| 排序查询 | `select_models_order` | ORM 实例列表 |
+| 主键更新 | `update_model` | 影响行数 |
+| 条件更新 | `update_model_by_column` | 影响行数 |
+| 批量更新不同数据 | `bulk_update_models` | 影响行数 |
+| 主键删除 | `delete_model` | 影响行数 |
+| 条件删除 | `delete_model_by_column` | 影响行数 |
+| 统计 / 存在 | `count` / `exists` | `int` / `bool` |
+
+## 创建
 
 ```python
-# 使用 Pydantic 模型
-user_data = UserCreate(name="张三", email="zhangsan@example.com")
-user = await user_crud.create_model(session, user_data)
+# 单条创建。默认不提交事务。
+user = await user_crud.create_model(session, UserCreate(name='张三', email='a@example.com'))
 
-# 使用 kwargs 传递额外数据
-user = await user_crud.create_model(session, user_data, is_verified=True)
-
-# 立即提交
-user = await user_crud.create_model(session, user_data, commit=True)
-
-# 获取主键（不提交事务）
+# 需要立即获得自增主键时使用 flush=True。
 user = await user_crud.create_model(session, user_data, flush=True)
-print(f"用户ID: {user.id}")  # 可以立即获取主键
+print(user.id)
+
+# 独立操作可以直接提交。
+user = await user_crud.create_model(session, user_data, commit=True)
 ```
 
-### 批量创建
+批量创建有两种方式：
 
 ```python
-# 批量创建
-users_data = [
-    UserCreate(name="用户1", email="user1@example.com"),
-    UserCreate(name="用户2", email="user2@example.com"),
-    UserCreate(name="用户3", email="user3@example.com")
-]
-users = await user_crud.create_models(session, users_data)
+# 返回 ORM 实例，适合普通批量创建。
+users = await user_crud.create_models(session, [
+    UserCreate(name='用户1', email='u1@example.com'),
+    UserCreate(name='用户2', email='u2@example.com')
+])
 
-# 使用字典批量创建（高性能方式）
-users_dict = [
-    {"name": "用户4", "email": "user4@example.com"},
-    {"name": "用户5", "email": "user5@example.com"}
-]
-users = await user_crud.bulk_create_models(session, users_dict)
+# 更接近 SQLAlchemy bulk insert，适合大量字典数据。
+users = await user_crud.bulk_create_models(session, [
+    {'name': '用户3', 'email': 'u3@example.com'},
+    {'name': '用户4', 'email': 'u4@example.com'}
+])
 
-# 仅当数据库方言支持 executemany RETURNING 时，users 才会是模型列表
+# 部分数据库方言不支持 executemany RETURNING，此时数据已写入但不返回实例。
 if users is None:
-    print("记录已插入，但当前方言不返回 ORM 实例")
+    print('inserted without returned ORM instances')
 ```
 
-## 查询操作
-
-### 主键查询
+## 查询
 
 ```python
-# 根据主键查询
+# 主键查询。
 user = await user_crud.select_model(session, pk=1)
 
-# 复合主键查询
+# 复合主键使用元组。
 user_role = await user_role_crud.select_model(session, pk=(1, 2))
 
-# 结合条件查询
-user = await user_crud.select_model(
+# 字段查询单条。
+user = await user_crud.select_model_by_column(session, email='a@example.com')
+
+# 条件查询多条 + 分页。
+users = await user_crud.select_models(
+    session,
+    is_active=True,
+    limit=20,
+    offset=0
+)
+```
+
+过滤条件直接写在关键字参数中：
+
+```python
+users = await user_crud.select_models(
+    session,
+    name__like='%张%',
+    age__ge=18,
+    email__endswith='@example.com'
+)
+```
+
+完整过滤操作符见 [过滤条件](../advanced/filter.md)。
+
+## 排序和分页
+
+```python
+# 单字段排序。
+users = await user_crud.select_models_order(
+    session,
+    sort_columns='created_at',
+    sort_orders='desc',
+    limit=20
+)
+
+# 多字段排序。
+users = await user_crud.select_models_order(
+    session,
+    sort_columns=['name', 'created_at'],
+    sort_orders=['asc', 'desc']
+)
+```
+
+## 字段加载控制
+
+字段加载适合列表页或大字段模型。它不会改变返回类型，只会影响 SQL 查询的列。
+
+```python
+# 只加载列表页需要的字段。
+users = await user_crud.select_models(
+    session,
+    load_strategies={
+        'id': 'load_only',
+        'name': 'load_only',
+        'email': 'load_only'
+    }
+)
+
+# 延迟加载大字段。
+users = await user_crud.select_models(
+    session,
+    load_strategies={
+        'bio': 'defer',
+        'extra_data': 'defer'
+    }
+)
+```
+
+!!! warning
+
+    异步场景中访问未加载字段可能触发额外 IO。列表页建议显式使用 `load_only` 或 `defer`，详情页则一次加载需要的字段。
+
+## 更新
+
+```python
+# 主键更新，obj 支持 dict 或 Pydantic 模型。
+count = await user_crud.update_model(
     session,
     pk=1,
-    is_active=True  # 额外条件
-)
-```
-
-### 条件查询
-
-```python
-# 根据字段查询单条记录
-user = await user_crud.select_model_by_column(session, email="zhangsan@example.com")
-
-# 查询多条记录
-users = await user_crud.select_models(session, is_active=True)
-
-# 分页查询
-users = await user_crud.select_models(session, limit=10, offset=20)
-```
-
-### 排序查询
-
-```python
-# 单列排序
-users = await user_crud.select_models_order(
-    session,
-    sort_columns="created_at",
-    sort_orders="desc"
+    obj={'name': '新名称'}
 )
 
-# 多列排序
-users = await user_crud.select_models_order(
+# 条件更新单条。默认不允许命中多条。
+count = await user_crud.update_model_by_column(
     session,
-    sort_columns=["name", "created_at"],
-    sort_orders=["asc", "desc"]
+    obj={'is_active': False},
+    email='a@example.com'
 )
 
-# 结合条件和分页
-users = await user_crud.select_models_order(
+# 条件更新多条，需要 allow_multiple=True。
+count = await user_crud.update_model_by_column(
     session,
-    sort_columns="created_at",
-    sort_orders="desc",
-    is_active=True,
-    limit=10
-)
-```
-
-### 统计查询
-
-```python
-# 统计总数
-total = await user_crud.count(session)
-
-# 条件统计
-active_count = await user_crud.count(session, is_active=True)
-
-# 检查是否存在
-exists = await user_crud.exists(session, email="test@example.com")
-if not exists:
-    # 不存在则创建
-    user = await user_crud.create_model(session, user_data)
-```
-
-## 更新操作
-
-### 主键更新
-
-```python
-# 使用字典更新
-await user_crud.update_model(session, pk=1, obj={"name": "新名称"})
-
-# 使用 Pydantic 模型更新
-user_update = UserUpdate(name="新名称", email="new@example.com")
-await user_crud.update_model(session, pk=1, obj=user_update)
-
-# 立即提交
-await user_crud.update_model(session, pk=1, obj={"name": "新名称"}, commit=True)
-
-# 复合主键更新
-await user_role_crud.update_model(
-    session,
-    pk=(1, 2),
-    obj={"assigned_at": datetime.now()}
-)
-```
-
-### 批量更新（不同数据）
-
-```python
-# 使用 bulk_update_models 批量更新不同的数据
-users_update = [
-    {"id": 1, "name": "张三三", "email": "zhangsan_new@example.com"},
-    {"id": 2, "name": "李四四", "email": "lisi_new@example.com"}
-]
-await user_crud.bulk_update_models(session, users_update)
-```
-
-### 条件更新（相同数据）
-
-```python
-# 根据条件更新单条记录
-await user_crud.update_model_by_column(
-    session,
-    obj={"is_active": False},
-    email="user@example.com"
-)
-
-# 批量更新相同数据
-await user_crud.update_model_by_column(
-    session,
-    obj={"last_login": datetime.now()},
+    obj={'is_active': False},
     allow_multiple=True,
-    is_active=True
+    created_at__lt='2024-01-01'
 )
 ```
 
-## 删除操作
-
-### 主键删除
+批量更新不同记录时，默认按主键匹配：
 
 ```python
-# 根据主键删除
-deleted_count = await user_crud.delete_model(session, pk=1)
-
-# 复合主键删除
-deleted_count = await user_role_crud.delete_model(session, pk=(1, 2))
-
-# 立即提交
-await user_crud.delete_model(session, pk=1, commit=True)
+count = await user_crud.bulk_update_models(session, [
+    {'id': 1, 'name': '张三'},
+    {'id': 2, 'name': '李四'}
+])
 ```
 
-### 条件删除
+如果要用过滤条件更新相同数据，优先使用 `update_model_by_column`。`bulk_update_models(pk_mode=False)` 只接受一个更新 payload，并返回实际影响行数：
 
 ```python
-# 根据条件删除
-deleted_count = await user_crud.delete_model_by_column(
+count = await user_crud.bulk_update_models(
     session,
-    name='张三'
+    [{'is_active': False}],
+    pk_mode=False,
+    last_login__lt='2024-01-01'
 )
+```
 
-# 批量删除
-deleted_count = await user_crud.delete_model_by_column(
+## 删除
+
+```python
+# 主键删除。
+count = await user_crud.delete_model(session, pk=1)
+
+# 复合主键删除。
+count = await user_role_crud.delete_model(session, pk=(1, 2))
+
+# 条件删除。默认只允许命中一条。
+count = await user_crud.delete_model_by_column(session, email='a@example.com')
+
+# 删除多条需要 allow_multiple=True。
+count = await user_crud.delete_model_by_column(
     session,
     allow_multiple=True,
-    created_at__lt=datetime.now() - timedelta(days=30)
+    is_active=False
 )
+```
 
-# 逻辑删除（软删除）
-deleted_count = await user_crud.delete_model_by_column(
+逻辑删除会把标记字段设为 `True`。如果模型包含删除时间字段，也会写入当前时间。
+
+```python
+count = await user_crud.delete_model_by_column(
     session,
-    logical_deletion=True,  # 启用逻辑删除
-    allow_multiple=False,
+    logical_deletion=True,
+    deleted_flag_column='is_deleted',
+    deleted_at_column='deleted_at',
     id=1
 )
 ```
 
-## 事务控制
-
-### 自动事务管理
+## 统计和存在性
 
 ```python
-# 推荐的事务模式
-async with async_session.begin() as session:
-    # 所有操作在同一事务中
-    user = await user_crud.create_model(session, user_data)
-    profile = await profile_crud.create_model(session, profile_data)
-    # 自动提交或回滚
+total = await user_crud.count(session)
+active_total = await user_crud.count(session, is_active=True)
+
+exists = await user_crud.exists(session, email='a@example.com')
+if not exists:
+    await user_crud.create_model(session, user_data)
 ```
 
-### 使用 flush 和 commit
+## 构建原生 Select
+
+需要继续追加 SQLAlchemy 原生条件时，可以先构建 `Select`。
 
 ```python
-async with async_session() as session:
-    # 创建用户并立即获取主键
-    user = await user_crud.create_model(session, user_data, flush=True)
-
-    # 使用获取到的主键创建关联记录
-    profile_data.user_id = user.id
-    profile = await profile_crud.create_model(session, profile_data)
-
-    # 手动提交
-    await session.commit()
-```
-
-## 实用示例
-
-### 分页查询实现
-
-```python
-async def get_users_paginated(
-        session: AsyncSession,
-        page: int = 1,
-        page_size: int = 20,
-        **filters
-):
-    offset = (page - 1) * page_size
-
-    # 查询数据
-    users = await user_crud.select_models(
-        session,
-        **filters,
-        limit=page_size,
-        offset=offset
-    )
-
-    # 统计总数
-    total = await user_crud.count(session, **filters)
-
-    return {
-        'items': users,
-        'total': total,
-        'page': page,
-        'page_size': page_size,
-        'total_pages': (total + page_size - 1) // page_size
-    }
-```
-
-### 安全的查询操作
-
-```python
-async def get_user_safely(session: AsyncSession, user_id: int):
-    """安全获取用户，处理不存在的情况"""
-    user = await user_crud.select_model(session, pk=user_id)
-    if not user:
-        raise ValueError(f"用户 {user_id} 不存在")
-    return user
-
-
-async def get_or_create_user(session: AsyncSession, email: str, name: str):
-    """获取用户，不存在则创建"""
-    user = await user_crud.select_model_by_column(session, email=email)
-    if not user:
-        user_data = UserCreate(name=name, email=email)
-        user = await user_crud.create_model(session, user_data)
-    return user
-```
-
-### 查询构建方法
-
-```python
-# 使用 select 方法构建查询
 stmt = await user_crud.select(
-    User.is_active == True,
-    load_strategies=['posts'],
+    User.is_active.is_(True),
     name__like='%张%'
 )
 
-# 使用 select_order 方法构建排序查询  
 stmt = await user_crud.select_order(
-    sort_columns=['name', 'created_at'],
-    sort_orders=['asc', 'desc'],
+    sort_columns='created_at',
+    sort_orders='desc',
     is_active=True
 )
 ```
 
-### 批量操作示例
+## 事务建议
 
-```python
-async def batch_update_users(session: AsyncSession, user_updates: list[dict]):
-    """批量更新用户（使用高性能批量更新）"""
-    # 方式1：批量更新不同数据
-    return await user_crud.bulk_update_models(session, user_updates)
-
-
-async def batch_update_same_data(session: AsyncSession, update_data: dict, **filters):
-    """批量更新相同数据"""
-    # 方式2：条件更新相同数据
-    return await user_crud.update_model_by_column(
-        session,
-        obj=update_data,
-        allow_multiple=True,
-        **filters
-    )
-```
-
-## 注意事项
-
-1. **主键参数**: 主键参数使用 `pk`，避免与常见字段名 `id` 混淆
-2. **事务管理**: 推荐使用 `async with session.begin()` 自动管理事务
-3. **flush vs commit**: `flush` 用于获取主键，`commit` 用于立即提交
-4. **复合主键**: 使用元组格式，如 `pk=(1, 2)`
-5. **错误处理**: 查询不存在的记录返回 `None`，删除不存在的记录返回 `0`
-6. **批量操作**: 大量数据操作时优先使用 `bulk_*` 方法
+- 多个操作组成一个业务动作时，使用 `async with async_session.begin()`。
+- 只需要拿到主键时用 `flush=True`，不要提前提交。
+- 独立的单个操作可以用 `commit=True`。
+- 查询不存在返回 `None`，更新或删除不存在返回 `0`。

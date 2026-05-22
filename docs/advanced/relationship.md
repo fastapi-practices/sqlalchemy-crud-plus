@@ -1,400 +1,146 @@
 # 关系查询
 
-SQLAlchemy CRUD Plus 提供强大的关系查询功能，支持 ORM 关系预加载和动态 JOIN 查询。
+关系查询主要解决三件事：预加载 relationship、动态 JOIN、控制查询字段。先选对参数，再写查询。
 
-## 核心参数
+## 参数怎么选
 
-- `load_strategies` - 关系数据预加载策略（需要 ORM relationship）
-- `join_conditions` - JOIN 条件控制（支持有无 relationship）
-- `load_options` - 原生 SQLAlchemy 选项
+| 需求 | 参数 | 说明 |
+| --- | --- | --- |
+| 避免 N+1，提前加载 relationship | `load_strategies` | 返回主模型实例 |
+| JOIN 过滤或按关联表条件查询 | `join_conditions` | 默认仍返回主模型实例 |
+| JOIN 后同时返回关联表数据 | `JoinConfig(fill_result=True)` | 返回 `Row` |
+| SQLAlchemy 原生加载选项 | `load_options` | 适合嵌套加载或复杂字段控制 |
+| 只查部分字段 / 延迟大字段 | `load_strategies` 或 `load_options` | 支持 `load_only`、`defer`、`undefer` |
 
-## ORM 关系（有 relationship）
+## 预加载 relationship
 
-使用 SQLAlchemy 的 `relationship` 定义关系，适合标准的外键关联。
+模型中已经定义 `relationship` 时，最常用的是 `load_strategies`。
 
 ```python
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class User(Base):
-    __tablename__ = 'user'
+    __tablename__ = 'users'
+
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str]
+    name: Mapped[str] = mapped_column(String(50))
     posts: Mapped[list['Post']] = relationship(back_populates='author')
 
 
 class Post(Base):
-    __tablename__ = 'post'
+    __tablename__ = 'posts'
+
     id: Mapped[int] = mapped_column(primary_key=True)
-    title: Mapped[str]
-    author_id: Mapped[int] = mapped_column(ForeignKey('user.id'))
-    author: Mapped['User'] = relationship(back_populates='posts')
+    title: Mapped[str] = mapped_column(String(200))
+    author_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    author: Mapped[User] = relationship(back_populates='posts')
 ```
 
-查询示例：
-
 ```python
-# 预加载关系数据
-user = await user_crud.select_model(
-    session,
-    pk=1,
-    load_strategies=['posts', 'profile']
-)
-print(user.posts)  # 直接访问关系
-
-# JOIN 查询（用于过滤）
+# 列表格式默认使用 selectinload。
 users = await user_crud.select_models(
     session,
-    join_conditions=['posts'],  # 只查询有文章的用户
-    is_active=True
-)
-```
-
-## 纯逻辑关联（无 relationship）
-
-不定义 `relationship`，在查询时通过 `JoinConfig` 动态关联。适合无外键约束的场景。
-
-```python
-class User(Base):
-    __tablename__ = 'user'
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str]
-    email: Mapped[str] = mapped_column(String(100), index=True)
-
-
-class Post(Base):
-    __tablename__ = 'post'
-    id: Mapped[int] = mapped_column(primary_key=True)
-    title: Mapped[str]
-    author_email: Mapped[str] = mapped_column(String(100), index=True)
-```
-
-查询示例：
-
-```python
-from sqlalchemy_crud_plus import JoinConfig
-
-# 使用 JoinConfig 动态关联
-users = await user_crud.select_models(
-    session,
-    join_conditions=[
-        JoinConfig(
-            model=Post,
-            join_on=User.email == Post.author_email,
-            join_type='inner'
-        )
-    ]
-)
-```
-
-## join_conditions
-
-`join_conditions` 用于关联查询多表数据，支持三种格式
-
-### 列表格式（有 relationship）
-
-```python
-# 使用关系名称
-users = await user_crud.select_models(
-    session,
-    join_conditions=['posts', 'profile']
-)
-```
-
-### 字典格式（有 relationship）
-
-```python
-# 指定 JOIN 类型
-users = await user_crud.select_models(
-    session,
-    join_conditions={
-        'posts': 'inner',  # INNER JOIN
-        'profile': 'left'  # LEFT JOIN
-    }
-)
-```
-
-### JoinConfig（无 relationship 或复杂条件）
-
-这是最灵活的方式，支持自定义 JOIN 条件。
-
-#### 基础用法
-
-```python
-from sqlalchemy_crud_plus import JoinConfig
-
-# 简单关联
-result = await user_crud.select_models(
-    session,
-    join_conditions=[
-        JoinConfig(
-            model=Post,
-            join_on=User.id == Post.author_id,
-            join_type='inner'
-        )
-    ]
-)
-```
-
-#### join_on 参数
-
-`join_on` 定义表之间的关联条件，支持：
-
-1. 简单等值条件
-   ```python
-   JoinConfig(
-       model=Post,
-       join_on=User.id == Post.author_id,
-       join_type='left'
-   )
-   ```
-
-2. 复合条件
-   ```python
-   from sqlalchemy import and_, or_
-   
-   JoinConfig(
-       model=Post,
-       join_on=and_(
-           User.id == Post.author_id,
-           Post.is_published == True,
-           Post.created_at >= datetime(2024, 1, 1)
-       ),
-       join_type='inner'
-   )
-   ```
-
-3. 多种条件组合
-   ```python
-   JoinConfig(
-       model=Post,
-       join_on=and_(
-           User.id == Post.author_id,
-           or_(
-               Post.status == 'published',
-               Post.status == 'featured'
-           ),
-           Post.view_count > 100
-       ),
-       join_type='left'
-   )
-   ```
-
-4. 使用函数
-   ```python
-   from sqlalchemy import func
-   
-   JoinConfig(
-       model=Post,
-       join_on=and_(
-           User.id == Post.author_id,
-           func.date(Post.created_at) == func.current_date()
-       ),
-       join_type='inner'
-   )
-   ```
-
-5. 非主键关联
-   ```python
-   # 通过 email 关联
-   JoinConfig(
-       model=Profile,
-       join_on=User.email == Profile.user_email,
-       join_type='left'
-   )
-   
-   # 通过业务编号关联
-   JoinConfig(
-       model=Order,
-       join_on=Customer.customer_code == Order.customer_code,
-       join_type='inner'
-   )
-   ```
-
-6. 范围条件
-   ```python
-   # 查询符合折扣区间的订单
-   JoinConfig(
-       model=Discount,
-       join_on=and_(
-           Order.total_amount >= Discount.min_amount,
-           Order.total_amount <= Discount.max_amount,
-           Discount.is_active == True
-       ),
-       join_type='left'
-   )
-   ```
-
-#### 多表关联
-
-```python
-# 关联多个表
-posts = await post_crud.select_models(
-    session,
-    join_conditions=[
-        JoinConfig(
-            model=User,
-            join_on=Post.author_id == User.id,
-            join_type='inner'
-        ),
-        JoinConfig(
-            model=Category,
-            join_on=Post.category_id == Category.id,
-            join_type='left'
-        )
-    ]
-)
-```
-
-#### fill_result 参数
-
-当设置 `fill_result=True` 时，查询结果会包含关联表的数据。
-
-```python
-# 基础用法
-results = await user_crud.select_models(
-    session,
-    join_conditions=[
-        JoinConfig(
-            model=Post,
-            join_on=User.id == Post.author_id,
-            join_type='left',
-            fill_result=True  # 包含关联表数据
-        )
-    ]
+    load_strategies=['posts']
 )
 
-# 当 fill_result=True 时，results 是 Row 对象（行为类似元组）
-for result in results:
-    user, post = result  # (User, Post)
-    print(f"{user.name}: {post.title if post else 'No post'}")
-```
-
-多表关联：
-
-```python
-# 关联多个表，都包含在结果中
-results = await post_crud.select_models(
-    session,
-    join_conditions=[
-        JoinConfig(
-            model=User,
-            join_on=Post.author_id == User.id,
-            join_type='inner',
-            fill_result=True
-        ),
-        JoinConfig(
-            model=Category,
-            join_on=Post.category_id == Category.id,
-            join_type='left',
-            fill_result=True
-        )
-    ]
-)
-
-# 结果是三元组 (Post, User, Category) - Row 对象
-for post, user, category in results:
-    print(f"{post.title} by {user.name} in {category.name if category else 'Uncategorized'}")
-```
-
-fill_result 默认行为：
-
-```python
-# fill_result=False (默认) - 只返回主表数据
-users = await user_crud.select_models(
-    session,
-    join_conditions=[
-        JoinConfig(
-            model=Post,
-            join_on=User.id == Post.author_id,
-            join_type='left',
-            fill_result=False  # 默认值
-        )
-    ]
-)
-# users 只包含 User 实例
-```
-
-选择正确的使用方式：
-
-- 只需要主表数据：使用 `fill_result=False` (默认)
-- 需要关联表数据：使用 `fill_result=True`
-- 复杂查询/自定义字段：使用原生 `select()`
-
-### JOIN 类型说明
-
-| 类型      | 说明              | 使用场景           |
-|---------|-----------------|----------------|
-| `inner` | INNER JOIN      | 只返回两表都匹配的记录    |
-| `left`  | LEFT JOIN       | 返回左表所有记录，右表可为空 |
-| `full`  | FULL OUTER JOIN | 返回两表所有记录       |
-
-## load_strategies
-
-!!! note
-
-    仅用于有 relationship 的模型，预加载关系数据以避免 N+1 查询
-
-### 列表格式（使用默认策略）
-
-```python
-user = await user_crud.select_model(
-    session,
-    pk=1,
-    load_strategies=['posts', 'profile']
-)
-```
-
-### 字典格式（指定策略）
-
-```python
+# 字典格式可以指定策略。
 user = await user_crud.select_model(
     session,
     pk=1,
     load_strategies={
-        'posts': 'selectinload',
-        'profile': 'joinedload',
-        'roles': 'subqueryload'
+        'posts': 'selectinload'
     }
 )
 ```
 
-### 避免 N+1 查询
+常用策略：
+
+| 策略 | 适合场景 |
+| --- | --- |
+| `selectinload` | 一对多、多对多，通常首选 |
+| `joinedload` | 一对一或多对一，希望一次 JOIN 查出 |
+| `subqueryload` | 某些复杂集合加载场景 |
+| `noload` | 明确不加载关系 |
+| `raiseload` | 防止意外懒加载 |
+
+## 字段加载控制
+
+字段加载策略用于减少 SELECT 字段或延迟大字段。
 
 ```python
-# 错误：N+1 查询
-users = await user_crud.select_models(session, limit=10)
-for user in users:
-    print(len(user.posts))  # 每次都触发查询
-
-# 正确：预加载
+# 只加载 id 和 name。主键会自动保留。
 users = await user_crud.select_models(
     session,
-    load_strategies=['posts'],
-    limit=10
+    load_strategies={
+        'id': 'load_only',
+        'name': 'load_only'
+    },
+    limit=20
 )
-for user in users:
-    print(len(user.posts))  # 无额外查询
+
+# 延迟加载大字段。
+users = await user_crud.select_models(
+    session,
+    load_strategies={
+        'content': 'defer',
+        'extra_data': 'defer'
+    }
+)
+
+# 恢复加载模型中默认 deferred 的字段。
+user = await user_crud.select_model(
+    session,
+    pk=1,
+    load_strategies={
+        'profile_summary': 'undefer'
+    }
+)
 ```
 
-## 组合使用
+!!! warning
 
-### JOIN 过滤 + 预加载数据
+    异步 ORM 中访问未加载字段可能触发额外 SQL。推荐在查询时一次声明需要的字段。
+
+## JOIN 过滤
+
+`join_conditions` 用来把关联表加入查询。默认返回主模型实例，适合“按关联条件筛选主表”的场景。
 
 ```python
-# 查询有文章的用户，并预加载其数据
+# 使用 relationship 名称 JOIN。
 users = await user_crud.select_models(
     session,
-    join_conditions=['posts'],  # 过滤：只要有文章的用户
-    load_strategies=['posts', 'profile'],  # 预加载数据
+    join_conditions=['posts'],
     is_active=True
 )
+
+# 指定 JOIN 类型。
+users = await user_crud.select_models(
+    session,
+    join_conditions={
+        'posts': 'inner',
+        'profile': 'left'
+    }
+)
 ```
 
-### 复杂组合
+JOIN 类型：
+
+| 类型 | 说明 |
+| --- | --- |
+| `inner` | 只返回两边都匹配的数据 |
+| `left` | 保留主表数据，关联表可为空 |
+| `full` | FULL OUTER JOIN，取决于数据库支持 |
+
+## 自定义 JOIN：JoinConfig
+
+没有 relationship、没有外键，或 JOIN 条件较复杂时，使用 `JoinConfig`。
 
 ```python
+from sqlalchemy import and_
+from sqlalchemy_crud_plus import JoinConfig
+
 users = await user_crud.select_models(
     session,
     join_conditions=[
@@ -402,144 +148,44 @@ users = await user_crud.select_models(
             model=Post,
             join_on=and_(
                 User.id == Post.author_id,
-                Post.view_count > 100
+                Post.status == 'published'
             ),
             join_type='inner'
         )
-    ],
-    load_strategies={
-        'posts': 'selectinload',
-        'profile': 'joinedload'
-    },
-    is_active=True,
-    name__like='%admin%',
-    limit=20
-)
-```
-
-## 实际应用示例
-
-### 用户详情页面
-
-```python
-async def get_user_detail(session: AsyncSession, user_id: int):
-    return await user_crud.select_model(
-        session,
-        pk=user_id,
-        load_strategies={
-            'posts': 'selectinload',
-            'profile': 'joinedload',
-            'roles': 'selectinload'
-        }
-    )
-```
-
-### 文章列表（多表数据）
-
-```python
-async def get_posts_with_details(session: AsyncSession):
-    stmt = (
-        select(Post, User, Category)
-        .join(User, Post.author_id == User.id)
-        .join(Category, Post.category_id == Category.id, isouter=True)
-        .where(Post.is_published == True)
-    )
-
-    result = await session.execute(stmt)
-    return [
-        {
-            'post': post,
-            'author': user,
-            'category': category
-        }
-        for post, user, category in result.all()
     ]
-```
-
-### 统计查询
-
-```python
-async def get_active_authors(session: AsyncSession):
-    # 查询有已发布文章的作者
-    authors = await user_crud.select_models(
-        session,
-        join_conditions=[
-            JoinConfig(
-                model=Post,
-                join_on=and_(
-                    User.id == Post.author_id,
-                    Post.is_published == True
-                ),
-                join_type='inner'
-            )
-        ],
-        is_active=True
-    )
-    return authors
-```
-
-## 性能优化
-
-### 索引优化
-
-```python
-# 为关联字段添加索引
-class Post(Base):
-    __tablename__ = 'post'
-    id: Mapped[int] = mapped_column(primary_key=True)
-    author_id: Mapped[int] = mapped_column(index=True)  # 添加索引
-    author_email: Mapped[str] = mapped_column(String(100), index=True)  # 添加索引
-```
-
-### 选择合适的 JOIN 类型
-
-```python
-# INNER JOIN - 只要匹配的
-users = await user_crud.select_models(
-    session,
-    join_conditions={'posts': 'inner'}  # 只返回有文章的用户
-)
-
-# LEFT JOIN - 保留主表所有记录
-users = await user_crud.select_models(
-    session,
-    join_conditions={'posts': 'left'}  # 返回所有用户，包括没文章的
 )
 ```
 
-## 最佳实践
-
-1. 根据场景选择方式
-    - 有外键 + 标准关系 → 使用 `load_strategies`
-    - 无外键或复杂条件 → 使用 `JoinConfig`
-
-2. 关联查询获取多表数据
-    - 使用原生 `select(Model1, Model2).join()` 获取多表数据
-    - 构建字典结果用于 API 返回
-    - `JoinConfig` 默认主要用于过滤；如需返回关联表数据，设置 `fill_result=True`
-
-3. 性能优化
-    - 为关联字段添加索引
-    - 预加载避免 N+1 查询
-    - 合理选择 JOIN 类型
-
-4. 字段命名
-    - 主键关联：`user_id`（整数）
-    - 业务字段关联：`user_email`、`customer_code`（语义化）
-
-5. 错误处理
-    - 检查关联字段是否有索引
-    - 验证 JOIN 条件的正确性
-    - 处理关联数据为空的情况
-
-## load_options
-
-使用原生 SQLAlchemy 选项进行精确控制：
+如果只需要主表数据，保持默认 `fill_result=False` 即可。需要同时拿到关联表数据时，设置 `fill_result=True`：
 
 ```python
-from sqlalchemy.orm import selectinload, joinedload
+rows = await user_crud.select_models(
+    session,
+    join_conditions=[
+        JoinConfig(
+            model=Post,
+            join_on=User.id == Post.author_id,
+            join_type='left',
+            fill_result=True
+        )
+    ]
+)
 
-# 嵌套关系
+for user, post in rows:
+    print(user.name, post.title if post else None)
+```
+
+!!! note
+
+    `fill_result=True` 会让返回值变成 SQLAlchemy `Row`，不再是单纯的主模型实例列表。
+
+## 原生 load_options
+
+当 `load_strategies` 不够表达复杂加载需求时，可以直接传 SQLAlchemy 原生选项。
+
+```python
+from sqlalchemy.orm import defer, load_only, selectinload
+
 user = await user_crud.select_model(
     session,
     pk=1,
@@ -547,10 +193,43 @@ user = await user_crud.select_model(
         selectinload(User.posts).selectinload(Post.comments)
     ]
 )
+
+users = await user_crud.select_models(
+    session,
+    load_options=[
+        load_only(User.id, User.name, User.email),
+        defer(User.bio)
+    ]
+)
 ```
 
-## 相关资源
+## 常见组合
 
-- [过滤条件](filter.md) - 高级过滤技术
-- [事务控制](transaction.md) - 事务管理
-- [API 参考](../api/crud-plus.md) - 完整 API 文档
+```python
+users = await user_crud.select_models(
+    session,
+    join_conditions={'posts': 'inner'},
+    load_strategies={
+        'posts': 'selectinload',
+        'id': 'load_only',
+        'name': 'load_only'
+    },
+    name__like='%admin%',
+    limit=20
+)
+```
+
+## 实用建议
+
+- 有标准外键和 relationship：优先 `load_strategies`。
+- 只是筛选主表：用 `join_conditions`，不要设置 `fill_result=True`。
+- 需要返回多表数据：用 `JoinConfig(fill_result=True)` 或原生 `select()`。
+- 列表页：用 `load_only` 减少字段，用 `limit` 限制结果。
+- 常用 JOIN 字段和过滤字段要加索引。
+- 避免在异步环境中依赖隐式懒加载。
+
+## 相关页面
+
+- [过滤条件](filter.md)
+- [CRUD 操作](../usage/crud.md)
+- [API 参考](../api/crud-plus.md)

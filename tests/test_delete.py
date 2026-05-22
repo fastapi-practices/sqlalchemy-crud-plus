@@ -438,3 +438,37 @@ async def test_delete_model_by_column_with_custom_deleted_at_column(
         assert updated_item is not None
         assert updated_item.is_deleted is True
         assert updated_item.updated_time is not None
+
+
+@pytest.mark.asyncio
+async def test_delete_model_by_column_default_deleted_at_factory_is_runtime(
+    db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]
+):
+    from datetime import datetime, timezone
+
+    item = sample_ins[9]
+    before_delete = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    async with db.begin():
+        count = await crud_ins.delete_model_by_column(
+            db,
+            logical_deletion=True,
+            deleted_flag_column='is_deleted',
+            deleted_at_column='updated_time',
+            id=item.id,
+        )
+
+    after_delete = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    assert count == 1
+
+    async with db.begin():
+        updated_item = await crud_ins.select_model(db, item.id)
+        assert updated_item is not None
+        assert updated_item.is_deleted is True
+        assert updated_item.updated_time is not None
+
+        updated_time = updated_item.updated_time
+        if updated_time.tzinfo is not None:
+            updated_time = updated_time.astimezone(timezone.utc).replace(tzinfo=None)
+        assert before_delete <= updated_time <= after_delete

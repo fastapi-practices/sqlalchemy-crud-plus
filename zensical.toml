@@ -1,0 +1,121 @@
+[project]
+site_name = "SQLAlchemy CRUD Plus"
+site_description = "基于 SQLAlchemy 2.0 构建的高级异步 CRUD SDK"
+site_url = "https://fastapi-practices.github.io/sqlalchemy-crud-plus"
+site_author = "FastAPI Practices"
+repo_name = "sqlalchemy-crud-plus"
+repo_url = "https://github.com/fastapi-practices/sqlalchemy-crud-plus"
+copyright = """
+&copy; 2026 FastAPI Practices
+"""
+
+nav = [
+    { "首页" = "index.md" },
+    { "安装" = "installing.md" },
+    { "基础用法" = [
+        { "快速开始" = "getting-started/quick-start.md" },
+        { "CRUD 操作" = "usage/crud.md" },
+    ] },
+    { "高级用法" = [
+        { "过滤条件" = "advanced/filter.md" },
+        { "关系查询" = "advanced/relationship.md" },
+        { "事务控制" = "advanced/transaction.md" },
+    ] },
+    { "API 参考" = "api/crud-plus.md" },
+    { "更新日志" = "changelog.md" },
+]
+
+extra_javascript = [
+    "https://unpkg.com/mermaid@10.9.0/dist/mermaid.min.js",
+]
+
+extra_css = [
+    "extra/custom.css",
+]
+
+[project.theme]
+name = "zensical"
+language = "zh"
+features = [
+    "content.code.annotate",
+    "content.code.copy",
+    "content.code.select",
+    "navigation.instant",
+    "navigation.instant.progress",
+    "navigation.path",
+    "navigation.tracking",
+    "navigation.top",
+    "search.suggest",
+    "toc.follow",
+]
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme)"
+
+[project.theme.palette.toggle]
+icon = "material/brightness-auto"
+name = "Switch to light mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "pink"
+
+[project.theme.palette.toggle]
+icon = "material/brightness-7"
+name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "teal"
+
+[project.theme.palette.toggle]
+icon = "material/brightness-4"
+name = "Switch to system preference"
+
+[project.markdown_extensions.toc]
+permalink = true
+
+[project.markdown_extensions.tables]
+
+[project.markdown_extensions.admonition]
+
+[project.markdown_extensions.attr_list]
+
+[project.markdown_extensions.def_list]
+
+[project.markdown_extensions.md_in_html]
+
+[project.markdown_extensions."pymdownx.emoji"]
+emoji_index = "zensical.extensions.emoji.twemoji"
+emoji_generator = "zensical.extensions.emoji.to_svg"
+
+[project.markdown_extensions."pymdownx.highlight"]
+
+[project.markdown_extensions."pymdownx.inlinehilite"]
+
+[project.markdown_extensions."pymdownx.details"]
+
+[project.markdown_extensions."pymdownx.superfences"]
+
+[project.markdown_extensions."pymdownx.tabbed"]
+alternate_style = true
+
+[project.markdown_extensions."pymdownx.tasklist"]
+custom_checkbox = true
+
+[project.plugins.search]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_style = "sphinx"
+filters = ["!^_"]
+show_root_heading = true
+members_order = "source"
+separate_signature = true
+show_signature_annotations = true
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/fastapi-practices/sqlalchemy-crud-plus"
+name = "GitHub"

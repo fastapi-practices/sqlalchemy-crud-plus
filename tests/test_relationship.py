@@ -1,5 +1,6 @@
 import pytest
 
+from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -327,8 +328,12 @@ async def test_column_loading_strategies_defer(
     db: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
 ):
     users = rel_sample_data['users']
-    user = await rel_crud_user.select_model(db, users[0].id, load_strategies={'name': 'defer'})
+    user_id = users[0].id
+    db.expire_all()
+
+    user = await rel_crud_user.select_model(db, user_id, load_strategies={'name': 'defer'})
     assert user is not None
+    assert 'name' in inspect(user).unloaded
 
 
 @pytest.mark.asyncio
@@ -336,8 +341,12 @@ async def test_column_loading_strategies_load_only(
     db: AsyncSession, rel_sample_data: dict, rel_crud_user: CRUDPlus[RelUser]
 ):
     users = rel_sample_data['users']
-    user = await rel_crud_user.select_model(db, users[0].id, load_strategies={'id': 'load_only'})
+    user_id = users[0].id
+    db.expire_all()
+
+    user = await rel_crud_user.select_model(db, user_id, load_strategies={'id': 'load_only'})
     assert user is not None
+    assert 'name' in inspect(user).unloaded
 
 
 @pytest.mark.asyncio
