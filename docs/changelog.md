@@ -1,3 +1,24 @@
+<a id="1.13.2"></a>
+# [1.13.2](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/1.13.2) - 2026-05-22
+
+## What's Changed
+* Update changelog for 1.13.1 by [@wu-clan](https://github.com/wu-clan) in [#80](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/80)
+* Add the codecov to test ci by [@wu-clan](https://github.com/wu-clan) in [#81](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/81)
+* Update tests to improve coverage by [@wu-clan](https://github.com/wu-clan) in [#82](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/82)
+* Remove shebang from python files by [@wu-clan](https://github.com/wu-clan) in [#84](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/84)
+* Improve incorrect usage in docs by [@wu-clan](https://github.com/wu-clan) in [#89](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/89)
+* Remove the sponsorship from the readme by [@wu-clan](https://github.com/wu-clan) in [#92](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/92)
+* Update copyright year to 2026 by [@wu-clan](https://github.com/wu-clan) in [#93](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/93)
+* Fix the usage of batch creation returning by [@wu-clan](https://github.com/wu-clan) in [#96](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/96)
+* Update prek docs typing and links by [@wu-clan](https://github.com/wu-clan) in [#97](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/97)
+* Prepare for 1.13.2 release by [@wu-clan](https://github.com/wu-clan) in [#98](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/98)
+
+
+**Full Changelog**: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.13.1...1.13.2
+
+[Changes][1.13.2]
+
+
 <a id="1.13.1"></a>
 # [1.13.1](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/1.13.1) - 2025-11-07
 
@@ -253,6 +274,7 @@ CRUD methods have been refactored, check out the documentation for new usage!
 [Changes][0.0.4]
 
 
+[1.13.2]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.13.1...1.13.2
 [1.13.1]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.13.0...1.13.1
 [1.13.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.12.1...1.13.0
 [1.12.1]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.12.0...1.12.1
