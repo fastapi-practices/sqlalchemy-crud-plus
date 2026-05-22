@@ -3,6 +3,8 @@ import textwrap
 
 from pathlib import Path
 
+import pytest
+
 
 def iter_python_code_blocks():
     docs_dir = Path(__file__).resolve().parents[1] / 'docs'
@@ -50,3 +52,21 @@ def test_all_python_doc_examples_have_valid_syntax():
         checked += 1
 
     assert checked > 0
+
+
+def test_compile_doc_example_skips_empty_code():
+    compile_doc_example('')
+
+
+def test_compile_doc_example_wraps_top_level_await():
+    compile_doc_example('await run_example()')
+
+
+def test_doc_example_failure_message_includes_location(monkeypatch: pytest.MonkeyPatch):
+    def invalid_blocks():
+        yield Path('docs/example.md'), 10, 'if'
+
+    monkeypatch.setattr('tests.test_docs_examples.iter_python_code_blocks', invalid_blocks)
+
+    with pytest.raises(AssertionError, match='docs/example.md:10'):
+        test_all_python_doc_examples_have_valid_syntax()

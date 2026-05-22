@@ -420,8 +420,6 @@ def apply_join_conditions(model: type[Model], stmt: Select, join_conditions: Joi
                     stmt = stmt.join(attr, isouter=True)
                 elif join_type == 'full':
                     stmt = stmt.join(attr, full=True)
-                else:
-                    stmt = stmt.join(attr)
             except AttributeError:
                 raise ModelColumnError(f'Invalid model column: {column}')
 

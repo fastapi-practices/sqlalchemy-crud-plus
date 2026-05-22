@@ -237,6 +237,22 @@ async def test_bulk_update_models_pk_mode_false_not_found(db: AsyncSession, crud
 
 
 @pytest.mark.asyncio
+async def test_bulk_update_models_pk_mode_false_empty_payload(db: AsyncSession, crud_ins: CRUDPlus[Ins]):
+    async with db.begin():
+        result = await crud_ins.bulk_update_models(db, [], pk_mode=False, name='nonexistent')
+
+    assert result == 0
+
+
+@pytest.mark.asyncio
+async def test_bulk_update_models_pk_mode_true_empty_payload(db: AsyncSession, crud_ins: CRUDPlus[Ins]):
+    async with db.begin():
+        result = await crud_ins.bulk_update_models(db, [], pk_mode=True)
+
+    assert result == 0
+
+
+@pytest.mark.asyncio
 async def test_bulk_update_models_with_pydantic_schema(db: AsyncSession, crud_ins: CRUDPlus[Ins]):
     create_data = [CreateIns(name='schema_test')]
 
