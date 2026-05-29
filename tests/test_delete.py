@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -146,6 +148,34 @@ async def test_logical_delete_single_record(db: AsyncSession, sample_ins: list[I
         updated_item = await crud_ins.select_model(db, item.id)
         assert updated_item is not None
         assert updated_item.is_deleted is True
+
+
+@pytest.mark.asyncio
+async def test_logical_delete_with_deleted_flag_value_expression(
+    db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]
+):
+    item = sample_ins[0]
+
+    deleted_time = datetime(2024, 1, 1, 12, 0, 0)
+
+    async with db.begin():
+        count = await crud_ins.delete_model_by_column(
+            db,
+            logical_deletion=True,
+            deleted_flag_column='deleted',
+            deleted_flag_value=crud_ins.model.id,
+            deleted_at_column='deleted_time',
+            deleted_at_factory=deleted_time,
+            id=item.id,
+            deleted=0,
+        )
+
+    assert count == 1
+
+    updated_item = await crud_ins.select_model(db, item.id)
+    assert updated_item is not None
+    assert updated_item.deleted == item.id
+    assert updated_item.deleted_time == deleted_time
 
 
 @pytest.mark.asyncio

@@ -202,7 +202,7 @@ count = await user_crud.delete_model_by_column(
 )
 ```
 
-逻辑删除会把标记字段设为 `True`。如果模型包含删除时间字段，也会写入当前时间。
+逻辑删除默认会把标记字段设为 `True`。如果模型包含删除时间字段，也会写入当前时间。
 
 ```python
 count = await user_crud.delete_model_by_column(
@@ -211,6 +211,20 @@ count = await user_crud.delete_model_by_column(
     deleted_flag_column='is_deleted',
     deleted_at_column='deleted_at',
     id=1
+)
+```
+
+如果逻辑删除标记需要写入自定义值，可以使用 `deleted_flag_value`。该参数也支持 SQLAlchemy 表达式，例如把 `deleted` 字段写成当前行的 `id`。
+
+```python
+count = await user_crud.delete_model_by_column(
+    session,
+    logical_deletion=True,
+    deleted_flag_column='deleted',
+    deleted_flag_value=User.id,
+    deleted_at_column='deleted_time',
+    id=1,
+    deleted=0
 )
 ```
 

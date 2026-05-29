@@ -751,6 +751,7 @@ class CRUDPlus(Generic[Model]):
         allow_multiple: bool = False,
         logical_deletion: bool = False,
         deleted_flag_column: str = 'is_deleted',
+        deleted_flag_value: Any = True,
         deleted_at_column: str = 'deleted_at',
         deleted_at_factory: datetime | Callable[[], datetime] | None = None,
         flush: bool = False,
@@ -764,6 +765,7 @@ class CRUDPlus(Generic[Model]):
         :param allow_multiple: If `True`, allows deleting multiple records that match the filters
         :param logical_deletion: If `True`, enable logical deletion instead of physical deletion
         :param deleted_flag_column: Column name for logical deletion flag
+        :param deleted_flag_value: Value written to logical deletion flag column
         :param deleted_at_column: Column name for delete time，automatic judgment
         :param deleted_at_factory: The delete time value or factory function
         :param flush: If `True`, flush all object changes to the database
@@ -785,7 +787,7 @@ class CRUDPlus(Generic[Model]):
             if total_count > 1:
                 raise MultipleResultsError(f'Only one record is expected to be deleted, found {total_count} records.')
 
-        data: dict[str, Any] = {deleted_flag_column: True}
+        data: dict[str, Any] = {deleted_flag_column: deleted_flag_value}
 
         if deleted_at_column in self.model_column_names:
             if deleted_at_factory is None:

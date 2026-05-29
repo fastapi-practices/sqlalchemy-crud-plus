@@ -16,8 +16,10 @@ class Ins(Base):
     id: Mapped[int] = mapped_column(init=False, primary_key=True, index=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(64))
     is_deleted: Mapped[bool] = mapped_column(default=False)
+    deleted: Mapped[int] = mapped_column(default=0)
     created_time: Mapped[datetime] = mapped_column(init=False, default_factory=datetime.now)
     updated_time: Mapped[datetime | None] = mapped_column(init=False, onupdate=datetime.now)
+    deleted_time: Mapped[datetime | None] = mapped_column(init=False, default=None)
 
 
 class InsPks(Base):
