@@ -1,3 +1,18 @@
+<a id="1.13.3"></a>
+# [1.13.3](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/1.13.3) - 2026-05-29
+
+## What's Changed
+* Migrating from mkdocs to zensical by [@wu-clan](https://github.com/wu-clan) in [#102](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/102)
+* Update changelog for 1.13.2 by [@wu-clan](https://github.com/wu-clan) in [#103](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/103)
+* Add logical deletion custom column value by [@wu-clan](https://github.com/wu-clan) in [#104](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/104)
+* Prepare for 1.13.3 release by [@wu-clan](https://github.com/wu-clan) in [#105](https://github.com/fastapi-practices/sqlalchemy-crud-plus/pull/105)
+
+
+**Full Changelog**: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.13.2...1.13.3
+
+[Changes][1.13.3]
+
+
 <a id="1.13.2"></a>
 # [1.13.2](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/1.13.2) - 2026-05-22
 
@@ -274,6 +289,7 @@ CRUD methods have been refactored, check out the documentation for new usage!
 [Changes][0.0.4]
 
 
+[1.13.3]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.13.2...1.13.3
 [1.13.2]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.13.1...1.13.2
 [1.13.1]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.13.0...1.13.1
 [1.13.0]: https://github.com/fastapi-practices/sqlalchemy-crud-plus/compare/1.12.1...1.13.0
