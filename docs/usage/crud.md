@@ -9,10 +9,12 @@
 | 创建单条 | `create_model` | ORM 实例 |
 | 创建多条 | `create_models` | ORM 实例列表 |
 | 高性能批量插入 | `bulk_create_models` | 实例列表或 `None` |
+| 插入或更新（Upsert） | `upsert_model` | ORM 实例或 `None` |
 | 主键查询 | `select_model` | ORM 实例或 `None` |
 | 条件查询单条 | `select_model_by_column` | ORM 实例或 `None` |
 | 条件查询多条 | `select_models` | ORM 实例列表 |
 | 排序查询 | `select_models_order` | ORM 实例列表 |
+| 分页查询 | `select_models_paginated` | `PaginatedResult` |
 | 主键更新 | `update_model` | 影响行数 |
 | 条件更新 | `update_model_by_column` | 影响行数 |
 | 批量更新不同数据 | `bulk_update_models` | 影响行数 |
@@ -53,6 +55,36 @@ users = await user_crud.bulk_create_models(session, [
 if users is None:
     print('inserted without returned ORM instances')
 ```
+
+## 插入或更新（Upsert）
+
+`upsert_model` 在发生冲突时更新已有记录，否则插入新记录。支持 PostgreSQL / SQLite（`ON CONFLICT DO UPDATE`）
+和 MySQL / MariaDB（`ON DUPLICATE KEY UPDATE`），其他方言会抛出 `UpsertError`。
+
+```python
+# 默认按主键判断冲突，冲突时更新除主键外的所有数据列。
+user = await user_crud.upsert_model(session, {'id': 1, 'name': '张三'}, commit=True)
+
+# 按唯一索引判断冲突（MySQL / MariaDB 忽略该参数，始终使用主键和唯一索引）。
+user = await user_crud.upsert_model(
+    session,
+    {'email': 'a@example.com', 'name': '张三'},
+    conflict_columns=['email'],
+    commit=True
+)
+
+# 只允许冲突时更新指定列。
+user = await user_crud.upsert_model(
+    session,
+    {'id': 1, 'name': '张三', 'level': 99},
+    update_columns=['name'],
+    commit=True
+)
+```
+
+!!! note
+
+    PostgreSQL / SQLite 会通过 RETURNING 返回 ORM 实例；MySQL / MariaDB 不支持该组合，返回 `None`。
 
 ## 查询
 
@@ -106,6 +138,27 @@ users = await user_crud.select_models_order(
     sort_orders=['asc', 'desc']
 )
 ```
+
+需要同时拿到数据和总数时，使用 `select_models_paginated`：
+
+```python
+result = await user_crud.select_models_paginated(
+    session,
+    page=1,
+    size=20,
+    sort_columns='created_at',
+    sort_orders='desc',
+    is_active=True
+)
+
+print(result.items)        # 当前页数据
+print(result.total)        # 总记录数
+print(result.total_pages)  # 总页数
+print(result.has_next)     # 是否有下一页
+print(result.has_prev)     # 是否有上一页
+```
+
+`page` 从 `1` 开始，`size` 必须大于 `0`。
 
 ## 字段加载控制
 
@@ -161,6 +214,28 @@ count = await user_crud.update_model_by_column(
     created_at__lt='2024-01-01'
 )
 ```
+
+字典更新支持原子表达式，语法为 `字段名__操作符=值`，会生成 `column = column op value`：
+
+```python
+# clicks = clicks + 1
+count = await user_crud.update_model(session, pk=1, obj={'clicks__add': 1})
+
+# score = score - 5
+count = await user_crud.update_model(session, pk=1, obj={'score__sub': 5})
+
+# name = name || '_suffix'
+count = await user_crud.update_model(session, pk=1, obj={'name__concat': '_suffix'})
+
+# 可与普通字段混用。
+count = await user_crud.update_model(
+    session,
+    pk=1,
+    obj={'name': '新名称', 'clicks__add': 1}
+)
+```
+
+支持的原子操作符：`add` / `sub` / `mul` / `truediv` / `floordiv` / `mod` / `concat`，以及对应的右结合版本（`radd`、`rsub` 等）。
 
 批量更新不同记录时，默认按主键匹配：
 
@@ -227,6 +302,31 @@ count = await user_crud.delete_model_by_column(
     deleted=0
 )
 ```
+
+## 软删除全局过滤
+
+初始化时开启 `filter_deleted=True` 后，所有查询类方法（`select_*` / `count` / `exists` / `select_models_paginated`）会自动排除已删除记录：
+
+```python
+user_crud = CRUDPlus(
+    User,
+    filter_deleted=True,
+    deleted_flag_column='is_deleted',
+    deleted_flag_value=True
+)
+
+# 自动附加 is_deleted != True。
+users = await user_crud.select_models(session)
+total = await user_crud.count(session)
+
+# 需要包含已删除记录时，显式传入 include_deleted=True。
+all_users = await user_crud.select_models(session, include_deleted=True)
+deleted_user = await user_crud.select_model(session, pk=1, include_deleted=True)
+```
+
+!!! note
+
+    软删除过滤只影响查询，不影响更新和删除。更新 / 删除前的“是否命中多条”检查会使用 `include_deleted=True`，避免因过滤导致误判。
 
 ## 统计和存在性
 

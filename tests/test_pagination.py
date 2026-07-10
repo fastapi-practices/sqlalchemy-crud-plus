@@ -1,3 +1,5 @@
+import math
+
 import pytest
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -170,6 +172,78 @@ class TestPaginationNegativeValues:
     async def test_negative_offset(self, db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
         results = await crud_ins.select_models(db, offset=-5, limit=3)
         assert len(results) <= 3
+
+
+class TestSelectModelsPaginated:
+    @pytest.mark.asyncio
+    async def test_paginated_basic(self, db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
+        total = await crud_ins.count(db)
+
+        result = await crud_ins.select_models_paginated(db, page=1, size=3)
+
+        assert len(result.items) == min(3, total)
+        assert result.total == total
+        assert result.page == 1
+        assert result.size == 3
+        assert result.total_pages == math.ceil(total / 3)
+        assert result.has_next is (total > 3)
+        assert result.has_prev is False
+
+    @pytest.mark.asyncio
+    async def test_paginated_last_page(self, db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
+        total = await crud_ins.count(db)
+        size = 3
+        last_page = math.ceil(total / size)
+
+        result = await crud_ins.select_models_paginated(db, page=last_page, size=size)
+
+        assert len(result.items) == total - (last_page - 1) * size
+        assert result.has_next is False
+        assert result.has_prev is (last_page > 1)
+
+    @pytest.mark.asyncio
+    async def test_paginated_with_filters(self, db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
+        expected_total = await crud_ins.count(db, is_deleted=False)
+
+        result = await crud_ins.select_models_paginated(db, page=1, size=5, is_deleted=False)
+
+        assert result.total == expected_total
+        assert all(item.is_deleted is False for item in result.items)
+
+    @pytest.mark.asyncio
+    async def test_paginated_with_sorting(self, db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
+        result = await crud_ins.select_models_paginated(db, page=1, size=5, sort_columns='id', sort_orders='desc')
+
+        ids = [item.id for item in result.items]
+        assert ids == sorted(ids, reverse=True)
+
+    @pytest.mark.asyncio
+    async def test_paginated_page_beyond_total(self, db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
+        total = await crud_ins.count(db)
+
+        result = await crud_ins.select_models_paginated(db, page=math.ceil(total / 10) + 10, size=10)
+
+        assert len(result.items) == 0
+        assert result.total == total
+        assert result.has_next is False
+
+    @pytest.mark.asyncio
+    async def test_paginated_empty_result(self, db: AsyncSession, crud_ins: CRUDPlus[Ins]):
+        result = await crud_ins.select_models_paginated(db, page=1, size=10, name='nonexistent')
+
+        assert len(result.items) == 0
+        assert result.total == 0
+        assert result.total_pages == 0
+
+    @pytest.mark.asyncio
+    async def test_paginated_invalid_page(self, db: AsyncSession, crud_ins: CRUDPlus[Ins]):
+        with pytest.raises(ValueError):
+            await crud_ins.select_models_paginated(db, page=0, size=10)
+
+    @pytest.mark.asyncio
+    async def test_paginated_invalid_size(self, db: AsyncSession, crud_ins: CRUDPlus[Ins]):
+        with pytest.raises(ValueError):
+            await crud_ins.select_models_paginated(db, page=1, size=0)
 
 
 class TestPaginationWithRelationships:

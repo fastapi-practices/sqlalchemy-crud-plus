@@ -17,13 +17,19 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sqlalchemy_crud_plus.errors import CompositePrimaryKeysError, ModelColumnError, MultipleResultsError
+from sqlalchemy_crud_plus.errors import (
+    CompositePrimaryKeysError,
+    ModelColumnError,
+    MultipleResultsError,
+    UpsertError,
+)
 from sqlalchemy_crud_plus.types import (
     CreateSchema,
     JoinConditions,
     LoadOptions,
     LoadStrategies,
     Model,
+    PaginatedResult,
     SortColumns,
     SortOrders,
     UpdateSchema,
@@ -32,16 +38,49 @@ from sqlalchemy_crud_plus.utils import (
     apply_join_conditions,
     apply_sorting,
     build_load_strategies,
+    get_column,
     has_join_fill_result,
     parse_filters,
+    parse_update_values,
 )
 
 
 class CRUDPlus(Generic[Model]):
-    def __init__(self, model: type[Model]):
+    def __init__(
+        self,
+        model: type[Model],
+        filter_deleted: bool = False,
+        deleted_flag_column: str = 'is_deleted',
+        deleted_flag_value: Any = True,
+    ):
+        """
+        :param model: The SQLAlchemy model class
+        :param filter_deleted: If `True`, automatically exclude soft-deleted records from all
+            query operations (select / count / exists), unless `include_deleted=True` is passed
+        :param deleted_flag_column: Column name for the logical deletion flag
+        :param deleted_flag_value: Value that marks a record as deleted
+        """
         self.model = model
         self.model_column_names = [column.key for column in model.__table__.columns]
         self.primary_key = self._get_primary_key()
+        self.filter_deleted = filter_deleted
+        self.deleted_flag_column = deleted_flag_column
+        self.deleted_flag_value = deleted_flag_value
+
+        if filter_deleted and deleted_flag_column not in self.model_column_names:
+            raise ModelColumnError(f'Column {deleted_flag_column} is not found in {model}')
+
+    def _get_deleted_filters(self, include_deleted: bool) -> list[ColumnExpressionArgument[bool]]:
+        """
+        Get the soft deletion filter(s) when global soft deletion filtering is enabled.
+
+        :param include_deleted: If `True`, soft-deleted records are not filtered out
+        :return:
+        """
+        if not self.filter_deleted or include_deleted:
+            return []
+        column = get_column(self.model, self.deleted_flag_column)
+        return [column != self.deleted_flag_value]
 
     def _get_primary_key(self) -> Column | list[Column]:
         """
@@ -174,11 +213,103 @@ class CRUDPlus(Generic[Model]):
 
         return None
 
+    async def upsert_model(
+        self,
+        session: AsyncSession,
+        obj: CreateSchema | dict[str, Any],
+        conflict_columns: list[str] | None = None,
+        update_columns: list[str] | None = None,
+        flush: bool = False,
+        commit: bool = False,
+        **kwargs,
+    ) -> Model | None:
+        """
+        Insert a new record or update the existing one on conflict (upsert).
+
+        Supported dialects: PostgreSQL, SQLite (ON CONFLICT DO UPDATE) and MySQL / MariaDB
+        (ON DUPLICATE KEY UPDATE).
+
+        :param session: The SQLAlchemy async session
+        :param obj: The Pydantic schema or dictionary containing data to be saved
+        :param conflict_columns: Columns that determine the conflict, defaults to the primary key(s);
+            ignored on MySQL / MariaDB, which always uses the primary key and unique indexes
+        :param update_columns: Columns to update on conflict, defaults to all data columns
+            except the conflict columns
+        :param flush: If `True`, flush all object changes to the database
+        :param commit: If `True`, commits the transaction immediately
+        :param kwargs: Additional model data not included in the pydantic schema
+        :return: The upserted model instance on dialects supporting RETURNING, otherwise `None`
+        """
+        obj_data = obj if isinstance(obj, dict) else obj.model_dump()
+        if kwargs:
+            obj_data = {**obj_data, **kwargs}
+
+        if conflict_columns is None:
+            pks = self.primary_key if isinstance(self.primary_key, list) else [self.primary_key]
+            conflict_columns = [column.name for column in pks]
+        else:
+            for column in conflict_columns:
+                if column not in self.model_column_names:
+                    raise ModelColumnError(f'Column {column} is not found in {self.model}')
+
+        if update_columns is None:
+            update_columns = [key for key in obj_data if key not in conflict_columns]
+        else:
+            for column in update_columns:
+                if column not in self.model_column_names:
+                    raise ModelColumnError(f'Column {column} is not found in {self.model}')
+
+        dialect = session.get_bind().dialect
+        dialect_name = dialect.name
+
+        if dialect_name == 'postgresql':
+            from sqlalchemy.dialects.postgresql import insert as dialect_insert
+        elif dialect_name == 'sqlite':
+            from sqlalchemy.dialects.sqlite import insert as dialect_insert
+        elif dialect_name in ('mysql', 'mariadb'):
+            from sqlalchemy.dialects.mysql import insert as dialect_insert
+        else:
+            raise UpsertError(f'Upsert is not supported for dialect: {dialect_name}')
+
+        stmt = dialect_insert(self.model).values(**obj_data)
+
+        if dialect_name in ('mysql', 'mariadb'):
+            if not update_columns:
+                raise UpsertError('MySQL / MariaDB upsert requires at least one update column')
+            stmt = stmt.on_duplicate_key_update(**{column: stmt.inserted[column] for column in update_columns})
+        else:
+            if update_columns:
+                stmt = stmt.on_conflict_do_update(
+                    index_elements=conflict_columns,
+                    set_={column: stmt.excluded[column] for column in update_columns},
+                )
+            else:
+                stmt = stmt.on_conflict_do_nothing(index_elements=conflict_columns)
+
+        # MySQL / MariaDB do not support RETURNING combined with ON DUPLICATE KEY UPDATE
+        use_returning = dialect_name in ('postgresql', 'sqlite') and getattr(dialect, 'insert_returning', False)
+        if use_returning:
+            stmt = stmt.returning(self.model)
+
+        # populate_existing refreshes identity-mapped instances with the RETURNING row
+        result = await session.execute(stmt, execution_options={'populate_existing': True})
+
+        if flush:
+            await session.flush()
+        if commit:
+            await session.commit()
+
+        if use_returning:
+            return result.scalars().first()
+
+        return None
+
     async def count(
         self,
         session: AsyncSession,
         *whereclause: ColumnExpressionArgument[bool],
         join_conditions: JoinConditions | None = None,
+        include_deleted: bool = False,
         **kwargs,
     ) -> int:
         """
@@ -187,10 +318,12 @@ class CRUDPlus(Generic[Model]):
         :param session: SQLAlchemy async session
         :param whereclause: Additional WHERE clauses
         :param join_conditions: JOIN conditions for relationships
+        :param include_deleted: If `True`, include soft-deleted records when `filter_deleted` is enabled
         :param kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
         filters = list(whereclause)
+        filters.extend(self._get_deleted_filters(include_deleted))
 
         if kwargs:
             filters.extend(parse_filters(self.model, **kwargs))
@@ -215,6 +348,7 @@ class CRUDPlus(Generic[Model]):
         session: AsyncSession,
         *whereclause: ColumnExpressionArgument[bool],
         join_conditions: JoinConditions | None = None,
+        include_deleted: bool = False,
         **kwargs,
     ) -> bool:
         """
@@ -223,10 +357,12 @@ class CRUDPlus(Generic[Model]):
         :param session: SQLAlchemy async session
         :param whereclause: Additional WHERE clauses
         :param join_conditions: JOIN conditions for relationships
+        :param include_deleted: If `True`, include soft-deleted records when `filter_deleted` is enabled
         :param kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
         filters = list(whereclause)
+        filters.extend(self._get_deleted_filters(include_deleted))
 
         if kwargs:
             filters.extend(parse_filters(self.model, **kwargs))
@@ -248,6 +384,7 @@ class CRUDPlus(Generic[Model]):
         load_options: LoadOptions | None = None,
         load_strategies: LoadStrategies | None = None,
         join_conditions: None = None,
+        include_deleted: bool = False,
         **kwargs: Any,
     ) -> Model | None: ...
 
@@ -260,6 +397,7 @@ class CRUDPlus(Generic[Model]):
         load_options: LoadOptions | None = None,
         load_strategies: LoadStrategies | None = None,
         join_conditions: JoinConditions = ...,
+        include_deleted: bool = False,
         **kwargs: Any,
     ) -> Row[Any] | Model | None: ...
 
@@ -271,6 +409,7 @@ class CRUDPlus(Generic[Model]):
         load_options: LoadOptions | None = None,
         load_strategies: LoadStrategies | None = None,
         join_conditions: JoinConditions | None = None,
+        include_deleted: bool = False,
         **kwargs: Any,
     ) -> Row[Any] | Model | None:
         """
@@ -282,11 +421,13 @@ class CRUDPlus(Generic[Model]):
         :param load_options: SQLAlchemy loading options
         :param load_strategies: Relationship loading strategies
         :param join_conditions: JOIN conditions for relationships
+        :param include_deleted: If `True`, include soft-deleted records when `filter_deleted` is enabled
         :param kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
         filters = list(whereclause)
         filters.extend(self._get_pk_filter(pk))
+        filters.extend(self._get_deleted_filters(include_deleted))
 
         if kwargs:
             filters.extend(parse_filters(self.model, **kwargs))
@@ -320,6 +461,7 @@ class CRUDPlus(Generic[Model]):
         load_options: LoadOptions | None = None,
         load_strategies: LoadStrategies | None = None,
         join_conditions: None = None,
+        include_deleted: bool = False,
         **kwargs: Any,
     ) -> Model | None: ...
 
@@ -331,6 +473,7 @@ class CRUDPlus(Generic[Model]):
         load_options: LoadOptions | None = None,
         load_strategies: LoadStrategies | None = None,
         join_conditions: JoinConditions = ...,
+        include_deleted: bool = False,
         **kwargs: Any,
     ) -> Row[Any] | Model | None: ...
 
@@ -341,6 +484,7 @@ class CRUDPlus(Generic[Model]):
         load_options: LoadOptions | None = None,
         load_strategies: LoadStrategies | None = None,
         join_conditions: JoinConditions | None = None,
+        include_deleted: bool = False,
         **kwargs: Any,
     ) -> Row[Any] | Model | None:
         """
@@ -351,6 +495,7 @@ class CRUDPlus(Generic[Model]):
         :param load_options: SQLAlchemy loading options
         :param load_strategies: Relationship loading strategies
         :param join_conditions: JOIN conditions for relationships
+        :param include_deleted: If `True`, include soft-deleted records when `filter_deleted` is enabled
         :param kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
@@ -359,6 +504,7 @@ class CRUDPlus(Generic[Model]):
             load_options=load_options,
             load_strategies=load_strategies,
             join_conditions=join_conditions,
+            include_deleted=include_deleted,
             **kwargs,
         )
 
@@ -376,6 +522,7 @@ class CRUDPlus(Generic[Model]):
         load_options: LoadOptions | None = None,
         load_strategies: LoadStrategies | None = None,
         join_conditions: JoinConditions | None = None,
+        include_deleted: bool = False,
         **kwargs,
     ) -> Select:
         """
@@ -385,10 +532,12 @@ class CRUDPlus(Generic[Model]):
         :param load_options: SQLAlchemy loading options
         :param load_strategies: Relationship loading strategies
         :param join_conditions: JOIN conditions for relationships
+        :param include_deleted: If `True`, include soft-deleted records when `filter_deleted` is enabled
         :param kwargs: Query expressions
         :return:
         """
         filters = list(whereclause)
+        filters.extend(self._get_deleted_filters(include_deleted))
         filters.extend(parse_filters(self.model, **kwargs))
         stmt = select(self.model).where(*filters)
 
@@ -413,6 +562,7 @@ class CRUDPlus(Generic[Model]):
         load_options: LoadOptions | None = None,
         load_strategies: LoadStrategies | None = None,
         join_conditions: JoinConditions | None = None,
+        include_deleted: bool = False,
         **kwargs: Any,
     ) -> Select:
         """
@@ -424,6 +574,7 @@ class CRUDPlus(Generic[Model]):
         :param load_options: SQLAlchemy loading options
         :param load_strategies: Relationship loading strategies
         :param join_conditions: JOIN conditions for relationships
+        :param include_deleted: If `True`, include soft-deleted records when `filter_deleted` is enabled
         :param kwargs: Query expressions
         :return:
         """
@@ -432,6 +583,7 @@ class CRUDPlus(Generic[Model]):
             load_options=load_options,
             load_strategies=load_strategies,
             join_conditions=join_conditions,
+            include_deleted=include_deleted,
             **kwargs,
         )
         sorted_stmt = apply_sorting(self.model, stmt, sort_columns, sort_orders)
@@ -447,6 +599,7 @@ class CRUDPlus(Generic[Model]):
         join_conditions: None = None,
         limit: int | None = None,
         offset: int | None = None,
+        include_deleted: bool = False,
         **kwargs: Any,
     ) -> Sequence[Model]: ...
 
@@ -460,6 +613,7 @@ class CRUDPlus(Generic[Model]):
         join_conditions: JoinConditions = ...,
         limit: int | None = None,
         offset: int | None = None,
+        include_deleted: bool = False,
         **kwargs: Any,
     ) -> Sequence[Row[Any] | Model]: ...
 
@@ -472,6 +626,7 @@ class CRUDPlus(Generic[Model]):
         join_conditions: JoinConditions | None = None,
         limit: int | None = None,
         offset: int | None = None,
+        include_deleted: bool = False,
         **kwargs: Any,
     ) -> Sequence[Row[Any] | Model]:
         """
@@ -484,6 +639,7 @@ class CRUDPlus(Generic[Model]):
         :param join_conditions: JOIN conditions for relationships
         :param limit: Maximum number of results to return
         :param offset: Number of results to skip
+        :param include_deleted: If `True`, include soft-deleted records when `filter_deleted` is enabled
         :param kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
@@ -492,6 +648,7 @@ class CRUDPlus(Generic[Model]):
             load_options=load_options,
             load_strategies=load_strategies,
             join_conditions=join_conditions,
+            include_deleted=include_deleted,
             **kwargs,
         )
 
@@ -520,6 +677,7 @@ class CRUDPlus(Generic[Model]):
         join_conditions: None = None,
         limit: int | None = None,
         offset: int | None = None,
+        include_deleted: bool = False,
         **kwargs: Any,
     ) -> Sequence[Model]: ...
 
@@ -535,6 +693,7 @@ class CRUDPlus(Generic[Model]):
         join_conditions: JoinConditions = ...,
         limit: int | None = None,
         offset: int | None = None,
+        include_deleted: bool = False,
         **kwargs: Any,
     ) -> Sequence[Row[Any] | Model]: ...
 
@@ -549,6 +708,7 @@ class CRUDPlus(Generic[Model]):
         join_conditions: JoinConditions | None = None,
         limit: int | None = None,
         offset: int | None = None,
+        include_deleted: bool = False,
         **kwargs: Any,
     ) -> Sequence[Row[Any] | Model]:
         """
@@ -564,6 +724,7 @@ class CRUDPlus(Generic[Model]):
         :param join_conditions: JOIN conditions for relationships
         :param limit: Maximum number of results to return
         :param offset: Number of results to skip
+        :param include_deleted: If `True`, include soft-deleted records when `filter_deleted` is enabled
         :param kwargs: Filter expressions using field__operator=value syntax
         :return:
         """
@@ -574,6 +735,7 @@ class CRUDPlus(Generic[Model]):
             load_options=load_options,
             load_strategies=load_strategies,
             join_conditions=join_conditions,
+            include_deleted=include_deleted,
             **kwargs,
         )
 
@@ -590,6 +752,59 @@ class CRUDPlus(Generic[Model]):
 
         return query.scalars().all()
 
+    async def select_models_paginated(
+        self,
+        session: AsyncSession,
+        *whereclause: ColumnExpressionArgument[bool],
+        page: int = 1,
+        size: int = 20,
+        sort_columns: SortColumns | None = None,
+        sort_orders: SortOrders = None,
+        load_options: LoadOptions | None = None,
+        load_strategies: LoadStrategies | None = None,
+        include_deleted: bool = False,
+        **kwargs: Any,
+    ) -> PaginatedResult[Model]:
+        """
+        Query a page of rows that match the specified filters, together with the total count.
+
+        :param session: SQLAlchemy async session
+        :param whereclause: Additional WHERE clauses
+        :param page: Page number, starting from 1
+        :param size: Page size, must be greater than 0
+        :param sort_columns: Column names to sort by
+        :param sort_orders: Sort orders ('asc' or 'desc')
+        :param load_options: SQLAlchemy loading options
+        :param load_strategies: Relationship loading strategies
+        :param include_deleted: If `True`, include soft-deleted records when `filter_deleted` is enabled
+        :param kwargs: Filter expressions using field__operator=value syntax
+        :return:
+        """
+        if page < 1:
+            raise ValueError('Page number must be greater than or equal to 1')
+        if size < 1:
+            raise ValueError('Page size must be greater than or equal to 1')
+
+        total = await self.count(session, *whereclause, include_deleted=include_deleted, **kwargs)
+
+        stmt = await self.select(
+            *whereclause,
+            load_options=load_options,
+            load_strategies=load_strategies,
+            include_deleted=include_deleted,
+            **kwargs,
+        )
+
+        if sort_columns:
+            stmt = apply_sorting(self.model, stmt, sort_columns, sort_orders)
+
+        stmt = stmt.limit(size).offset((page - 1) * size)
+
+        query = await session.execute(stmt)
+        items = query.scalars().all()
+
+        return PaginatedResult(items=items, total=total, page=page, size=size)
+
     async def update_model(
         self,
         session: AsyncSession,
@@ -602,6 +817,9 @@ class CRUDPlus(Generic[Model]):
         """
         Update an instance by model's primary key
 
+        Dictionary data supports atomic expression updates using the field__operator=value
+        syntax, e.g. `{'clicks__add': 1}` generates `clicks = clicks + 1`.
+
         :param session: The SQLAlchemy async session.
         :param pk: Single value for simple primary key, or tuple for composite primary key.
         :param obj: A pydantic schema or dictionary containing the update data
@@ -611,8 +829,9 @@ class CRUDPlus(Generic[Model]):
         :return:
         """
         filters = self._get_pk_filter(pk)
-        data = obj if isinstance(obj, dict) else obj.model_dump(exclude_unset=True)
+        data = dict(obj) if isinstance(obj, dict) else obj.model_dump(exclude_unset=True)
         data.update(kwargs)
+        data = parse_update_values(self.model, data)
         stmt = update(self.model).where(*filters).values(**data)
         result = cast(CursorResult[Any], await session.execute(stmt))
 
@@ -635,6 +854,9 @@ class CRUDPlus(Generic[Model]):
         """
         Update records by model column filters.
 
+        Dictionary data supports atomic expression updates using the field__operator=value
+        syntax, e.g. `{'clicks__add': 1}` generates `clicks = clicks + 1`.
+
         :param session: The SQLAlchemy async session
         :param obj: A Pydantic schema or dictionary containing the update data
         :param allow_multiple: If `True`, allows updating multiple records that match the filters
@@ -649,11 +871,12 @@ class CRUDPlus(Generic[Model]):
             raise ValueError('At least one filter condition must be provided for update operation')
 
         if not allow_multiple:
-            total_count = await self.count(session, *filters)
+            total_count = await self.count(session, *filters, include_deleted=True)
             if total_count > 1:
                 raise MultipleResultsError(f'Only one record is expected to be updated, found {total_count} records.')
 
-        data = obj if isinstance(obj, dict) else obj.model_dump(exclude_unset=True)
+        data = dict(obj) if isinstance(obj, dict) else obj.model_dump(exclude_unset=True)
+        data = parse_update_values(self.model, data)
         stmt = update(self.model).where(*filters).values(**data)
         result = cast(CursorResult[Any], await session.execute(stmt))
 
@@ -783,7 +1006,7 @@ class CRUDPlus(Generic[Model]):
             raise ValueError('At least one filter condition must be provided for delete operation')
 
         if not allow_multiple:
-            total_count = await self.count(session, *filters)
+            total_count = await self.count(session, *filters, include_deleted=True)
             if total_count > 1:
                 raise MultipleResultsError(f'Only one record is expected to be deleted, found {total_count} records.')
 

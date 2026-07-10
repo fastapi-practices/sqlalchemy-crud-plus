@@ -340,3 +340,76 @@ async def test_bulk_update_models_pk_mode_false_with_commit(db: AsyncSession, cr
     )
 
     assert result == 2
+
+
+@pytest.mark.asyncio
+async def test_update_model_atomic_add(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
+    item = sample_ins[0]
+    before = item.deleted
+
+    result = await crud_ins.update_model(db, item.id, {'deleted__add': 3}, commit=True)
+    assert result == 1
+
+    updated = await crud_ins.select_model(db, item.id)
+    assert updated.deleted == before + 3
+
+
+@pytest.mark.asyncio
+async def test_update_model_atomic_sub(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
+    item = sample_ins[0]
+
+    await crud_ins.update_model(db, item.id, {'deleted': 10}, commit=True)
+    result = await crud_ins.update_model(db, item.id, {'deleted__sub': 4}, commit=True)
+    assert result == 1
+
+    updated = await crud_ins.select_model(db, item.id)
+    assert updated.deleted == 6
+
+
+@pytest.mark.asyncio
+async def test_update_model_atomic_concat(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
+    item = sample_ins[0]
+    before = item.name
+
+    result = await crud_ins.update_model(db, item.id, {'name__concat': '_suffix'}, commit=True)
+    assert result == 1
+
+    updated = await crud_ins.select_model(db, item.id)
+    assert updated.name == f'{before}_suffix'
+
+
+@pytest.mark.asyncio
+async def test_update_model_atomic_mixed_with_plain_values(
+    db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]
+):
+    item = sample_ins[0]
+    before = item.deleted
+
+    result = await crud_ins.update_model(db, item.id, {'name': 'mixed_update', 'deleted__add': 1}, commit=True)
+    assert result == 1
+
+    updated = await crud_ins.select_model(db, item.id)
+    assert updated.name == 'mixed_update'
+    assert updated.deleted == before + 1
+
+
+@pytest.mark.asyncio
+async def test_update_model_by_column_atomic_add(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
+    item = sample_ins[0]
+    before = item.deleted
+
+    result = await crud_ins.update_model_by_column(db, {'deleted__add': 5}, commit=True, id=item.id)
+    assert result == 1
+
+    updated = await crud_ins.select_model(db, item.id)
+    assert updated.deleted == before + 5
+
+
+@pytest.mark.asyncio
+async def test_update_model_atomic_invalid_operator(db: AsyncSession, sample_ins: list[Ins], crud_ins: CRUDPlus[Ins]):
+    from sqlalchemy_crud_plus.errors import SelectOperatorError
+
+    item = sample_ins[0]
+
+    with pytest.raises(SelectOperatorError):
+        await crud_ins.update_model(db, item.id, {'deleted__like': 1})

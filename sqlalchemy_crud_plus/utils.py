@@ -257,6 +257,38 @@ def parse_filters(model: type[Model] | AliasedClass, **kwargs) -> list[ColumnEle
     return filters
 
 
+def parse_update_values(model: type[Model], data: dict[str, Any]) -> dict[str, Any]:
+    """
+    Parse update values, converting field__operator=value keys into SQL expressions.
+
+    Plain keys are kept as-is. Keys using the field__operator syntax (e.g. clicks__add=1)
+    are converted into atomic column expressions (e.g. clicks = clicks + 1).
+
+    :param model: The SQLAlchemy model class
+    :param data: The update data dictionary
+    :return:
+    """
+    values: dict[str, Any] = {}
+
+    for key, value in data.items():
+        if '__' not in key or key in model.__table__.columns:
+            values[key] = value
+            continue
+
+        field_name, op = key.rsplit('__', 1)
+
+        if op not in _DYNAMIC_OPERATORS:
+            raise SelectOperatorError(
+                f'The update operator <{op}> is not supported, only {", ".join(_DYNAMIC_OPERATORS)}'
+            )
+
+        column = get_column(model, field_name)
+        expression_func = _SUPPORTED_FILTERS[op](column)
+        values[field_name] = expression_func(value)
+
+    return values
+
+
 def apply_sorting(
     model: type[Model] | AliasedClass,
     stmt: Select,

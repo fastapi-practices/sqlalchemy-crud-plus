@@ -53,3 +53,10 @@ class JoinConditionError(SQLAlchemyCRUDPlusException):
 
     def __init__(self, msg: str) -> None:
         super().__init__(msg)
+
+
+class UpsertError(SQLAlchemyCRUDPlusException):
+    """Error raised when an upsert operation is invalid."""
+
+    def __init__(self, msg: str) -> None:
+        super().__init__(msg)

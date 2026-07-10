@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Literal, TypeVar
+import math
+
+from dataclasses import dataclass
+from typing import Any, Generic, Literal, Sequence, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import Alias, Table
@@ -64,3 +67,29 @@ LoadOptions = list[ExecutableOption]
 
 SortColumns = str | list[str]
 SortOrders = str | list[str] | None
+
+_T = TypeVar('_T')
+
+
+@dataclass
+class PaginatedResult(Generic[_T]):
+    """Paginated query result with items and pagination metadata."""
+
+    items: Sequence[_T]
+    total: int
+    page: int
+    size: int
+
+    @property
+    def total_pages(self) -> int:
+        if self.size <= 0:
+            return 0
+        return math.ceil(self.total / self.size)
+
+    @property
+    def has_next(self) -> bool:
+        return self.page < self.total_pages
+
+    @property
+    def has_prev(self) -> bool:
+        return self.page > 1

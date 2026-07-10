@@ -53,6 +53,9 @@ class UserUpdate(BaseModel):
 from sqlalchemy_crud_plus import CRUDPlus
 
 user_crud = CRUDPlus(User)
+
+# 需要自动过滤软删除记录时：
+# user_crud = CRUDPlus(User, filter_deleted=True)
 ```
 
 `CRUDPlus(User)` 只绑定模型，不绑定 session。每次调用时传入当前请求或任务中的 `AsyncSession`。
@@ -78,6 +81,15 @@ async with async_session.begin() as session:
         limit=20,
         offset=0
     )
+
+    # 分页查询（同时返回总数）
+    page = await user_crud.select_models_paginated(
+        session,
+        page=1,
+        size=20,
+        is_active=True
+    )
+    print(page.total, page.items)
 
     # 更新
     await user_crud.update_model(
