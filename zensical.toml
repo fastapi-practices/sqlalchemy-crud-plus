@@ -19,6 +19,7 @@ nav = [
     { "高级用法" = [
         { "过滤条件" = "advanced/filter.md" },
         { "关系查询" = "advanced/relationship.md" },
+        { "业务 DAO 封装" = "advanced/business-dao.md" },
         { "事务控制" = "advanced/transaction.md" },
     ] },
     { "API 参考" = "api/crud-plus.md" },
