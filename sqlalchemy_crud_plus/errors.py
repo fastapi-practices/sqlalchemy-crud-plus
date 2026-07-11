@@ -60,3 +60,17 @@ class UpsertError(SQLAlchemyCRUDPlusException):
 
     def __init__(self, msg: str) -> None:
         super().__init__(msg)
+
+
+class QueryBuilderError(SQLAlchemyCRUDPlusException):
+    """Error raised when a fluent query cannot be constructed or executed."""
+
+    def __init__(self, msg: str) -> None:
+        super().__init__(msg)
+
+
+class UnsafeWriteError(QueryBuilderError):
+    """Error raised for an update or delete without an explicit user filter."""
+
+    def __init__(self, msg: str) -> None:
+        super().__init__(msg)

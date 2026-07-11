@@ -15,6 +15,7 @@ nav = [
     { "基础用法" = [
         { "快速开始" = "getting-started/quick-start.md" },
         { "CRUD 操作" = "usage/crud.md" },
+        { "链式查询与写入" = "usage/fluent-query.md" },
     ] },
     { "高级用法" = [
         { "过滤条件" = "advanced/filter.md" },

@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from datetime import datetime, timezone
-from typing import Any, Generic, Sequence, cast, overload
+from typing import TYPE_CHECKING, Any, Generic, Sequence, cast, overload
 
 from sqlalchemy import (
     Column,
@@ -43,6 +43,9 @@ from sqlalchemy_crud_plus.utils import (
     parse_filters,
     parse_update_values,
 )
+
+if TYPE_CHECKING:
+    from sqlalchemy_crud_plus.query import DeleteBuilder, InsertBuilder, QueryBuilder, UpdateBuilder, UpsertBuilder
 
 
 class CRUDPlus(Generic[Model]):
@@ -106,6 +109,36 @@ class CRUDPlus(Generic[Model]):
             return [column == value for column, value in zip(self.primary_key, pk)]
         else:
             return [self.primary_key == pk]
+
+    def query(self, session: AsyncSession) -> 'QueryBuilder[Model]':
+        """Create an immutable fluent query builder bound to ``session``."""
+        from sqlalchemy_crud_plus.query import QueryBuilder
+
+        return QueryBuilder(self, session, select(self.model), _models=(self.model,))
+
+    def update_query(self, session: AsyncSession) -> 'UpdateBuilder[Model]':
+        """Create a fluent update builder bound to ``session``."""
+        from sqlalchemy_crud_plus.query import UpdateBuilder
+
+        return UpdateBuilder(self, session)
+
+    def delete_query(self, session: AsyncSession) -> 'DeleteBuilder[Model]':
+        """Create a fluent delete builder bound to ``session``."""
+        from sqlalchemy_crud_plus.query import DeleteBuilder
+
+        return DeleteBuilder(self, session)
+
+    def insert_query(self, session: AsyncSession) -> 'InsertBuilder[Model]':
+        """Create a fluent insert builder bound to ``session``."""
+        from sqlalchemy_crud_plus.query import InsertBuilder
+
+        return InsertBuilder(self, session)
+
+    def upsert_query(self, session: AsyncSession) -> 'UpsertBuilder[Model]':
+        """Create a fluent upsert builder bound to ``session``."""
+        from sqlalchemy_crud_plus.query import UpsertBuilder
+
+        return UpsertBuilder(self, session)
 
     async def create_model(
         self,

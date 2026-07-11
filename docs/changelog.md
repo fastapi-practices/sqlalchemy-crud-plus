@@ -1,3 +1,14 @@
+<a id="1.14.0"></a>
+# 1.14.0 - 2026-07-11
+
+## What's Changed
+
+* Add immutable, strongly typed Lambda query builders with filtering, projection, joins, aggregation, pagination, CTEs and set operations
+* Add safe fluent update, delete, insert and upsert builders
+* Apply configured soft-delete filters to fluent reads and writes
+* Add fluent API documentation and test coverage
+
+
 <a id="1.13.3"></a>
 # [1.13.3](https://github.com/fastapi-practices/sqlalchemy-crud-plus/releases/tag/1.13.3) - 2026-05-29
 
